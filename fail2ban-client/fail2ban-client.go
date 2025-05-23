@@ -1,12 +1,13 @@
-package main
+package fail2ban_client
 
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
-	"github.com/kisielk/og-rek"
+	ogórek "github.com/kisielk/og-rek"
 	"github.com/nlpodyssey/gopickle/pickle"
-	fail2ban_client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"github.com/nlpodyssey/gopickle/types"
 	"net"
 )
 
@@ -22,34 +23,62 @@ const (
 	socketReadBufferSize = 1024
 )
 
-type Py_builtins_str struct{}
-
-func (c Py_builtins_str) Call(args ...interface{}) (interface{}, error) {
-	return args[0], nil
+type Fail2BanClient struct {
+	socket  net.Conn
+	encoder *ogórek.Encoder
 }
 
-func sendCommand(socket net.Conn, encoder *ogórek.Encoder, command []string) (interface{}, error) {
-	err := write(socket, encoder, command)
+func NewFail2BanClient(address string) (*Fail2BanClient, error) {
+	socket, err := net.Dial("unix", address)
 	if err != nil {
 		return nil, err
 	}
-	return read(socket)
+
+	encoder := ogórek.NewEncoder(socket)
+
+	return &Fail2BanClient{
+		socket,
+		encoder,
+	}, nil
 }
 
-func write(socket net.Conn, encoder *ogórek.Encoder, command []string) error {
-	err := encoder.Encode(command)
+func (f2bc *Fail2BanClient) GetVersion() (string, error) {
+	result, err := f2bc.sendCommand([]string{versionCommand})
+	if err != nil {
+		return "", err
+	}
+
+	if versionTuple, tupleOk := result.(*types.Tuple); tupleOk {
+		if versionStr, versionOk := versionTuple.Get(1).(string); versionOk {
+			return versionStr, nil
+		}
+	}
+
+	return "", errors.New("fetching version failed")
+}
+
+func (f2bc *Fail2BanClient) sendCommand(command []string) (interface{}, error) {
+	err := f2bc.write(command)
+	if err != nil {
+		return nil, err
+	}
+	return f2bc.read()
+}
+
+func (f2bc *Fail2BanClient) write(command []string) error {
+	err := f2bc.encoder.Encode(command)
 	if err != nil {
 		return err
 	}
-	_, err = socket.Write([]byte(commandTerminator))
+	_, err = f2bc.socket.Write([]byte(commandTerminator))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func read(socket net.Conn) (interface{}, error) {
-	reader := bufio.NewReader(socket)
+func (f2bc *Fail2BanClient) read() (interface{}, error) {
+	reader := bufio.NewReader(f2bc.socket)
 
 	data := []byte{}
 	for {
@@ -76,24 +105,4 @@ func read(socket net.Conn) (interface{}, error) {
 	}
 
 	return unpickler.Load()
-}
-
-func main() {
-	fmt.Println("This is fail2ban-dashboard v1")
-
-	socketPath := "/var/run/fail2ban/fail2ban.sock"
-
-	client, err := fail2ban_client.NewFail2BanClient(socketPath)
-
-	if err != nil {
-		panic(err)
-	}
-
-	version, err := client.GetVersion()
-
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("fail2ban version found: %s\n", version)
 }
