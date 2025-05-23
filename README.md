@@ -7,4 +7,4 @@
 ## Inspired by
 
 - https://gitlab.com/hctrdev/fail2ban-prometheus-exporter/-/tree/main?ref_type=heads
-- 
+- https://github.com/VerifiedJoseph/intruder-alert?tab=readme-ov-file
