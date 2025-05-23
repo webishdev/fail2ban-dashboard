@@ -96,4 +96,20 @@ func main() {
 	}
 
 	fmt.Printf("fail2ban version found: %s\n", version)
+
+	names, err := client.GetJailNames()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Jail names: %v\n", names)
+
+	for _, jailName := range names {
+		jailEntry, getErr := client.GetBanned(jailName)
+		if getErr != nil {
+			panic(getErr)
+		}
+
+		fmt.Printf("Banned IPs: %v\n", jailEntry)
+	}
 }

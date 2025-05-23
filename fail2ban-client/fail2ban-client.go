@@ -9,6 +9,9 @@ import (
 	"github.com/nlpodyssey/gopickle/pickle"
 	"github.com/nlpodyssey/gopickle/types"
 	"net"
+	"regexp"
+	"strings"
+	"time"
 )
 
 const (
@@ -16,12 +19,27 @@ const (
 	pingCommand          = "ping"
 	statusCommand        = "status"
 	versionCommand       = "version"
+	getCommand           = "get"
 	bannedCommand        = "banned"
-	banTimeCommandFmt    = "get %s bantime"
-	findTimeCommandFmt   = "get %s findtime"
-	maxRetriesCommandFmt = "get %s maxretry"
 	socketReadBufferSize = 1024
 )
+
+const (
+	protocolNumberOfJail string = "Number of jail"
+	protocolJailList     string = "Jail list"
+)
+
+type BanEntry struct {
+	Address       string
+	BannedAt      time.Time
+	CurrenPenalty string
+	BanEndsAt     time.Time
+}
+
+type JailEntry struct {
+	Name          string
+	BannedEntries []BanEntry
+}
 
 type Fail2BanClient struct {
 	socket  net.Conn
@@ -55,6 +73,105 @@ func (f2bc *Fail2BanClient) GetVersion() (string, error) {
 	}
 
 	return "", errors.New("fetching version failed")
+}
+
+func (f2bc *Fail2BanClient) GetJailNames() ([]string, error) {
+	result, err := f2bc.sendCommand([]string{statusCommand})
+	if err != nil {
+		return []string{}, err
+	}
+
+	expectedJailCount := 0
+
+	if statusTuple, tupleOk := result.(*types.Tuple); tupleOk {
+		if statusList, listOk := statusTuple.Get(1).(*types.List); listOk {
+			if numberOfJailsTuple, numberTupleOk := statusList.Get(0).(*types.Tuple); numberTupleOk {
+				if numberOfJailsKey, numberOfJailsKeyOk := numberOfJailsTuple.Get(0).(string); numberOfJailsKeyOk {
+					if numberOfJailsKey == protocolNumberOfJail {
+						if numberOfJails, numberOfJailsOk := numberOfJailsTuple.Get(1).(int); numberOfJailsOk {
+							expectedJailCount = numberOfJails
+						} else {
+							return []string{}, errors.New("number of jails could not be read")
+						}
+					}
+				}
+			}
+			if jailListTuple, jailListTupleOk := statusList.Get(1).(*types.Tuple); jailListTupleOk {
+				if jailListKey, jailListKeyOk := jailListTuple.Get(0).(string); jailListKeyOk {
+					if jailListKey == protocolJailList {
+						if jailList, jailListOk := jailListTuple.Get(1).(string); jailListOk {
+							jailNames := strings.Split(jailList, ",")
+
+							for i := range jailNames {
+								jailNames[i] = strings.TrimSpace(jailNames[i])
+							}
+
+							if len(jailNames) != expectedJailCount {
+								return []string{}, errors.New("number of jails did not match")
+							}
+							return jailNames, nil
+						} else {
+							return []string{}, errors.New("jail list could not be read")
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return []string{}, errors.New("fetching status failed")
+}
+
+func (f2bc *Fail2BanClient) GetBanned(jailName string) (JailEntry, error) {
+	var bannedEntries []BanEntry
+	result, err := f2bc.sendCommand([]string{getCommand, jailName, "banip", "--with-time"})
+	if err != nil {
+		return JailEntry{}, err
+	}
+
+	// fmt.Printf("Result: %#v - %v\n", result, result)
+
+	if getBanTuple, getBanOk := result.(*types.Tuple); getBanOk {
+		if banList, banListOk := getBanTuple.Get(1).(*types.List); banListOk {
+			banListLen := banList.Len()
+			for index := 0; index < banListLen; index++ {
+				if listEnty, listEntyOk := banList.Get(index).(string); listEntyOk {
+					re := regexp.MustCompile(`^(\d{1,3}(?:\.\d{1,3}){3}) \t(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \+ (\d+) = (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$`)
+
+					matches := re.FindStringSubmatch(listEnty)
+					if matches == nil {
+						return JailEntry{}, errors.New("could not parse banned IPs entry")
+					}
+
+					layout := "2006-01-02 15:04:05" // reference layout
+
+					bannedAt, bannedAtErr := time.Parse(layout, matches[2])
+					if bannedAtErr != nil {
+						return JailEntry{}, bannedAtErr
+					}
+
+					banEndsAt, banEndsAtErr := time.Parse(layout, matches[4])
+					if banEndsAtErr != nil {
+						return JailEntry{}, banEndsAtErr
+					}
+
+					ipAddress := matches[1]
+					currenPenalty := matches[3]
+
+					banEntry := BanEntry{
+						Address:       ipAddress,
+						BannedAt:      bannedAt,
+						CurrenPenalty: currenPenalty,
+						BanEndsAt:     banEndsAt,
+					}
+
+					bannedEntries = append(bannedEntries, banEntry)
+				}
+			}
+		}
+	}
+
+	return JailEntry{Name: jailName, BannedEntries: bannedEntries}, nil
 }
 
 func (f2bc *Fail2BanClient) sendCommand(command []string) (interface{}, error) {
