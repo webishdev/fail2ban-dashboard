@@ -3,3 +3,8 @@
 - `fail2ban-server`
 - `ls -lah /var/run/fail2ban/fail2ban.sock`
 - `fail2ban-client status --all`
+
+## Inspired by
+
+- https://gitlab.com/hctrdev/fail2ban-prometheus-exporter/-/tree/main?ref_type=heads
+- 
