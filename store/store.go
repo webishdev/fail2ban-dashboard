@@ -1,8 +1,9 @@
 package store
 
 import (
-	"fmt"
+	"github.com/gofiber/fiber/v2/log"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"sort"
 	"sync"
 	"time"
 )
@@ -23,15 +24,13 @@ func NewDataStore(f2bc *client.Fail2BanClient) *DataStore {
 		jails:         make(map[string]*client.JailEntry),
 	}
 
-	go dataStore.start()
-
 	return dataStore
 }
 
 func (dataStore *DataStore) start() {
 	defer dataStore.ticker.Stop()
 	for {
-		fmt.Println("fetching fail2ban data")
+		log.Info("Fetching fail2ban data")
 		names, err := dataStore.f2bc.GetJailNames()
 		if err != nil {
 			break
@@ -51,12 +50,27 @@ func (dataStore *DataStore) start() {
 	}
 }
 
+func (dataStore *DataStore) Start() {
+	time.AfterFunc(2*time.Second, func() {
+		go dataStore.start()
+	})
+
+}
+
 func (dataStore *DataStore) GetJails() []client.StaticJailEntry {
 	dataStore.mutex.RLock()
 	defer dataStore.mutex.RUnlock()
+	keys := make([]string, 0, len(dataStore.jails))
+	for key := range dataStore.jails {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
 	jails := make([]client.StaticJailEntry, len(dataStore.jails))
 	index := 0
-	for _, jailEntry := range dataStore.jails {
+	for _, key := range keys {
+		jailEntry := dataStore.jails[key]
 		jails[index] = jailEntry.Copy()
 		index++
 	}

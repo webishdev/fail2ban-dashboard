@@ -24,28 +24,28 @@ func main() {
 		panic(err)
 	}
 
-	version, err := f2bc.GetVersion()
+	fail2banVersion, err := f2bc.GetVersion()
 
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("fail2ban version found: %s\n", version)
+	fmt.Printf("fail2ban version found: %s\n", fail2banVersion)
 
 	versionIsOk := false
 	for _, supportedVersion := range supportedVersions {
-		if supportedVersion == version {
+		if supportedVersion == fail2banVersion {
 			versionIsOk = true
 		}
 	}
 	if !versionIsOk {
-		fmt.Printf("fail2ban version %s not supported\n", version)
+		fmt.Printf("fail2ban version %s not supported\n", fail2banVersion)
 		os.Exit(1)
 	}
 
 	dataStore := store.NewDataStore(f2bc)
 
-	err = server.Serve(dataStore)
+	err = server.Serve(Version, fail2banVersion, dataStore)
 	if err != nil {
 		panic(err)
 	}

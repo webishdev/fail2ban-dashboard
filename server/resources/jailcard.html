@@ -1,1 +1,6 @@
-<div>Jail: {{ .Name }} - {{ .BannedCount }}</div>
+<div class="stats shadow min-w-sm">
+    <div class="stat">
+        <div class="stat-title">{{ .Name }}</div>
+        <div class="stat-value">{{ .BannedCount }}</div>
+    </div>
+</div>

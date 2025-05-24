@@ -35,6 +35,7 @@ type BanEntry struct {
 	BannedAt      time.Time
 	CurrenPenalty string
 	BanEndsAt     time.Time
+	JailName      string
 }
 
 type JailEntry struct {
@@ -171,6 +172,7 @@ func (f2bc *Fail2BanClient) GetBanned(jailName string) (*JailEntry, error) {
 						BannedAt:      bannedAt,
 						CurrenPenalty: currenPenalty,
 						BanEndsAt:     banEndsAt,
+						JailName:      jailName,
 					}
 
 					bannedEntries = append(bannedEntries, banEntry)
