@@ -1,0 +1,17 @@
+version: "2"
+output:
+  formats:
+    text:
+      print-linter-name: true
+      colors: true
+    html:
+      path: .lint_result/lint-report.html
+linters:
+  enable:
+    - gocyclo
+    - misspell
+  disable:
+    - staticcheck
+formatters:
+  enable:
+    - gofmt

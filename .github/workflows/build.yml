@@ -20,11 +20,6 @@ on:
       - go.mod
       - go.sum
       - .golangci.yml
-  workflow_call:
-    inputs:
-      stopnik_version:
-        default: ci
-        type: string
 
 permissions:
   contents: read
