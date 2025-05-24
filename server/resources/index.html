@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta http-equiv="refresh" content="60">
+        <title>Fail2Ban Dashboard</title>
+    </head>
+    <body>
+        <h1>Fail2Ban Dashboard</h1>
+        <div>
+            {{ range .Jails }}
+                {{ template "jailCard" . }}
+            {{ end }}
+        </div>
+    </body>
+</html>

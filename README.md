@@ -4,7 +4,7 @@
 - `ls -lah /var/run/fail2ban/fail2ban.sock`
 - `fail2ban-client status --all`
 - `fail2ban-client banned`
-- `fail2ban-client set sshd banip 88.88.88.88`
+- `fail2ban-client set sshd banip 88.88.88.88 188.88.88.88 99.99.99.99 199.99.99.99`
 
 ## Inspired by
 

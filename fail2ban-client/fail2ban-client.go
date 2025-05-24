@@ -11,6 +11,7 @@ import (
 	"net"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -38,10 +39,17 @@ type BanEntry struct {
 
 type JailEntry struct {
 	Name          string
+	BannedEntries []*BanEntry
+}
+
+type StaticJailEntry struct {
+	Name          string
+	BannedCount   int
 	BannedEntries []BanEntry
 }
 
 type Fail2BanClient struct {
+	mutex   sync.RWMutex
 	socket  net.Conn
 	encoder *ogórek.Encoder
 }
@@ -55,8 +63,8 @@ func NewFail2BanClient(address string) (*Fail2BanClient, error) {
 	encoder := ogórek.NewEncoder(socket)
 
 	return &Fail2BanClient{
-		socket,
-		encoder,
+		socket:  socket,
+		encoder: encoder,
 	}, nil
 }
 
@@ -122,11 +130,11 @@ func (f2bc *Fail2BanClient) GetJailNames() ([]string, error) {
 	return []string{}, errors.New("fetching status failed")
 }
 
-func (f2bc *Fail2BanClient) GetBanned(jailName string) (JailEntry, error) {
-	var bannedEntries []BanEntry
+func (f2bc *Fail2BanClient) GetBanned(jailName string) (*JailEntry, error) {
+	var bannedEntries []*BanEntry
 	result, err := f2bc.sendCommand([]string{getCommand, jailName, "banip", "--with-time"})
 	if err != nil {
-		return JailEntry{}, err
+		return nil, err
 	}
 
 	// fmt.Printf("Result: %#v - %v\n", result, result)
@@ -140,25 +148,25 @@ func (f2bc *Fail2BanClient) GetBanned(jailName string) (JailEntry, error) {
 
 					matches := re.FindStringSubmatch(listEnty)
 					if matches == nil {
-						return JailEntry{}, errors.New("could not parse banned IPs entry")
+						return nil, errors.New("could not parse banned IPs entry")
 					}
 
 					layout := "2006-01-02 15:04:05" // reference layout
 
 					bannedAt, bannedAtErr := time.Parse(layout, matches[2])
 					if bannedAtErr != nil {
-						return JailEntry{}, bannedAtErr
+						return nil, bannedAtErr
 					}
 
 					banEndsAt, banEndsAtErr := time.Parse(layout, matches[4])
 					if banEndsAtErr != nil {
-						return JailEntry{}, banEndsAtErr
+						return nil, banEndsAtErr
 					}
 
 					ipAddress := matches[1]
 					currenPenalty := matches[3]
 
-					banEntry := BanEntry{
+					banEntry := &BanEntry{
 						Address:       ipAddress,
 						BannedAt:      bannedAt,
 						CurrenPenalty: currenPenalty,
@@ -171,7 +179,7 @@ func (f2bc *Fail2BanClient) GetBanned(jailName string) (JailEntry, error) {
 		}
 	}
 
-	return JailEntry{Name: jailName, BannedEntries: bannedEntries}, nil
+	return &JailEntry{Name: jailName, BannedEntries: bannedEntries}, nil
 }
 
 func (f2bc *Fail2BanClient) sendCommand(command []string) (interface{}, error) {
@@ -183,6 +191,8 @@ func (f2bc *Fail2BanClient) sendCommand(command []string) (interface{}, error) {
 }
 
 func (f2bc *Fail2BanClient) write(command []string) error {
+	f2bc.mutex.Lock()
+	defer f2bc.mutex.Unlock()
 	err := f2bc.encoder.Encode(command)
 	if err != nil {
 		return err
@@ -195,6 +205,8 @@ func (f2bc *Fail2BanClient) write(command []string) error {
 }
 
 func (f2bc *Fail2BanClient) read() (interface{}, error) {
+	f2bc.mutex.RLock()
+	defer f2bc.mutex.RUnlock()
 	reader := bufio.NewReader(f2bc.socket)
 
 	data := []byte{}
@@ -222,4 +234,25 @@ func (f2bc *Fail2BanClient) read() (interface{}, error) {
 	}
 
 	return unpickler.Load()
+}
+
+func (entry *JailEntry) Copy() StaticJailEntry {
+	if entry.BannedEntries == nil {
+		return StaticJailEntry{
+			Name:          entry.Name,
+			BannedCount:   0,
+			BannedEntries: []BanEntry{},
+		}
+	}
+	banEntries := make([]BanEntry, len(entry.BannedEntries))
+	for i, p := range entry.BannedEntries {
+		if p != nil {
+			banEntries[i] = *p // dereference the pointer
+		}
+	}
+	return StaticJailEntry{
+		Name:          entry.Name,
+		BannedCount:   len(banEntries),
+		BannedEntries: banEntries,
+	}
 }
