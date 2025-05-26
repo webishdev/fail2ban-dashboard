@@ -39,7 +39,7 @@ jobs:
 
       - name: Build
         run: |
-          VERSION_INPUT=${{ inputs.ubuntu-latest }}
+          VERSION_INPUT=${{ inputs.dashboard_version }}
           CURRENT_VERSION=${VERSION_INPUT:-"ci"}
           ./build.sh $CURRENT_VERSION
 
