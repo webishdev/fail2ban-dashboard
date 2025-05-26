@@ -43,10 +43,11 @@ type JailEntry struct {
 	BannedEntries []*BanEntry
 }
 
-type StaticJailEntry struct {
-	Name          string
-	BannedCount   int
-	BannedEntries []BanEntry
+type JailInfo struct {
+	CurrentlyFailed int
+	TotalFailed     int
+	CurrentlyBanned int
+	TotalBanned     int
 }
 
 type Fail2BanClient struct {
@@ -131,14 +132,92 @@ func (f2bc *Fail2BanClient) GetJailNames() ([]string, error) {
 	return []string{}, errors.New("fetching status failed")
 }
 
+func (f2bc *Fail2BanClient) GetJailInfo(jailName string) (*JailInfo, error) {
+	result, err := f2bc.sendCommand([]string{statusCommand, jailName})
+	if err != nil {
+		return nil, err
+	}
+
+	// fmt.Printf("Result: %#v - %v\n", result, result)
+
+	currentlyFailedResult := 0
+	totalFailedResult := 0
+	currentlyBannedResult := 0
+	totalBannedResult := 0
+
+	if getInfoTuple, getInfoOk := result.(*types.Tuple); getInfoOk {
+		if infoList, infoListOk := getInfoTuple.Get(1).(*types.List); infoListOk {
+			if infoList.Len() == 2 {
+				if filterEntry, filterEntryOk := infoList.Get(0).(*types.Tuple); filterEntryOk {
+					if filterTupleKey, filterTupleKeyOk := filterEntry.Get(0).(string); filterTupleKeyOk {
+						if filterTupleKey == "Filter" {
+							if filterList, filterListOk := filterEntry.Get(1).(*types.List); filterListOk {
+								if currentlyFailedTuple, currentlyFailedTupleOk := filterList.Get(0).(*types.Tuple); currentlyFailedTupleOk {
+									if currentlyFailedKey, currentlyFailedKeyOk := currentlyFailedTuple.Get(0).(string); currentlyFailedKeyOk {
+										if currentlyFailedKey == "Currently failed" {
+											if currentlyFailed, currentlyFailedOk := currentlyFailedTuple.Get(1).(int); currentlyFailedOk {
+												currentlyFailedResult = currentlyFailed
+											}
+										}
+									}
+								}
+								if totalFailedTuple, totalFailedTupleOk := filterList.Get(1).(*types.Tuple); totalFailedTupleOk {
+									if totalFailedKey, totalFailedKeyOk := totalFailedTuple.Get(0).(string); totalFailedKeyOk {
+										if totalFailedKey == "Total failed" {
+											if totalFailed, totalFailedOk := totalFailedTuple.Get(1).(int); totalFailedOk {
+												totalFailedResult = totalFailed
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				if actionsEntry, actionsEntryOk := infoList.Get(1).(*types.Tuple); actionsEntryOk {
+					if actionsTupleKey, actionsTupleKeyOk := actionsEntry.Get(0).(string); actionsTupleKeyOk {
+						if actionsTupleKey == "Actions" {
+							if actionsList, actionsListOk := actionsEntry.Get(1).(*types.List); actionsListOk {
+								if currentlyBannedTuple, currentlyBannedTupleOk := actionsList.Get(0).(*types.Tuple); currentlyBannedTupleOk {
+									if currentlyBannedKey, currentlyBannedKeyOk := currentlyBannedTuple.Get(0).(string); currentlyBannedKeyOk {
+										if currentlyBannedKey == "Currently banned" {
+											if currentlyBanned, currentlyBannedOk := currentlyBannedTuple.Get(1).(int); currentlyBannedOk {
+												currentlyBannedResult = currentlyBanned
+											}
+										}
+									}
+								}
+								if totalBannedTuple, totalBannedTupleOk := actionsList.Get(1).(*types.Tuple); totalBannedTupleOk {
+									if totalBannedKey, totalBannedKeyOk := totalBannedTuple.Get(0).(string); totalBannedKeyOk {
+										if totalBannedKey == "Total banned" {
+											if totalBanned, totalBannedOk := totalBannedTuple.Get(1).(int); totalBannedOk {
+												totalBannedResult = totalBanned
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return &JailInfo{
+		CurrentlyFailed: currentlyFailedResult,
+		TotalFailed:     totalFailedResult,
+		CurrentlyBanned: currentlyBannedResult,
+		TotalBanned:     totalBannedResult,
+	}, nil
+}
+
 func (f2bc *Fail2BanClient) GetBanned(jailName string) (*JailEntry, error) {
 	var bannedEntries []*BanEntry
 	result, err := f2bc.sendCommand([]string{getCommand, jailName, "banip", "--with-time"})
 	if err != nil {
 		return nil, err
 	}
-
-	// fmt.Printf("Result: %#v - %v\n", result, result)
 
 	if getBanTuple, getBanOk := result.(*types.Tuple); getBanOk {
 		if banList, banListOk := getBanTuple.Get(1).(*types.List); banListOk {
@@ -236,25 +315,4 @@ func (f2bc *Fail2BanClient) read() (interface{}, error) {
 	}
 
 	return unpickler.Load()
-}
-
-func (entry *JailEntry) Copy() StaticJailEntry {
-	if entry.BannedEntries == nil {
-		return StaticJailEntry{
-			Name:          entry.Name,
-			BannedCount:   0,
-			BannedEntries: []BanEntry{},
-		}
-	}
-	banEntries := make([]BanEntry, len(entry.BannedEntries))
-	for i, p := range entry.BannedEntries {
-		if p != nil {
-			banEntries[i] = *p // dereference the pointer
-		}
-	}
-	return StaticJailEntry{
-		Name:          entry.Name,
-		BannedCount:   len(banEntries),
-		BannedEntries: banEntries,
-	}
 }

@@ -1,6 +1,8 @@
-<div class="stats shadow min-w-sm">
+<div class="jail stats shadow min-w-sm max-sm:grow-1">
     <div class="stat">
         <div class="stat-title">{{ .Name }}</div>
-        <div class="stat-value">{{ .BannedCount }}</div>
+        <div class="stat-value text-secondary">{{ .BannedCount }}</div>
+        <div class="stat-desc">failed {{ .Info.CurrentlyFailed }} / {{ .Info.TotalFailed }}</div>
+        <div class="stat-desc">banned {{ .Info.CurrentlyBanned }} / {{ .Info.TotalBanned }}</div>
     </div>
 </div>

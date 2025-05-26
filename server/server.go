@@ -12,10 +12,16 @@ import (
 )
 
 //go:embed resources/css/daisyui@5.css
-var cssFile []byte
+var daisyUiCSSFile []byte
+
+//go:embed resources/css/main.css
+var mainCSSFile []byte
 
 //go:embed resources/js/browser@4.js
-var jsFile []byte
+var tailwindJSFile []byte
+
+//go:embed resources/images/favicon.ico
+var faviconICOFile []byte
 
 //go:embed resources/index.html
 var indexHtml []byte
@@ -29,7 +35,7 @@ var bannedHtml []byte
 type indexData struct {
 	Version         string
 	Fail2BanVersion string
-	Jails           []client.StaticJailEntry
+	Jails           []store.Jail
 	HasBanned       bool
 	Banned          []client.BanEntry
 }
@@ -54,14 +60,24 @@ func Serve(version string, fail2banVersion string, store *store.DataStore) error
 
 	app := fiber.New()
 
+	app.Get("images/favicon.ico", func(c *fiber.Ctx) error {
+		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
+		return c.Send(faviconICOFile)
+	})
+
+	app.Get("css/main.css", func(c *fiber.Ctx) error {
+		c.Set(fiber.HeaderContentType, "text/css")
+		return c.Send(mainCSSFile)
+	})
+
 	app.Get("css/daisyui@5.css", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "text/css")
-		return c.Send(cssFile)
+		return c.Send(daisyUiCSSFile)
 	})
 
 	app.Get("js/browser@4.js", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJavaScript)
-		return c.Send(jsFile)
+		return c.Send(tailwindJSFile)
 	})
 
 	app.Get("/", func(c *fiber.Ctx) error {

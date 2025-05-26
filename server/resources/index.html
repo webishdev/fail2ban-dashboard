@@ -4,16 +4,23 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta http-equiv="refresh" content="60">
+        <link rel="icon" href="images/favicon.ico" sizes="48x48" >
         <link href="css/daisyui@5.css" rel="stylesheet" type="text/css" />
+        <link href="css/main.css" rel="stylesheet" type="text/css" />
         <script src="js/browser@4.js"></script>
-        <title>fail2Ban dashboard - {{ .Version }}</title>
+        <title>fail2ban dashboard - {{ .Version }}</title>
     </head>
     <body>
         <div class="navbar bg-base-100 shadow-sm">
-            <h1 class="text-xl font-bold">fail2ban dashboard - {{ .Version }} <span class="badge badge-soft badge-info">fail2ban - {{ .Fail2BanVersion }}</span></h1>
+            <h1 class="flex-1 text-xl font-bold">fail2ban dashboard - {{ .Version }} <span class="badge badge-soft badge-info">fail2ban - {{ .Fail2BanVersion }}</span></h1>
+            <div class="flex-none">
+                <ul class="menu menu-horizontal px-1">
+                    <li><a href="https://github.com/webishdev/fail2ban-dashboard" rel="noopener" target="_blank">GitHub</a></li>
+                </ul>
+            </div>
         </div>
         <main class="p-4">
-            <div class="shadow-md rounded-md">
+            <div class="jails shadow-md rounded-md">
                 <div class="text-base font-medium text-center"><h2>Current jails</h2></div>
                 <div class="jails flex justify-center gap-4 p-4 flex-wrap">
                     {{ range .Jails }}
@@ -22,7 +29,7 @@
                 </div>
             </div>
             {{ if .HasBanned }}
-            <div class="shadow-md rounded-md">
+            <div class="banned shadow-md rounded-md">
                 <div class="text-base font-medium text-center pt-4"><h2>Currently banned</h2></div>
                 <div class="banned">
                     <div class="overflow-x-auto">

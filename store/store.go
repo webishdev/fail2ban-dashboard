@@ -8,12 +8,20 @@ import (
 	"time"
 )
 
+type Jail struct {
+	Name          string
+	BannedCount   int
+	BannedEntries []client.BanEntry
+	Info          client.JailInfo
+}
+
 type DataStore struct {
 	mutex         sync.RWMutex
 	ticker        *time.Ticker
 	f2bc          *client.Fail2BanClient
 	addressToJail map[string][]string
 	jails         map[string]*client.JailEntry
+	jailInfos     map[string]*client.JailInfo
 }
 
 func NewDataStore(f2bc *client.Fail2BanClient) *DataStore {
@@ -37,13 +45,21 @@ func (dataStore *DataStore) start() {
 		}
 		dataStore.mutex.Lock()
 		dataStore.jails = make(map[string]*client.JailEntry)
+		dataStore.jailInfos = make(map[string]*client.JailInfo)
 		for _, jailName := range names {
-			jailEntry, getErr := dataStore.f2bc.GetBanned(jailName)
-			if getErr != nil {
+			jailEntry, getBannedErr := dataStore.f2bc.GetBanned(jailName)
+			if getBannedErr != nil {
 				dataStore.mutex.Unlock()
 				break
 			}
+			jailInfo, getInfoErr := dataStore.f2bc.GetJailInfo(jailName)
+			if getInfoErr != nil {
+				dataStore.mutex.Unlock()
+				break
+			}
+
 			dataStore.jails[jailName] = jailEntry
+			dataStore.jailInfos[jailName] = jailInfo
 		}
 		dataStore.mutex.Unlock()
 		<-dataStore.ticker.C
@@ -57,7 +73,7 @@ func (dataStore *DataStore) Start() {
 
 }
 
-func (dataStore *DataStore) GetJails() []client.StaticJailEntry {
+func (dataStore *DataStore) GetJails() []Jail {
 	dataStore.mutex.RLock()
 	defer dataStore.mutex.RUnlock()
 	keys := make([]string, 0, len(dataStore.jails))
@@ -67,21 +83,49 @@ func (dataStore *DataStore) GetJails() []client.StaticJailEntry {
 
 	sort.Strings(keys)
 
-	jails := make([]client.StaticJailEntry, len(dataStore.jails))
+	jails := make([]Jail, len(dataStore.jails))
 	index := 0
 	for _, key := range keys {
-		jailEntry := dataStore.jails[key]
-		jails[index] = jailEntry.Copy()
+		jail, exists := dataStore.GetJailByName(key)
+		if exists {
+			jails[index] = jail
+		}
 		index++
 	}
 	return jails
 }
 
-func (dataStore *DataStore) GetJailsByName(jailName string) (client.StaticJailEntry, bool) {
+func (dataStore *DataStore) GetJailByName(jailName string) (Jail, bool) {
 	dataStore.mutex.RLock()
 	defer dataStore.mutex.RUnlock()
-	if dataStore.jails[jailName] != nil {
-		return dataStore.jails[jailName].Copy(), true
+	if dataStore.jails[jailName] != nil && dataStore.jailInfos[jailName] != nil {
+		jailEntry := dataStore.jails[jailName]
+		jailInfo := dataStore.jailInfos[jailName]
+		jail := createJail(jailEntry, jailInfo)
+		return jail, true
 	}
-	return client.StaticJailEntry{}, false
+	return Jail{}, false
+}
+
+func createJail(entry *client.JailEntry, info *client.JailInfo) Jail {
+	result := Jail{}
+	if entry != nil {
+		result.Name = entry.Name
+		if entry.BannedEntries != nil {
+			banEntries := make([]client.BanEntry, len(entry.BannedEntries))
+			for i, p := range entry.BannedEntries {
+				if p != nil {
+					banEntries[i] = *p // dereference the pointer
+				}
+			}
+			result.BannedCount = len(banEntries)
+			result.BannedEntries = banEntries
+		}
+	}
+
+	if info != nil {
+		result.Info = *info
+	}
+
+	return result
 }
