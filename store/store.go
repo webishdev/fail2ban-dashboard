@@ -25,6 +25,9 @@ type DataStore struct {
 }
 
 func NewDataStore(f2bc *client.Fail2BanClient) *DataStore {
+	if f2bc == nil {
+		return &DataStore{}
+	}
 	dataStore := &DataStore{
 		ticker:        time.NewTicker(30 * time.Second),
 		f2bc:          f2bc,
@@ -67,6 +70,9 @@ func (dataStore *DataStore) start() {
 }
 
 func (dataStore *DataStore) Start() {
+	if dataStore.f2bc == nil {
+		return
+	}
 	time.AfterFunc(2*time.Second, func() {
 		go dataStore.start()
 	})

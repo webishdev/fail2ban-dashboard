@@ -5,6 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"github.com/webishdev/fail2ban-dashboard/geoip"
 	"github.com/webishdev/fail2ban-dashboard/store"
 	"html/template"
 	"sort"
@@ -40,7 +41,7 @@ type indexData struct {
 	Banned          []client.BanEntry
 }
 
-func Serve(version string, fail2banVersion string, store *store.DataStore) error {
+func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP *geoip.GeoIP) error {
 	indexTemplate, indexTemplateError := template.New("index").Parse(string(indexHtml))
 	if indexTemplateError != nil {
 		return indexTemplateError

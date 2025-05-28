@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/gofiber/fiber/v2/log"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"github.com/webishdev/fail2ban-dashboard/geoip"
 	"github.com/webishdev/fail2ban-dashboard/server"
 	"github.com/webishdev/fail2ban-dashboard/store"
 	"os"
@@ -18,35 +20,42 @@ func main() {
 
 	socketPath := "/var/run/fail2ban/fail2ban.sock"
 
-	f2bc, err := client.NewFail2BanClient(socketPath)
+	f2bc, socketError := client.NewFail2BanClient(socketPath)
 
-	if err != nil {
-		panic(err)
-	}
+	var fail2banVersion = "unknown"
 
-	fail2banVersion, err := f2bc.GetVersion()
+	if socketError != nil {
+		log.Infof("Could not connect to fail2ban socket at %s", socketPath)
+	} else {
+		detectedFail2banVersion, versionError := f2bc.GetVersion()
 
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("fail2ban version found: %s\n", fail2banVersion)
-
-	versionIsOk := false
-	for _, supportedVersion := range supportedVersions {
-		if supportedVersion == fail2banVersion {
-			versionIsOk = true
+		if versionError != nil {
+			panic(versionError)
 		}
-	}
-	if !versionIsOk {
-		fmt.Printf("fail2ban version %s not supported\n", fail2banVersion)
-		os.Exit(1)
+
+		fmt.Printf("fail2ban version found: %s\n", detectedFail2banVersion)
+
+		versionIsOk := false
+		for _, supportedVersion := range supportedVersions {
+			if supportedVersion == detectedFail2banVersion {
+				versionIsOk = true
+			}
+		}
+		if !versionIsOk {
+			fmt.Printf("fail2ban version %s not supported\n", detectedFail2banVersion)
+			os.Exit(1)
+		}
+
+		fail2banVersion = detectedFail2banVersion
 	}
 
 	dataStore := store.NewDataStore(f2bc)
 
-	err = server.Serve(Version, fail2banVersion, dataStore)
-	if err != nil {
-		panic(err)
+	geoIP := geoip.NewGeoIP()
+
+	serveError := server.Serve(Version, fail2banVersion, dataStore, geoIP)
+	if serveError != nil {
+		fmt.Printf("Could not start server: %s\n", serveError)
+		os.Exit(1)
 	}
 }
