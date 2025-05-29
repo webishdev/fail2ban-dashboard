@@ -9,6 +9,16 @@
         <link href="css/main.css" rel="stylesheet" type="text/css" />
         <script src="js/browser@4.js"></script>
         <title>fail2ban dashboard - {{ .Version }}</title>
+        <style>
+{{ range $key, $value := .CountryCodes }}
+    .flag-{{ $key }} {
+        width: 21px;
+        height: 15px;
+        background: url({{ $value | safe }}) no-repeat;
+        display: inline-block;
+    }
+{{ end }}
+        </style>
     </head>
     <body>
         <div class="navbar bg-base-100 shadow-sm">
@@ -36,7 +46,7 @@
                         <table class="table table-zebra">
                             <thead>
                             <tr>
-                                <th>Name</th>
+                                <th>Address</th>
                                 <th>Jail</th>
                                 <th>Banned at</th>
                                 <th>Curren penalty</th>

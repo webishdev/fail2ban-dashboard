@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"sort"
 	"strings"
+	"time"
 )
 
 //go:embed resources/css/daisyui@5.css
@@ -39,10 +40,22 @@ type indexData struct {
 	Jails           []store.Jail
 	HasBanned       bool
 	Banned          []client.BanEntry
+	CountryCodes    map[string]string
 }
 
 func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP *geoip.GeoIP) error {
-	indexTemplate, indexTemplateError := template.New("index").Parse(string(indexHtml))
+
+	templateFunctions := template.FuncMap{
+		"safe": func(s string) template.URL {
+			safe := template.URL(s)
+			return safe
+		},
+		"time": func(t time.Time) string {
+			return formatTime(t)
+		},
+	}
+
+	indexTemplate, indexTemplateError := template.New("index").Funcs(templateFunctions).Parse(string(indexHtml))
 	if indexTemplateError != nil {
 		return indexTemplateError
 	}
@@ -59,7 +72,9 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 		return bannedTemplateError
 	}
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		DisableStartupMessage: true,
+	})
 
 	app.Get("images/favicon.ico", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
@@ -90,6 +105,19 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 			banned = append(banned, jail.BannedEntries...)
 		}
 
+		countryCodes := make(map[string]string)
+
+		for index, ban := range banned {
+			countryCode, exists := geoIP.Lookup(ban.Address)
+			if exists {
+				ban.CountryCode = countryCode
+				countryCodes[countryCode] = Flags[countryCode]
+			} else {
+				ban.CountryCode = "unknown"
+			}
+			banned[index] = ban
+		}
+
 		sort.Slice(banned, func(i, j int) bool {
 			return banned[i].BanEndsAt.Before(banned[j].BanEndsAt)
 		})
@@ -100,6 +128,7 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 			Jails:           jails,
 			HasBanned:       len(banned) > 0,
 			Banned:          banned,
+			CountryCodes:    countryCodes,
 		}
 
 		var sb strings.Builder
@@ -114,4 +143,12 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 	store.Start()
 
 	return app.Listen(":3000")
+}
+
+func formatTime(t time.Time) string {
+	now := time.Now()
+	if t.Year() == now.Year() && t.Month() == now.Month() && t.Day() == now.Day() {
+		return t.Format("15:04:05")
+	}
+	return t.Format("2006.01.02 15:04:05")
 }

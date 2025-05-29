@@ -36,6 +36,7 @@ type BanEntry struct {
 	CurrenPenalty string
 	BanEndsAt     time.Time
 	JailName      string
+	CountryCode   string
 }
 
 type JailEntry struct {

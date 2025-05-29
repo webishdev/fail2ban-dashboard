@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -22,7 +23,8 @@ const (
 )
 
 type GeoIP struct {
-	data []geoData
+	mutex sync.RWMutex
+	data  []geoData
 }
 
 type geoData struct {
@@ -32,15 +34,19 @@ type geoData struct {
 }
 
 func NewGeoIP() *GeoIP {
-	return &GeoIP{}
+	geoIP := &GeoIP{}
+	geoIP.download()
+	return geoIP
 }
 
-func (geoip *GeoIP) Lookup(value string) (string, bool) {
-	geoip.download()
-	return geoip.findCountry(value)
+func (geoIP *GeoIP) Lookup(value string) (string, bool) {
+	geoIP.download()
+	return geoIP.findCountry(value)
 }
 
-func (geoip *GeoIP) download() {
+func (geoIP *GeoIP) download() {
+	geoIP.mutex.Lock()
+	defer geoIP.mutex.Unlock()
 	tmpDir := os.TempDir()
 	filePath := filepath.Join(tmpDir, tempName)
 
@@ -67,8 +73,8 @@ func (geoip *GeoIP) download() {
 			return
 		}
 
-		geoip.data = data
-	} else if len(geoip.data) == 0 {
+		geoIP.data = data
+	} else if len(geoIP.data) == 0 {
 		log.Infof("Loading GeoIP data from %s", filePath)
 		data, err := readGzip(filePath)
 		if err != nil {
@@ -76,12 +82,14 @@ func (geoip *GeoIP) download() {
 			return
 		}
 
-		geoip.data = data
+		geoIP.data = data
 	}
 }
 
-func (geoip *GeoIP) findCountry(value string) (string, bool) {
-	if len(geoip.data) == 0 {
+func (geoIP *GeoIP) findCountry(value string) (string, bool) {
+	geoIP.mutex.RLock()
+	defer geoIP.mutex.RUnlock()
+	if len(geoIP.data) == 0 {
 		return "", false
 	}
 	ipRegEx := regexp.MustCompile("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$")
@@ -92,11 +100,11 @@ func (geoip *GeoIP) findCountry(value string) (string, bool) {
 	ip := net.ParseIP(value).To4()
 	ipNum := binary.BigEndian.Uint32(ip)
 
-	low, high := 0, len(geoip.data)-1
+	low, high := 0, len(geoIP.data)-1
 	for low <= high {
 		mid := (low + high) / 2
-		start := geoip.data[mid].rangeStart
-		end := geoip.data[mid].rangeEnd
+		start := geoIP.data[mid].rangeStart
+		end := geoIP.data[mid].rangeEnd
 
 		switch {
 		case ipNum < start:
@@ -104,7 +112,7 @@ func (geoip *GeoIP) findCountry(value string) (string, bool) {
 		case ipNum > end:
 			low = mid + 1
 		default:
-			return geoip.data[mid].countryCode, true
+			return geoIP.data[mid].countryCode, true
 		}
 	}
 	return "", false
@@ -123,13 +131,23 @@ func downloadFile(url, dest string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		httpCloseError := Body.Close()
+		if httpCloseError != nil {
+			log.Error(httpCloseError)
+		}
+	}(resp.Body)
 
 	out, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func(out *os.File) {
+		fileCloseError := out.Close()
+		if fileCloseError != nil {
+			log.Error(fileCloseError)
+		}
+	}(out)
 
 	_, err = io.Copy(out, resp.Body)
 	return err
@@ -140,13 +158,23 @@ func readGzip(filePath string) ([]geoData, error) {
 	if err != nil {
 		return []geoData{}, err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		fileCloseError := f.Close()
+		if fileCloseError != nil {
+			log.Error(fileCloseError)
+		}
+	}(f)
 
 	gzReader, err := gzip.NewReader(f)
 	if err != nil {
 		return []geoData{}, err
 	}
-	defer gzReader.Close()
+	defer func(gzReader *gzip.Reader) {
+		gzReaderCloseError := gzReader.Close()
+		if gzReaderCloseError != nil {
+			log.Error(gzReaderCloseError)
+		}
+	}(gzReader)
 
 	// Step 3: Create a TSV reader (CSV with tab delimiter)
 	tsvReader := csv.NewReader(gzReader)

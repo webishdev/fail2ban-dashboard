@@ -9,10 +9,13 @@ import (
 )
 
 type Jail struct {
-	Name          string
-	BannedCount   int
-	BannedEntries []client.BanEntry
-	Info          client.JailInfo
+	Name            string
+	BannedCount     int
+	BannedEntries   []client.BanEntry
+	CurrentlyFailed int
+	TotalFailed     int
+	CurrentlyBanned int
+	TotalBanned     int
 }
 
 type DataStore struct {
@@ -130,7 +133,10 @@ func createJail(entry *client.JailEntry, info *client.JailInfo) Jail {
 	}
 
 	if info != nil {
-		result.Info = *info
+		result.CurrentlyFailed = info.CurrentlyFailed
+		result.TotalFailed = info.TotalFailed
+		result.CurrentlyBanned = info.CurrentlyBanned
+		result.TotalBanned = info.TotalBanned
 	}
 
 	return result
