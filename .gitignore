@@ -3,3 +3,4 @@ bin/
 fail2ban-dashboard
 *.sqlite3
 generate*
+cached*

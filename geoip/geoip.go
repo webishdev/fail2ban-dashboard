@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	url      = "https://iptoasn.com/data/ip2country-v4-u32.tsv.gz"
-	tempName = "cached_file.tsv.gzx"
-	cacheTTL = 12 * time.Hour
+	url       = "https://iptoasn.com/data/ip2country-v4-u32.tsv.gz"
+	cacheName = "cached_file.tsv.gz"
+	cacheTTL  = 12 * time.Hour
 )
 
 type GeoIP struct {
@@ -35,7 +35,7 @@ type geoData struct {
 
 func NewGeoIP() *GeoIP {
 	geoIP := &GeoIP{}
-	geoIP.download()
+	go geoIP.download()
 	return geoIP
 }
 
@@ -47,8 +47,13 @@ func (geoIP *GeoIP) Lookup(value string) (string, bool) {
 func (geoIP *GeoIP) download() {
 	geoIP.mutex.Lock()
 	defer geoIP.mutex.Unlock()
-	tmpDir := os.TempDir()
-	filePath := filepath.Join(tmpDir, tempName)
+	dir, workingDirError := os.Getwd()
+	if workingDirError != nil {
+		log.Error(workingDirError)
+		return
+	}
+
+	filePath := filepath.Join(dir, cacheName)
 
 	// Check if file exists and is recent enough
 	needDownload := true
@@ -73,6 +78,7 @@ func (geoIP *GeoIP) download() {
 			return
 		}
 
+		log.Infof("Download finished to %s", filePath)
 		geoIP.data = data
 	} else if len(geoIP.data) == 0 {
 		log.Infof("Loading GeoIP data from %s", filePath)
