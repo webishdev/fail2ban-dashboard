@@ -147,8 +147,19 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 
 func formatTime(t time.Time) string {
 	now := time.Now()
-	if t.Year() == now.Year() && t.Month() == now.Month() && t.Day() == now.Day() {
-		return t.Format("15:04:05")
+
+	// Truncate to remove time portion for day comparison
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	target := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+
+	daysDiff := int(target.Sub(today).Hours() / 24)
+
+	switch daysDiff {
+	case 0:
+		return t.Format("15:04:05") // Today
+	case -1, 1:
+		return t.Format("2006.01.02 15:04:05") // Yesterday or Tomorrow
+	default:
+		return t.Format("2006.01.02") // Other days
 	}
-	return t.Format("2006.01.02 15:04:05")
 }
