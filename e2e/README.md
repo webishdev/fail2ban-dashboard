@@ -17,3 +17,7 @@ Then use the following commands to check the status or ban some addresses:
 - `fail2ban-client set sshd banip 103.59.94.155 196.251.84.225 218.92.0.247`
 - `fail2ban-client set apache-auth bantime 20000`
 - `fail2ban-client set apache-auth banip 78.88.88.99`
+- `fail2ban-client set apache-badbots banip 18.55.23.99`
+- `fail2ban-client set apache-noscript banip 221.123.11.2`
+- `fail2ban-client set apache-overflows banip 32.23.1.2`
+- `fail2ban-client set sshd banip 103.59.94.155 196.251.84.225 218.92.0.247 && fail2ban-client set apache-auth bantime 20000 && fail2ban-client set apache-auth banip 78.88.88.99 && fail2ban-client set apache-badbots banip 18.55.23.99 && fail2ban-client set apache-noscript banip 221.123.11.2 && fail2ban-client set apache-overflows banip 32.23.1.2`

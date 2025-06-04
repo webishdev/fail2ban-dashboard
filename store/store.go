@@ -44,31 +44,33 @@ func NewDataStore(f2bc *client.Fail2BanClient) *DataStore {
 func (dataStore *DataStore) start() {
 	defer dataStore.ticker.Stop()
 	for {
-		log.Info("Fetching fail2ban data")
+		log.Debug("Fetching fail2ban data")
 		names, err := dataStore.f2bc.GetJailNames()
 		if err != nil {
 			break
 		}
-		dataStore.mutex.Lock()
-		dataStore.jails = make(map[string]*client.JailEntry)
-		dataStore.jailInfos = make(map[string]*client.JailInfo)
-		for _, jailName := range names {
-			jailEntry, getBannedErr := dataStore.f2bc.GetBanned(jailName)
-			if getBannedErr != nil {
-				dataStore.mutex.Unlock()
-				break
-			}
-			jailInfo, getInfoErr := dataStore.f2bc.GetJailInfo(jailName)
-			if getInfoErr != nil {
-				dataStore.mutex.Unlock()
-				break
-			}
-
-			dataStore.jails[jailName] = jailEntry
-			dataStore.jailInfos[jailName] = jailInfo
-		}
-		dataStore.mutex.Unlock()
+		dataStore.initialize(names)
 		<-dataStore.ticker.C
+	}
+}
+
+func (dataStore *DataStore) initialize(names []string) {
+	dataStore.mutex.Lock()
+	defer dataStore.mutex.Unlock()
+	dataStore.jails = make(map[string]*client.JailEntry)
+	dataStore.jailInfos = make(map[string]*client.JailInfo)
+	for _, jailName := range names {
+		jailEntry, getBannedErr := dataStore.f2bc.GetBanned(jailName)
+		if getBannedErr != nil {
+			break
+		}
+		jailInfo, getInfoErr := dataStore.f2bc.GetJailInfo(jailName)
+		if getInfoErr != nil {
+			break
+		}
+
+		dataStore.jails[jailName] = jailEntry
+		dataStore.jailInfos[jailName] = jailInfo
 	}
 }
 

@@ -14,7 +14,7 @@
     .flag-{{ $key }} {
         width: 21px;
         height: 15px;
-        background: url({{ $value | safe }}) no-repeat;
+        background: url(data:image/png;base64,{{ $value | safe }}) no-repeat;
         display: inline-block;
     }
 {{ end }}
@@ -22,7 +22,7 @@
     </head>
     <body>
         <div class="navbar bg-base-100 shadow-sm">
-            <h1 class="flex-1 text-xl font-bold">fail2ban dashboard - {{ .Version }} <span class="badge badge-soft badge-info">fail2ban - {{ .Fail2BanVersion }}</span></h1>
+            <h1 class="flex-1 text-xl font-bold"><a href="/">fail2ban dashboard</a> - {{ .Version }} <span class="badge badge-soft badge-info">fail2ban - {{ .Fail2BanVersion }}</span></h1>
             <div class="flex-none">
                 <ul class="menu menu-horizontal px-1">
                     <li><a href="https://github.com/webishdev/fail2ban-dashboard" rel="noopener" target="_blank">GitHub</a></li>
@@ -30,12 +30,14 @@
             </div>
         </div>
         <main class="p-4">
-            <div class="jails shadow-md rounded-md">
+            <div class="jails">
                 <div class="text-base font-medium text-center"><h2>Current jails</h2></div>
                 <div class="jails flex justify-center gap-4 p-4 flex-wrap">
+                    <div class="jail stats shadow stats-vertical lg:stats-horizontal">
                     {{ range .Jails }}
                         {{ template "jailCard" . }}
                     {{ end }}
+                    </div>
                 </div>
             </div>
             {{ if .HasBanned }}
@@ -46,11 +48,12 @@
                         <table class="table table-zebra">
                             <thead>
                             <tr>
-                                <th>Address</th>
-                                <th>Jail</th>
-                                <th>Banned at</th>
-                                <th>Curren penalty</th>
-                                <th>Ban ends at</th>
+                                <th>Address<a href="?sorting=address&order={{ .OrderAddress.Order }}"><span class="{{ .OrderAddress.Class }} inline-block">&nbsp;</span></a></th>
+                                <th>Jail<a href="?sorting=jail&order={{ .OrderJail.Order }}"><span class="{{ .OrderJail.Class }} inline-block">&nbsp;</span></a></th>
+                                <th>Banned at<a href="?sorting=started&order={{ .OrderStarted.Order }}"><span class="{{ .OrderStarted.Class }} inline-block">&nbsp;</span></a></th>
+                                <th>Curren penalty<a href="?sorting=penalty&order={{ .OrderPenalty.Order }}"><span class="{{ .OrderPenalty.Class }} inline-block">&nbsp;</span></a></th>
+                                <th>Ban ends at<a href="?sorting=ends&order={{ .OrderEnds.Order }}"><span class="{{ .OrderEnds.Class }} inline-block">&nbsp;</span></a>
+                                </th>
                             </tr>
                             </thead>
                             <tbody>

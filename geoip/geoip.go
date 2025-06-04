@@ -71,24 +71,11 @@ func (geoIP *GeoIP) download() {
 			log.Error(err)
 			return
 		}
-
-		data, err := readGzip(filePath)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
 		log.Infof("Download finished to %s", filePath)
-		geoIP.data = data
-	} else if len(geoIP.data) == 0 {
-		log.Infof("Loading GeoIP data from %s", filePath)
-		data, err := readGzip(filePath)
-		if err != nil {
-			log.Error(err)
-			return
-		}
 
-		geoIP.data = data
+		geoIP.data = loadDataFromFile(filePath)
+	} else if len(geoIP.data) == 0 {
+		geoIP.data = loadDataFromFile(filePath)
 	}
 }
 
@@ -124,12 +111,16 @@ func (geoIP *GeoIP) findCountry(value string) (string, bool) {
 	return "", false
 }
 
-func toInt(value string) uint32 {
-	u64, err := strconv.ParseUint(value, 10, 32)
+func loadDataFromFile(filePath string) []geoData {
+	log.Infof("Loading GeoIP data from %s", filePath)
+	data, err := readGzip(filePath)
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		return []geoData{}
 	}
-	return uint32(u64)
+
+	log.Info("GeoIP data loaded")
+	return data
 }
 
 func downloadFile(url, dest string) error {
@@ -212,4 +203,12 @@ func readGzip(filePath string) ([]geoData, error) {
 	}
 
 	return result, nil
+}
+
+func toInt(value string) uint32 {
+	u64, err := strconv.ParseUint(value, 10, 32)
+	if err != nil {
+		panic(err)
+	}
+	return uint32(u64)
 }

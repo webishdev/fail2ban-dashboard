@@ -2,13 +2,16 @@ package server
 
 import (
 	_ "embed"
+	"encoding/binary"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
 	"github.com/webishdev/fail2ban-dashboard/store"
 	"html/template"
+	"net"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -34,6 +37,11 @@ var jailCardHtml []byte
 //go:embed resources/banned.html
 var bannedHtml []byte
 
+type Sorted struct {
+	Order string
+	Class string
+}
+
 type indexData struct {
 	Version         string
 	Fail2BanVersion string
@@ -41,9 +49,16 @@ type indexData struct {
 	HasBanned       bool
 	Banned          []client.BanEntry
 	CountryCodes    map[string]string
+	OrderAddress    Sorted
+	OrderJail       Sorted
+	OrderPenalty    Sorted
+	OrderStarted    Sorted
+	OrderEnds       Sorted
 }
 
 func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP *geoip.GeoIP) error {
+
+	log.SetLevel(log.LevelInfo)
 
 	templateFunctions := template.FuncMap{
 		"safe": func(s string) template.URL {
@@ -97,7 +112,7 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 	})
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		log.Infof("Access banned overview at %s%s", c.BaseURL(), c.OriginalURL())
+		log.Infof("Access banned overview at %s%s for %s", c.BaseURL(), c.OriginalURL(), c.IP())
 		jails := store.GetJails()
 
 		banned := make([]client.BanEntry, 0)
@@ -118,9 +133,10 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 			banned[index] = ban
 		}
 
-		sort.Slice(banned, func(i, j int) bool {
-			return banned[i].BanEndsAt.Before(banned[j].BanEndsAt)
-		})
+		sorting := c.Query("sorting", "ends")
+		order := c.Query("order", "asc")
+
+		sort.Slice(banned, sortSlice(sorting, order, banned))
 
 		data := &indexData{
 			Version:         version,
@@ -129,6 +145,11 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 			HasBanned:       len(banned) > 0,
 			Banned:          banned,
 			CountryCodes:    countryCodes,
+			OrderAddress:    toggleSortOrder("address", sorting, order),
+			OrderJail:       toggleSortOrder("jail", sorting, order),
+			OrderPenalty:    toggleSortOrder("penalty", sorting, order),
+			OrderStarted:    toggleSortOrder("started", sorting, order),
+			OrderEnds:       toggleSortOrder("ends", sorting, order),
 		}
 
 		var sb strings.Builder
@@ -145,6 +166,71 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 	return app.Listen(":3000")
 }
 
+func sortSlice(sorting string, order string, banned []client.BanEntry) func(i, j int) bool {
+	switch {
+	case sorting == "address" && order == "desc":
+		return func(i, j int) bool {
+			first := ipToUint32(banned[i].Address)
+			second := ipToUint32(banned[j].Address)
+			return first > second
+		}
+	case sorting == "address" && order == "asc":
+		return func(i, j int) bool {
+			first := ipToUint32(banned[i].Address)
+			second := ipToUint32(banned[j].Address)
+			return first < second
+		}
+	case sorting == "jail" && order == "desc":
+		return func(i, j int) bool {
+			return banned[i].JailName > banned[j].JailName
+		}
+	case sorting == "jail" && order == "asc":
+		return func(i, j int) bool {
+			return banned[i].JailName < banned[j].JailName
+		}
+	case sorting == "penalty" && order == "desc":
+		return func(i, j int) bool {
+			first := penaltyToUint64(banned[i].CurrenPenalty)
+			second := penaltyToUint64(banned[j].CurrenPenalty)
+			return first > second
+		}
+	case sorting == "penalty" && order == "asc":
+		return func(i, j int) bool {
+			first := penaltyToUint64(banned[i].CurrenPenalty)
+			second := penaltyToUint64(banned[j].CurrenPenalty)
+			return first < second
+		}
+	case sorting == "started" && order == "desc":
+		return func(i, j int) bool {
+			return banned[i].BannedAt.After(banned[j].BannedAt)
+		}
+	case sorting == "started" && order == "asc":
+		return func(i, j int) bool {
+			return banned[i].BannedAt.Before(banned[j].BannedAt)
+		}
+	case sorting == "ends" && order == "desc":
+		return func(i, j int) bool {
+			return banned[i].BanEndsAt.After(banned[j].BanEndsAt)
+		}
+	case sorting == "ends" && order == "asc":
+	default:
+	}
+
+	return func(i, j int) bool {
+		return banned[i].BanEndsAt.Before(banned[j].BanEndsAt)
+	}
+}
+
+func toggleSortOrder(current string, sorting string, order string) Sorted {
+	if current == sorting {
+		if order == "asc" {
+			return Sorted{"desc", "arrow-down"}
+		}
+		return Sorted{"asc", "arrow-up"}
+	}
+	return Sorted{"asc", "arrows-up-down"}
+}
+
 func formatTime(t time.Time) string {
 	now := time.Now()
 
@@ -158,8 +244,25 @@ func formatTime(t time.Time) string {
 	case 0:
 		return t.Format("15:04:05") // Today
 	case -1, 1:
-		return t.Format("2006.01.02 15:04:05") // Yesterday or Tomorrow
+		return t.Format("02.01.2006 15:04:05") // Yesterday or Tomorrow
 	default:
-		return t.Format("2006.01.02") // Other days
+		return t.Format("02.01.2006") // Other days
 	}
+}
+
+func ipToUint32(address string) uint32 {
+	ip := net.ParseIP(address)
+	ip = ip.To4()
+	if ip == nil {
+		return 0 // or handle invalid IP
+	}
+	return binary.BigEndian.Uint32(ip)
+}
+
+func penaltyToUint64(penalty string) int64 {
+	i64, err := strconv.ParseInt(penalty, 10, 64) // base 10, 64-bit int
+	if err != nil {
+		return 0
+	}
+	return i64
 }
