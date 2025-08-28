@@ -123,6 +123,14 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -hR
 
+      - name: Create compressed archives
+        run: |          
+          # Create tar.gz archive
+          cd bin && tar -czf ../fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.tar.gz . && cd ..
+          
+          # List created archives
+          ls -la *.tar.gz
+
       - uses: ncipollo/release-action@v1
         with:
           tag: ${{ github.event.release.tag_name }}
@@ -130,7 +138,7 @@ jobs:
             # fail2ban-dashboard ${{ github.event.release.tag_name }}
             
             ## Binary Downloads
-            The compiled binary for Linux (amd64) is attached to this release.
+            The compiled binary for Linux (amd64) is attached to this release as compressed archives.
             
             ## Docker Container
             Docker images are available at:
@@ -142,6 +150,6 @@ jobs:
             docker pull ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:${{ github.event.release.tag_name }}
             docker run --user=root -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro -p 3000:3000 ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:${{ github.event.release.tag_name }}
             ```
-          artifacts: "bin/*"
+          artifacts: "fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.zip,fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.tar.gz"
           allowUpdates: true
           updateOnlyUnreleased: false
