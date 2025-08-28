@@ -41,7 +41,7 @@ jobs:
         run: |
           VERSION_INPUT=${{ inputs.dashboard_version }}
           CURRENT_VERSION=${VERSION_INPUT:-"ci"}
-          ./build.sh $CURRENT_VERSION
+          make build VERSION=$CURRENT_VERSION
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8

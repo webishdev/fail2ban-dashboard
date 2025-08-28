@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -46,8 +46,8 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.1.6
+          version: v2.4.0
 
       - name: Build
         run: |
-          ./build.sh
+          make build
