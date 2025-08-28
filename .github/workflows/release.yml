@@ -131,12 +131,11 @@ jobs:
           # List created archives
           ls -la *.tar.gz
 
-      - uses: ncipollo/release-action@v1
+      - uses: softprops/action-gh-release@v2
         with:
-          tag: ${{ github.event.release.tag_name }}
+          tag_name: ${{ github.event.release.tag_name }}
+          append_body: true
           body: |
-            # fail2ban-dashboard ${{ github.event.release.tag_name }}
-            
             ## Binary Downloads
             The compiled binary for Linux (amd64) is attached to this release as compressed archives.
             
@@ -150,6 +149,4 @@ jobs:
             docker pull ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:${{ github.event.release.tag_name }}
             docker run --user=root -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro -p 3000:3000 ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:${{ github.event.release.tag_name }}
             ```
-          artifacts: "fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.tar.gz"
-          allowUpdates: true
-          updateOnlyUnreleased: false
+          files: "fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.tar.gz"
