@@ -1,12 +1,8 @@
 name: Create fail2ban-dashboard release
 
 on:
-  workflow_dispatch:
-    inputs:
-      dashboard_version:
-        type: string
-        description: Version for the tag (e.g v1.0.0)
-        required: true
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -25,7 +21,7 @@ jobs:
 
     steps:
       - name: Show tag
-        run: echo "Will create version ${{ inputs.dashboard_version }}"
+        run: echo "Building for release ${{ github.event.release.tag_name }}"
 
       - uses: actions/checkout@v4
 
@@ -39,7 +35,7 @@ jobs:
 
       - name: Build
         run: |
-          VERSION_INPUT=${{ inputs.dashboard_version }}
+          VERSION_INPUT=${{ github.event.release.tag_name }}
           CURRENT_VERSION=${VERSION_INPUT:-"ci"}
           make build VERSION=$CURRENT_VERSION
 
@@ -103,7 +99,7 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:${{ inputs.dashboard_version }},ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:latest
+          tags: ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:${{ github.event.release.tag_name }},ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:latest
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Generate artifact attestation
@@ -129,7 +125,10 @@ jobs:
 
       - uses: ncipollo/release-action@v1
         with:
-          tag: ${{ inputs.dashboard_version }}
+          tag: ${{ github.event.release.tag_name }}
           body: >
             fail2ban-dashboard!
-            Version ${{ inputs.dashboard_version }}
+            Version ${{ github.event.release.tag_name }}
+          artifacts: "bin/*"
+          allowUpdates: true
+          updateOnlyUnreleased: false
