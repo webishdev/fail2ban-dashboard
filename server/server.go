@@ -3,6 +3,7 @@ package server
 import (
 	_ "embed"
 	"encoding/binary"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
@@ -56,7 +57,7 @@ type indexData struct {
 	OrderEnds       Sorted
 }
 
-func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP *geoip.GeoIP) error {
+func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP *geoip.GeoIP, port int) error {
 
 	log.SetLevel(log.LevelInfo)
 
@@ -163,7 +164,10 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 
 	store.Start()
 
-	return app.Listen(":3000")
+	log.Infof("Listening on port %d", port)
+
+	address := fmt.Sprintf(":%d", port)
+	return app.Listen(address)
 }
 
 func sortSlice(sorting string, order string, banned []client.BanEntry) func(i, j int) bool {

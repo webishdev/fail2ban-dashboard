@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/spf13/cobra"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
 	"github.com/webishdev/fail2ban-dashboard/server"
 	"github.com/webishdev/fail2ban-dashboard/store"
-	"os"
 )
 
 var Version = "development"
@@ -15,7 +17,27 @@ var GitHash = "none"
 
 var supportedVersions = []string{"1.1.0"}
 
+var port int
+
+var rootCmd = &cobra.Command{
+	Use:   "fail2ban-dashboard",
+	Short: "A dashboard for monitoring fail2ban",
+	Long:  "fail2ban-dashboard provides a web-based dashboard for monitoring fail2ban bans and jails.",
+	Run:   run,
+}
+
+func init() {
+	rootCmd.Flags().IntVarP(&port, "port", "p", 3000, "Port to serve the dashboard on")
+}
+
 func main() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Printf("Error: %s\n", err)
+		os.Exit(1)
+	}
+}
+
+func run(cmd *cobra.Command, args []string) {
 	fmt.Printf("This is fail2ban-dashboard %s (%s)\n", Version, GitHash)
 
 	socketPath := "/var/run/fail2ban/fail2ban.sock"
@@ -53,7 +75,7 @@ func main() {
 
 	geoIP := geoip.NewGeoIP()
 
-	serveError := server.Serve(Version, fail2banVersion, dataStore, geoIP)
+	serveError := server.Serve(Version, fail2banVersion, dataStore, geoIP, port)
 	if serveError != nil {
 		fmt.Printf("Could not start server: %s\n", serveError)
 		os.Exit(1)
