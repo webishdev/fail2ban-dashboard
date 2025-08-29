@@ -22,12 +22,22 @@ var port int
 var rootCmd = &cobra.Command{
 	Use:   "fail2ban-dashboard",
 	Short: "A dashboard for monitoring fail2ban",
-	Long:  "fail2ban-dashboard provides a web-based dashboard for monitoring fail2ban bans and jails.",
+	Long:  fmt.Sprintf("fail2ban-dashboard %s (%s) provides a web-based dashboard for monitoring fail2ban bans and jails", Version, GitHash),
 	Run:   run,
+}
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version number and git hash",
+	Long:  "Print the version number and git hash",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("fail2ban-dashboard %s (%s)\n", Version, GitHash)
+	},
 }
 
 func init() {
 	rootCmd.Flags().IntVarP(&port, "port", "p", 3000, "Port to serve the dashboard on")
+	rootCmd.AddCommand(versionCmd)
 }
 
 func main() {
