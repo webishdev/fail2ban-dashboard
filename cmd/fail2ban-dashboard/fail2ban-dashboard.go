@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/spf13/cobra"
@@ -18,6 +19,7 @@ var GitHash = "none"
 var supportedVersions = []string{"1.1.0"}
 
 var port int
+var cacheDir string
 
 var rootCmd = &cobra.Command{
 	Use:   "fail2ban-dashboard",
@@ -36,7 +38,8 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().IntVarP(&port, "port", "p", 3000, "Port to serve the dashboard on")
+	rootCmd.Flags().IntVarP(&port, "port", "p", 3000, "port to serve the dashboard on")
+	rootCmd.Flags().StringVarP(&cacheDir, "cache-dir", "c", "", "directory to cache GeoIP data (default current working directory)")
 	rootCmd.AddCommand(versionCmd)
 }
 
@@ -57,7 +60,7 @@ func run(cmd *cobra.Command, args []string) {
 	var fail2banVersion = "unknown"
 
 	if socketError != nil {
-		log.Infof("Could not connect to fail2ban socket at %s", socketPath)
+		log.Errorf("Could not connect to fail2ban socket at %s", socketPath)
 	} else {
 		detectedFail2banVersion, versionError := f2bc.GetVersion()
 
@@ -83,7 +86,31 @@ func run(cmd *cobra.Command, args []string) {
 
 	dataStore := store.NewDataStore(f2bc)
 
-	geoIP := geoip.NewGeoIP()
+	if cacheDir == "" {
+		dir, workingDirError := os.Getwd()
+		if workingDirError != nil {
+			log.Error("Could not access current working directory")
+			os.Exit(1)
+		}
+		cacheDir = dir
+	}
+
+	absolutCacheDir, absolutPathError := filepath.Abs(cacheDir)
+	if absolutPathError != nil {
+		log.Error(absolutPathError)
+		os.Exit(1)
+	}
+
+	if _, statError := os.Stat(absolutCacheDir); os.IsNotExist(statError) {
+		log.Infof("Creating cache directory %s", absolutCacheDir)
+		if mkdirError := os.MkdirAll(absolutCacheDir, os.ModePerm); mkdirError != nil {
+			log.Errorf("Cache directory could not be created at %s", absolutCacheDir)
+			os.Exit(1)
+		}
+
+	}
+
+	geoIP := geoip.NewGeoIP(absolutCacheDir)
 
 	serveError := server.Serve(Version, fail2banVersion, dataStore, geoIP, port)
 	if serveError != nil {

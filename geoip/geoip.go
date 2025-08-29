@@ -23,6 +23,7 @@ const (
 )
 
 type GeoIP struct {
+	dir   string
 	mutex sync.RWMutex
 	data  []geoData
 }
@@ -33,8 +34,10 @@ type geoData struct {
 	countryCode string
 }
 
-func NewGeoIP() *GeoIP {
-	geoIP := &GeoIP{}
+func NewGeoIP(dir string) *GeoIP {
+	geoIP := &GeoIP{
+		dir: dir,
+	}
 	go geoIP.download()
 	return geoIP
 }
@@ -47,15 +50,10 @@ func (geoIP *GeoIP) Lookup(value string) (string, bool) {
 func (geoIP *GeoIP) download() {
 	geoIP.mutex.Lock()
 	defer geoIP.mutex.Unlock()
-	dir, workingDirError := os.Getwd()
-	if workingDirError != nil {
-		log.Error(workingDirError)
-		return
-	}
 
-	filePath := filepath.Join(dir, cacheName)
+	filePath := filepath.Join(geoIP.dir, cacheName)
 
-	// Check if file exists and is recent enough
+	// Check if a file exists and is recent enough
 	needDownload := true
 	if stat, err := os.Stat(filePath); err == nil {
 		if time.Since(stat.ModTime()) < cacheTTL {
@@ -63,7 +61,7 @@ func (geoIP *GeoIP) download() {
 		}
 	}
 
-	// Download file if needed
+	// Download the file if needed
 	if needDownload {
 		log.Infof("Downloading GeoIP data from %s", url)
 		err := downloadFile(url, filePath)
