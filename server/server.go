@@ -1,11 +1,13 @@
 package server
 
 import (
+	"crypto/rand"
 	_ "embed"
 	"encoding/binary"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
 	"github.com/webishdev/fail2ban-dashboard/store"
@@ -38,6 +40,12 @@ var jailCardHtml []byte
 //go:embed resources/banned.html
 var bannedHtml []byte
 
+type Configuration struct {
+	Port         int
+	AuthUser     string
+	AuthPassword string
+}
+
 type Sorted struct {
 	Order string
 	Class string
@@ -57,7 +65,7 @@ type indexData struct {
 	OrderEnds       Sorted
 }
 
-func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP *geoip.GeoIP, port int) error {
+func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
 
 	log.SetLevel(log.LevelInfo)
 
@@ -91,6 +99,24 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
+
+	if configuration.AuthUser != "" || configuration.AuthPassword != "" {
+		log.Info("Basic authentication enabled")
+		if configuration.AuthUser == "" {
+			configuration.AuthUser = "admin"
+			log.Infof("Basic authentication username set to %s", configuration.AuthUser)
+		}
+		if configuration.AuthPassword == "" {
+			configuration.AuthPassword = rand.Text()
+			log.Infof("Basic authentication password set to %s", configuration.AuthPassword)
+		}
+
+		app.Use(basicauth.New(basicauth.Config{
+			Users: map[string]string{
+				configuration.AuthUser: configuration.AuthPassword,
+			},
+		}))
+	}
 
 	app.Get("images/favicon.ico", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
@@ -164,9 +190,9 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 
 	store.Start()
 
-	log.Infof("Listening on port %d", port)
+	log.Infof("Listening on port %d", configuration.Port)
 
-	address := fmt.Sprintf(":%d", port)
+	address := fmt.Sprintf(":%d", configuration.Port)
 	return app.Listen(address)
 }
 

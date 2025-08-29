@@ -20,6 +20,8 @@ var supportedVersions = []string{"1.1.0"}
 
 var port int
 var cacheDir string
+var user string
+var password string
 
 var rootCmd = &cobra.Command{
 	Use:   "fail2ban-dashboard",
@@ -40,6 +42,8 @@ var versionCmd = &cobra.Command{
 func init() {
 	rootCmd.Flags().IntVarP(&port, "port", "p", 3000, "port to serve the dashboard on")
 	rootCmd.Flags().StringVarP(&cacheDir, "cache-dir", "c", "", "directory to cache GeoIP data (default current working directory)")
+	rootCmd.Flags().StringVar(&user, "auth-user", "", "username for basic auth")
+	rootCmd.Flags().StringVar(&password, "auth-password", "", "password for basic auth")
 	rootCmd.AddCommand(versionCmd)
 }
 
@@ -112,7 +116,13 @@ func run(cmd *cobra.Command, args []string) {
 
 	geoIP := geoip.NewGeoIP(absolutCacheDir)
 
-	serveError := server.Serve(Version, fail2banVersion, dataStore, geoIP, port)
+	configuration := &server.Configuration{
+		Port:         port,
+		AuthUser:     user,
+		AuthPassword: password,
+	}
+
+	serveError := server.Serve(Version, fail2banVersion, dataStore, geoIP, configuration)
 	if serveError != nil {
 		fmt.Printf("Could not start server: %s\n", serveError)
 		os.Exit(1)

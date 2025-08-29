@@ -19,11 +19,14 @@ Available Commands:
   version     Print the version number and git hash
 
 Flags:
-  -c, --cache-dir string   directory to cache GeoIP data (default current working directory)
-  -h, --help               help for fail2ban-dashboard
-  -p, --port int           port to serve the dashboard on (default 3000)
+      --auth-password string   password for basic auth
+      --auth-user string       username for basic auth
+  -c, --cache-dir string       directory to cache GeoIP data (default current working directory)
+  -h, --help                   help for fail2ban-dashboard
+  -p, --port int               port to serve the dashboard on (default 3000)
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
+
 ```
 
 ### Docker
@@ -37,6 +40,10 @@ The `root` user is necessary as by default the `fail2ban` socket is only accessi
 ## Dashboard
 
 When started, check http://localhost:3000/
+
+Basic authentication can be enabled with the `--auth-user` and/or `--auth-password` flags.  
+When only `--auth-user` is provided, the password will be generated and show in the logs/console.  
+When only `--auth-password` is provided, the user will be named `admin`.
 
 ## Inspired by
 
