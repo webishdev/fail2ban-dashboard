@@ -1,5 +1,7 @@
 # fail2ban-dashboard
 
+![build](https://github.com/webishdev/fail2ban-dashboard/actions/workflows/build.yml/badge.svg)
+
 A web based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.sock` socket to access `fail2ban`.
 
 ![Screenshot of fail2ban-dashboard](./images/screenshot.png "Screenshot of fail2ban-dashboard")
