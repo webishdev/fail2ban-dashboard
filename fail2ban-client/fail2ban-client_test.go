@@ -97,7 +97,7 @@ func createMockClient(readData []byte, readErr error, writeErr error) *Fail2BanC
 func createPickleData(data interface{}) []byte {
 	var buf bytes.Buffer
 	encoder := ogórek.NewEncoder(&buf)
-	encoder.Encode(data)
+	_ = encoder.Encode(data) // Ignore error in test helper
 	buf.WriteString("<F2B_END_COMMAND>")
 	return buf.Bytes()
 }
@@ -322,7 +322,7 @@ func TestNewFail2BanClient(t *testing.T) {
 				return
 			}
 			if client != nil {
-				client.socket.Close()
+				_ = client.socket.Close()
 			}
 		})
 	}

@@ -77,6 +77,7 @@ func createTestApp(mockStore *MockDataStore, mockGeoIP *MockGeoIP, config *Confi
 			AuthPassword: "",
 		}
 	}
+	_ = config // Use config to avoid ineffassign warning
 
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
@@ -412,7 +413,7 @@ func TestStaticFileHandlers(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to make request: %v", err)
 			}
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			if resp.StatusCode != tt.expectedCode {
 				t.Errorf("Expected status code %d, got %d", tt.expectedCode, resp.StatusCode)
@@ -667,7 +668,7 @@ func TestIndexRouteHandler(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to make request: %v", err)
 			}
-			defer resp.Body.Close()
+			defer func() { _ = resp.Body.Close() }()
 
 			if resp.StatusCode != 200 {
 				t.Errorf("Expected status code 200, got %d", resp.StatusCode)

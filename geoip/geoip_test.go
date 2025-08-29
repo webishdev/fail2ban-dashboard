@@ -295,8 +295,8 @@ func TestReadGzip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to write test data: %v", err)
 	}
-	gzWriter.Close()
-	file.Close()
+	_ = gzWriter.Close()
+	_ = file.Close()
 
 	// Test reading the file
 	data, err := readGzip(testFile)
@@ -424,8 +424,8 @@ func TestLoadDataFromFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to write test data: %v", err)
 	}
-	gzWriter.Close()
-	file.Close()
+	_ = gzWriter.Close()
+	_ = file.Close()
 
 	// Test loading data
 	data := loadDataFromFile(testFile)
@@ -461,13 +461,13 @@ func TestGeoIP_Lookup_Integration(t *testing.T) {
 	}
 
 	gzWriter := gzip.NewWriter(file)
-	gzWriter.Write([]byte(testTSV))
-	gzWriter.Close()
-	file.Close()
+	_, _ = gzWriter.Write([]byte(testTSV))
+	_ = gzWriter.Close()
+	_ = file.Close()
 
 	// Set file modification time to recent to avoid download
 	recentTime := time.Now().Add(-1 * time.Hour)
-	os.Chtimes(testFile, recentTime, recentTime)
+	_ = os.Chtimes(testFile, recentTime, recentTime)
 
 	geoIP := NewGeoIP(tempDir)
 
@@ -506,13 +506,13 @@ func TestGeoIP_download_CacheHit(t *testing.T) {
 	}
 
 	gzWriter := gzip.NewWriter(file)
-	gzWriter.Write([]byte(testTSV))
-	gzWriter.Close()
-	file.Close()
+	_, _ = gzWriter.Write([]byte(testTSV))
+	_ = gzWriter.Close()
+	_ = file.Close()
 
 	// Set recent modification time
 	recentTime := time.Now().Add(-1 * time.Hour)
-	os.Chtimes(testFile, recentTime, recentTime)
+	_ = os.Chtimes(testFile, recentTime, recentTime)
 
 	geoIP := &GeoIP{dir: tempDir}
 
@@ -537,13 +537,13 @@ func TestGeoIP_download_CacheMiss_OldFile(t *testing.T) {
 	}
 
 	gzWriter := gzip.NewWriter(file)
-	gzWriter.Write([]byte(testTSV))
-	gzWriter.Close()
-	file.Close()
+	_, _ = gzWriter.Write([]byte(testTSV))
+	_ = gzWriter.Close()
+	_ = file.Close()
 
 	// Set old modification time (older than cacheTTL)
 	oldTime := time.Now().Add(-24 * time.Hour)
-	os.Chtimes(testFile, oldTime, oldTime)
+	_ = os.Chtimes(testFile, oldTime, oldTime)
 
 	geoIP := &GeoIP{dir: tempDir}
 
