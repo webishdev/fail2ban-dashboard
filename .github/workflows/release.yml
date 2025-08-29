@@ -33,6 +33,10 @@ jobs:
       - name: Display Go version
         run: go version
 
+      - name: Test
+        run: |
+          make test
+
       - name: Build
         run: |
           VERSION_INPUT=${{ github.event.release.tag_name }}

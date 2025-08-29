@@ -1,4 +1,4 @@
-.PHONY: build clean help
+.PHONY: build test clean help
 
 # Variables
 VERSION ?= development
@@ -8,7 +8,7 @@ BINARY_NAME := fail2ban-dashboard
 MAIN_PATH := ./cmd/fail2ban-dashboard
 
 # Default target
-all: build
+all: test build
 
 # Build the application
 build:
@@ -18,6 +18,11 @@ build:
 		-ldflags="-s -w -X 'main.Version=$(VERSION)' -X 'main.GitHash=$(GIT_HASH)'" \
 		-o $(BIN_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 
+# Run tests
+test:
+	@echo "Running tests"
+	go test ./...
+
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts"
@@ -26,7 +31,9 @@ clean:
 # Show help
 help:
 	@echo "Available targets:"
-	@echo "  build   - Build the application (default)"
+	@echo "  all     - Run tests and build the application (default)"
+	@echo "  test    - Run tests"
+	@echo "  build   - Build the application"
 	@echo "  clean   - Remove build artifacts"
 	@echo "  help    - Show this help message"
 	@echo ""
