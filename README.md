@@ -6,11 +6,35 @@ A web based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.
 
 ## Usage
 
+### Command line
+
+```
+Usage:
+  fail2ban-dashboard [flags]
+  fail2ban-dashboard [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  version     Print the version number and git hash
+
+Flags:
+  -c, --cache-dir string   directory to cache GeoIP data (default current working directory)
+  -h, --help               help for fail2ban-dashboard
+  -p, --port int           port to serve the dashboard on (default 3000)
+
+Use "fail2ban-dashboard [command] --help" for more information about a command.
+```
+
+### Docker
+
 With Docker use
 
 `docker run --user=root -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro -p 3000:3000 ghcr.io/webishdev/fail2ban-dashboard:latest`
 
 The `root` user is necessary as by default the `fail2ban` socket is only accessible for the `root` user.
+
+## Dashboard
 
 When started, check http://localhost:3000/
 
