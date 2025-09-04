@@ -6,6 +6,27 @@ A web based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.
 
 ![Screenshot of fail2ban-dashboard](./images/screenshot.png "Screenshot of fail2ban-dashboard")
 
+
+## Build the application
+
+To build the application, use make with the following options:
+
+```
+make
+
+    build           - Build the application
+    
+    test            - Run tests
+    
+    clean           - Remove build artifacts
+    
+    help            - Show this help message
+    
+    all             - Run tests and build the application (default)
+
+```
+
+
 ## Usage
 
 ### Command line
