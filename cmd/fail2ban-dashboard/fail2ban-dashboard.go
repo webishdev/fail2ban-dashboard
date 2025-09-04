@@ -22,6 +22,7 @@ var port int
 var cacheDir string
 var user string
 var password string
+var socketPath string
 
 var rootCmd = &cobra.Command{
 	Use:   "fail2ban-dashboard",
@@ -44,6 +45,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&cacheDir, "cache-dir", "c", "", "directory to cache GeoIP data (default current working directory)")
 	rootCmd.Flags().StringVar(&user, "auth-user", "", "username for basic auth")
 	rootCmd.Flags().StringVar(&password, "auth-password", "", "password for basic auth")
+	rootCmd.Flags().StringVarP(&socketPath, "socket", "s", "/var/run/fail2ban/fail2ban.sock", "fail to ban socket")
 	rootCmd.AddCommand(versionCmd)
 }
 
@@ -56,8 +58,6 @@ func main() {
 
 func run(cmd *cobra.Command, args []string) {
 	fmt.Printf("This is fail2ban-dashboard %s (%s)\n", Version, GitHash)
-
-	socketPath := "/var/run/fail2ban/fail2ban.sock"
 
 	f2bc, socketError := client.NewFail2BanClient(socketPath)
 
