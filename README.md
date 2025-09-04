@@ -6,6 +6,27 @@ A web based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.
 
 ![Screenshot of fail2ban-dashboard](./images/screenshot.png "Screenshot of fail2ban-dashboard")
 
+
+## Build the application
+
+To build the application, use make with the following options:
+
+```
+make
+
+    build           - Build the application
+    
+    test            - Run tests
+    
+    clean           - Remove build artifacts
+    
+    help            - Show this help message
+    
+    all             - Run tests and build the application (default)
+
+```
+
+
 ## Usage
 
 ### Command line
@@ -26,6 +47,7 @@ Flags:
   -c, --cache-dir string       directory to cache GeoIP data (default current working directory)
   -h, --help                   help for fail2ban-dashboard
   -p, --port int               port to serve the dashboard on (default 3000)
+  -s, --socket string          fail to ban socket (default /var/run/fail2ban/fail2ban.sock)
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
 
