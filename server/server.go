@@ -4,19 +4,19 @@ import (
 	"crypto/rand"
 	_ "embed"
 	"encoding/binary"
-	"fmt"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/fiber/v2/middleware/basicauth"
-	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
-	"github.com/webishdev/fail2ban-dashboard/geoip"
-	"github.com/webishdev/fail2ban-dashboard/store"
 	"html/template"
 	"net"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v2/middleware/basicauth"
+	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"github.com/webishdev/fail2ban-dashboard/geoip"
+	"github.com/webishdev/fail2ban-dashboard/store"
 )
 
 //go:embed resources/css/daisyui@5.css
@@ -41,7 +41,7 @@ var jailCardHtml []byte
 var bannedHtml []byte
 
 type Configuration struct {
-	Port         int
+	Address      string
 	AuthUser     string
 	AuthPassword string
 }
@@ -190,10 +190,9 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 
 	store.Start()
 
-	log.Infof("Listening on port %d", configuration.Port)
+	log.Infof("Listening on address %d", configuration.Address)
 
-	address := fmt.Sprintf(":%d", configuration.Port)
-	return app.Listen(address)
+	return app.Listen(configuration.Address)
 }
 
 func sortSlice(sorting string, order string, banned []client.BanEntry) func(i, j int) bool {

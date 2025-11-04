@@ -72,7 +72,7 @@ func createTestJail(name string, entries []client.BanEntry) store.Jail {
 func createTestApp(mockStore *MockDataStore, mockGeoIP *MockGeoIP, config *Configuration) *fiber.App {
 	if config == nil {
 		config = &Configuration{
-			Port:         8080,
+			Address:      ":8080",
 			AuthUser:     "",
 			AuthPassword: "",
 		}
@@ -438,14 +438,14 @@ func TestStaticFileHandlers(t *testing.T) {
 
 func TestConfigurationStructure(t *testing.T) {
 	config := &Configuration{
-		Port:         0, // Use port 0 to avoid conflicts
+		Address:      ":0", // Use port 0 to avoid conflicts
 		AuthUser:     "",
 		AuthPassword: "",
 	}
 
 	// Test configuration structure
 	t.Run("configuration validation", func(t *testing.T) {
-		if config.Port != 0 {
+		if config.Address != ":0" {
 			t.Error("Expected port to be 0 for test")
 		}
 		if config.AuthUser != "" {
@@ -465,7 +465,7 @@ func TestConfiguration(t *testing.T) {
 		{
 			name: "default configuration",
 			config: Configuration{
-				Port:         8080,
+				Address:      ":8080",
 				AuthUser:     "",
 				AuthPassword: "",
 			},
@@ -473,7 +473,7 @@ func TestConfiguration(t *testing.T) {
 		{
 			name: "with authentication",
 			config: Configuration{
-				Port:         3000,
+				Address:      ":3000",
 				AuthUser:     "admin",
 				AuthPassword: "secret",
 			},
@@ -482,7 +482,7 @@ func TestConfiguration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.config.Port <= 0 && tt.name != "default configuration" {
+			if tt.config.Address <= "0" && tt.name != "default configuration" {
 				t.Error("Port should be positive")
 			}
 		})
@@ -691,7 +691,7 @@ func TestAuthenticationScenarios(t *testing.T) {
 		{
 			name: "no authentication",
 			config: Configuration{
-				Port:         8080,
+				Address:      ":8080",
 				AuthUser:     "",
 				AuthPassword: "",
 			},
@@ -700,7 +700,7 @@ func TestAuthenticationScenarios(t *testing.T) {
 		{
 			name: "user only",
 			config: Configuration{
-				Port:         8080,
+				Address:      ":8080",
 				AuthUser:     "admin",
 				AuthPassword: "",
 			},
@@ -709,7 +709,7 @@ func TestAuthenticationScenarios(t *testing.T) {
 		{
 			name: "password only",
 			config: Configuration{
-				Port:         8080,
+				Address:      ":8080",
 				AuthUser:     "",
 				AuthPassword: "secret",
 			},
@@ -718,7 +718,7 @@ func TestAuthenticationScenarios(t *testing.T) {
 		{
 			name: "full authentication",
 			config: Configuration{
-				Port:         8080,
+				Address:      ":8080",
 				AuthUser:     "admin",
 				AuthPassword: "secret",
 			},
