@@ -18,7 +18,7 @@ var GitHash = "none"
 
 var supportedVersions = []string{"1.1.0"}
 
-var port int
+var address string
 var cacheDir string
 var user string
 var password string
@@ -41,7 +41,7 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().IntVarP(&port, "port", "p", 3000, "port to serve the dashboard on")
+	rootCmd.Flags().StringVarP(&address, "address", "a", "127.0.0.1:3000", "address to serve the dashboard on")
 	rootCmd.Flags().StringVarP(&cacheDir, "cache-dir", "c", "", "directory to cache GeoIP data (default current working directory)")
 	rootCmd.Flags().StringVar(&user, "auth-user", "", "username for basic auth")
 	rootCmd.Flags().StringVar(&password, "auth-password", "", "password for basic auth")
@@ -117,7 +117,7 @@ func run(cmd *cobra.Command, args []string) {
 	geoIP := geoip.NewGeoIP(absolutCacheDir)
 
 	configuration := &server.Configuration{
-		Port:         port,
+		Address:      address,
 		AuthUser:     user,
 		AuthPassword: password,
 	}
