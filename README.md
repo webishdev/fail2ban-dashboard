@@ -46,7 +46,7 @@ Flags:
       --auth-user string       username for basic auth
   -c, --cache-dir string       directory to cache GeoIP data (default current working directory)
   -h, --help                   help for fail2ban-dashboard
-  -p, --port int               port to serve the dashboard on (default 3000)
+  -a, --address string         address to serve the dashboard on (default 127.0.0.1:3000)
   -s, --socket string          fail to ban socket (default /var/run/fail2ban/fail2ban.sock)
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
