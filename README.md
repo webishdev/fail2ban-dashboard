@@ -2,7 +2,7 @@
 
 ![build](https://github.com/webishdev/fail2ban-dashboard/actions/workflows/build.yml/badge.svg)
 
-A web based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.sock` socket to access `fail2ban`.
+A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.sock` socket to access `fail2ban`.
 
 ![Screenshot of fail2ban-dashboard](./images/screenshot.png "Screenshot of fail2ban-dashboard")
 
@@ -42,12 +42,12 @@ Available Commands:
   version     Print the version number and git hash
 
 Flags:
-      --auth-password string   password for basic auth
-      --auth-user string       username for basic auth
-  -c, --cache-dir string       directory to cache GeoIP data (default current working directory)
+  -a, --address string         address to serve the dashboard on, also F2BD_ADDRESS (default "127.0.0.1:3000")
+      --auth-password string   password for basic auth, also F2BD_AUTH_PASSWORD
+      --auth-user string       username for basic auth, also F2BD_AUTH_USER
+  -c, --cache-dir string       directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
   -h, --help                   help for fail2ban-dashboard
-  -a, --address string         address to serve the dashboard on (default 127.0.0.1:3000)
-  -s, --socket string          fail to ban socket (default /var/run/fail2ban/fail2ban.sock)
+  -s, --socket string          fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
 
@@ -68,6 +68,16 @@ When started, check http://localhost:3000/
 Basic authentication can be enabled with the `--auth-user` and/or `--auth-password` flags.  
 When only `--auth-user` is provided, the password will be generated and show in the logs/console.  
 When only `--auth-password` is provided, the user will be named `admin`.
+
+### Environment variables
+
+Environment variables can be used to set parameters without using command line flags.
+
+- `F2BD_ADDRESS`
+- `F2BD_AUTH_USER`
+- `F2BD_AUTH_PASSWORD`
+- `F2BD_CACHE_DIR`
+- `F2BD_SOCKET`
 
 ## Inspired by
 
