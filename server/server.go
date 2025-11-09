@@ -104,8 +104,8 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 		log.Info("Basic authentication enabled")
 		if configuration.AuthUser == "" {
 			configuration.AuthUser = "admin"
-			log.Infof("Basic authentication username set to %s", configuration.AuthUser)
 		}
+		log.Infof("Basic authentication username set to %s", configuration.AuthUser)
 		if configuration.AuthPassword == "" {
 			configuration.AuthPassword = rand.Text()
 			log.Infof("Basic authentication password set to %s", configuration.AuthPassword)
@@ -190,7 +190,7 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 
 	store.Start()
 
-	log.Infof("Listening on address %d", configuration.Address)
+	log.Infof("Listening on address %s", configuration.Address)
 
 	return app.Listen(configuration.Address)
 }

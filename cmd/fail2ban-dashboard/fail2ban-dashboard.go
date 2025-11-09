@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
 	"github.com/webishdev/fail2ban-dashboard/server"
@@ -17,12 +19,6 @@ var Version = "development"
 var GitHash = "none"
 
 var supportedVersions = []string{"1.1.0"}
-
-var address string
-var cacheDir string
-var user string
-var password string
-var socketPath string
 
 var rootCmd = &cobra.Command{
 	Use:   "fail2ban-dashboard",
@@ -41,11 +37,47 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&address, "address", "a", "127.0.0.1:3000", "address to serve the dashboard on")
-	rootCmd.Flags().StringVarP(&cacheDir, "cache-dir", "c", "", "directory to cache GeoIP data (default current working directory)")
-	rootCmd.Flags().StringVar(&user, "auth-user", "", "username for basic auth")
-	rootCmd.Flags().StringVar(&password, "auth-password", "", "password for basic auth")
-	rootCmd.Flags().StringVarP(&socketPath, "socket", "s", "/var/run/fail2ban/fail2ban.sock", "fail to ban socket")
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("F2BD")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+
+	flags := rootCmd.Flags()
+
+	flags.StringP("address", "a", "127.0.0.1:3000", "address to serve the dashboard on, also F2BD_ADDRESS")
+	addressErr := viper.BindPFlag("address", flags.Lookup("address"))
+	if addressErr != nil {
+		fmt.Printf("Could not bind address flag: %s\n", addressErr)
+		os.Exit(1)
+	}
+
+	flags.StringP("cache-dir", "c", "", "directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)")
+	cacheDirErr := viper.BindPFlag("cache-dir", flags.Lookup("cache-dir"))
+	if cacheDirErr != nil {
+		fmt.Printf("Could not bind cache-dir flag: %s\n", cacheDirErr)
+		os.Exit(1)
+	}
+
+	flags.String("auth-user", "", "username for basic auth, also F2BD_AUTH_USER")
+	authUserErr := viper.BindPFlag("auth-user", flags.Lookup("auth-user"))
+	if authUserErr != nil {
+		fmt.Printf("Could not bind auth-user flag: %s\n", authUserErr)
+		os.Exit(1)
+	}
+
+	flags.String("auth-password", "", "password for basic auth, also F2BD_AUTH_PASSWORD")
+	authPasswordErr := viper.BindPFlag("auth-password", flags.Lookup("auth-password"))
+	if authPasswordErr != nil {
+		fmt.Printf("Could not bind auth-password flag: %s\n", authPasswordErr)
+		os.Exit(1)
+	}
+
+	flags.StringP("socket", "s", "/var/run/fail2ban/fail2ban.sock", "fail2ban socket, also F2BD_SOCKET")
+	socketError := viper.BindPFlag("socket", flags.Lookup("socket"))
+	if socketError != nil {
+		fmt.Printf("Could not bind socket flag: %s\n", socketError)
+		os.Exit(1)
+	}
+
 	rootCmd.AddCommand(versionCmd)
 }
 
@@ -56,9 +88,16 @@ func main() {
 	}
 }
 
-func run(cmd *cobra.Command, args []string) {
+func run(_ *cobra.Command, _ []string) {
 	fmt.Printf("This is fail2ban-dashboard %s (%s)\n", Version, GitHash)
 
+	socketPath := viper.GetString("socket")
+	address := viper.GetString("address")
+	user := viper.GetString("auth-user")
+	password := viper.GetString("auth-password")
+	cacheDir := viper.GetString("cache-dir")
+
+	log.Infof("Will use socket at %s for fail2ban connection", socketPath)
 	f2bc, socketError := client.NewFail2BanClient(socketPath)
 
 	var fail2banVersion = "unknown"
