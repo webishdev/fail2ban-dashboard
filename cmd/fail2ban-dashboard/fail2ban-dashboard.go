@@ -78,6 +78,13 @@ func init() {
 		os.Exit(1)
 	}
 
+	flags.String("log-level", "info", "log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL")
+	logLevelErr := viper.BindPFlag("log-level", flags.Lookup("log-level"))
+	if logLevelErr != nil {
+		fmt.Printf("Could not bind log-level flag: %s\n", logLevelErr)
+		os.Exit(1)
+	}
+
 	rootCmd.AddCommand(versionCmd)
 }
 
@@ -96,6 +103,26 @@ func run(_ *cobra.Command, _ []string) {
 	user := viper.GetString("auth-user")
 	password := viper.GetString("auth-password")
 	cacheDir := viper.GetString("cache-dir")
+	logLevel := viper.GetString("log-level")
+
+	// Set log level
+	switch logLevel {
+	case "trace":
+		log.SetLevel(log.LevelTrace)
+	case "debug":
+		log.SetLevel(log.LevelDebug)
+	case "info":
+		log.SetLevel(log.LevelInfo)
+	case "warn":
+		log.SetLevel(log.LevelWarn)
+	case "error":
+		log.SetLevel(log.LevelError)
+	default:
+		log.SetLevel(log.LevelInfo)
+		log.Warnf("Invalid log level '%s', using 'info'", logLevel)
+	}
+
+	log.Debugf("Log level set to %s", logLevel)
 
 	log.Infof("Will use socket at %s for fail2ban connection", socketPath)
 	f2bc, socketError := client.NewFail2BanClient(socketPath)
@@ -111,7 +138,7 @@ func run(_ *cobra.Command, _ []string) {
 			panic(versionError)
 		}
 
-		fmt.Printf("fail2ban version found: %s\n", detectedFail2banVersion)
+		log.Infof("fail2ban version found: %s\n", detectedFail2banVersion)
 
 		versionIsOk := false
 		for _, supportedVersion := range supportedVersions {
@@ -120,7 +147,7 @@ func run(_ *cobra.Command, _ []string) {
 			}
 		}
 		if !versionIsOk {
-			fmt.Printf("fail2ban version %s not supported\n", detectedFail2banVersion)
+			log.Errorf("fail2ban version %s not supported\n", detectedFail2banVersion)
 			os.Exit(1)
 		}
 
@@ -163,7 +190,7 @@ func run(_ *cobra.Command, _ []string) {
 
 	serveError := server.Serve(Version, fail2banVersion, dataStore, geoIP, configuration)
 	if serveError != nil {
-		fmt.Printf("Could not start server: %s\n", serveError)
+		log.Errorf("Could not start server: %s\n", serveError)
 		os.Exit(1)
 	}
 }

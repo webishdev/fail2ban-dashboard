@@ -67,8 +67,6 @@ type indexData struct {
 
 func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
 
-	log.SetLevel(log.LevelInfo)
-
 	templateFunctions := template.FuncMap{
 		"safe": func(s string) template.URL {
 			safe := template.URL(s)

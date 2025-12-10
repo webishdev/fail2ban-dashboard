@@ -47,6 +47,7 @@ Flags:
       --auth-user string       username for basic auth, also F2BD_AUTH_USER
   -c, --cache-dir string       directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
   -h, --help                   help for fail2ban-dashboard
+      --log-level string       log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL (default "info")
   -s, --socket string          fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
