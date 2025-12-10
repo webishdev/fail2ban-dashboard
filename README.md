@@ -1,6 +1,7 @@
 # fail2ban-dashboard
 
 ![build](https://github.com/webishdev/fail2ban-dashboard/actions/workflows/build.yml/badge.svg)
+![GitHub Release](https://img.shields.io/github/v/release/webishdev/fail2ban-dashboard)
 
 A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.sock` socket to access `fail2ban`.
 
