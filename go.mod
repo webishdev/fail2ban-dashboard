@@ -1,6 +1,6 @@
 module github.com/webishdev/fail2ban-dashboard
 
-go 1.25.3
+go 1.25.5
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.10
