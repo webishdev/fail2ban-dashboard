@@ -95,7 +95,8 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 	}
 
 	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
+		DisableStartupMessage:   true,
+		EnableTrustedProxyCheck: true,
 	})
 
 	if configuration.AuthUser != "" || configuration.AuthPassword != "" {
@@ -137,6 +138,7 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 	})
 
 	app.Get("/", func(c *fiber.Ctx) error {
+
 		log.Infof("Access banned overview at %s%s for %s", c.BaseURL(), c.OriginalURL(), c.IP())
 		jails := store.GetJails()
 
