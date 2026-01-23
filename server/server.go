@@ -65,7 +65,7 @@ type indexData struct {
 	OrderEnds       Sorted
 }
 
-func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
+func Serve(version string, fail2banVersion string, trustProxyHeaders bool, store *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
 
 	templateFunctions := template.FuncMap{
 		"safe": func(s string) template.URL {
@@ -95,8 +95,7 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 	}
 
 	app := fiber.New(fiber.Config{
-		DisableStartupMessage:   true,
-		EnableTrustedProxyCheck: true,
+		DisableStartupMessage: true,
 	})
 
 	if configuration.AuthUser != "" || configuration.AuthPassword != "" {
@@ -138,8 +137,13 @@ func Serve(version string, fail2banVersion string, store *store.DataStore, geoIP
 	})
 
 	app.Get("/", func(c *fiber.Ctx) error {
-
-		log.Infof("Access banned overview at %s%s for %s", c.BaseURL(), c.OriginalURL(), c.IP())
+		remoteIP := c.IP()
+		if trustProxyHeaders {
+			xff := c.Get("X-Forwarded-For")
+			xri := c.Get("X-Real-Ip")
+			remoteIP = firstNonEmpty(remoteIP, xff, xri)
+		}
+		log.Infof("Access banned overview at %s%s for %s", c.BaseURL(), c.OriginalURL(), remoteIP)
 		jails := store.GetJails()
 
 		banned := make([]client.BanEntry, 0)
@@ -294,4 +298,13 @@ func penaltyToUint64(penalty string) int64 {
 		return 0
 	}
 	return i64
+}
+
+func firstNonEmpty(def string, vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return def
 }

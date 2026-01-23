@@ -85,10 +85,17 @@ func init() {
 		os.Exit(1)
 	}
 
-	flags.Bool("skip-version-check", false, "skip fail2ban version check (use at your own risk) F2BD_SKIP_VERSION_CHECK")
+	flags.Bool("skip-version-check", false, "skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK")
 	skipVersionCheckErr := viper.BindPFlag("skip-version-check", flags.Lookup("skip-version-check"))
 	if skipVersionCheckErr != nil {
 		fmt.Printf("Could not bind skip-version-check flag: %s\n", logLevelErr)
+		os.Exit(1)
+	}
+
+	flags.Bool("trust-proxy-headers", false, "trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS")
+	trustProxyHeadersErr := viper.BindPFlag("trust-proxy-headers", flags.Lookup("trust-proxy-headers"))
+	if trustProxyHeadersErr != nil {
+		fmt.Printf("Could not bind trust-proxy-headers flag: %s\n", logLevelErr)
 		os.Exit(1)
 	}
 
@@ -112,6 +119,7 @@ func run(_ *cobra.Command, _ []string) {
 	cacheDir := viper.GetString("cache-dir")
 	logLevel := viper.GetString("log-level")
 	skipVersionCheck := viper.GetBool("skip-version-check")
+	trustProxyHeaders := viper.GetBool("trust-proxy-headers")
 
 	// Set log level
 	switch logLevel {
@@ -200,7 +208,7 @@ func run(_ *cobra.Command, _ []string) {
 		AuthPassword: password,
 	}
 
-	serveError := server.Serve(Version, fail2banVersion, dataStore, geoIP, configuration)
+	serveError := server.Serve(Version, fail2banVersion, trustProxyHeaders, dataStore, geoIP, configuration)
 	if serveError != nil {
 		log.Errorf("Could not start server: %s\n", serveError)
 		os.Exit(1)
