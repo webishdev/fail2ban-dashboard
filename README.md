@@ -7,6 +7,7 @@ A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.
 
 ![Screenshot of fail2ban-dashboard](./images/screenshot.png "Screenshot of fail2ban-dashboard")
 
+Tested with `fail2ban` version `1.1.0`, if the deshboard should be used with another version, please switch off the version check with the `--skip-version-check` flag.
 
 ## Build the application
 
@@ -49,6 +50,7 @@ Flags:
   -c, --cache-dir string       directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
   -h, --help                   help for fail2ban-dashboard
       --log-level string       log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL (default "info")
+      --skip-version-check     skip fail2ban version check (use at your own risk) F2BD_SKIP_VERSION_CHECK
   -s, --socket string          fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
