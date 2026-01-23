@@ -85,6 +85,13 @@ func init() {
 		os.Exit(1)
 	}
 
+	flags.Bool("skip-version-check", false, "skip fail2ban version check (use at your own risk) F2BD_SKIP_VERSION_CHECK")
+	skipVersionCheckErr := viper.BindPFlag("skip-version-check", flags.Lookup("skip-version-check"))
+	if skipVersionCheckErr != nil {
+		fmt.Printf("Could not bind skip-version-check flag: %s\n", logLevelErr)
+		os.Exit(1)
+	}
+
 	rootCmd.AddCommand(versionCmd)
 }
 
@@ -104,6 +111,7 @@ func run(_ *cobra.Command, _ []string) {
 	password := viper.GetString("auth-password")
 	cacheDir := viper.GetString("cache-dir")
 	logLevel := viper.GetString("log-level")
+	skipVersionCheck := viper.GetBool("skip-version-check")
 
 	// Set log level
 	switch logLevel {
@@ -140,15 +148,19 @@ func run(_ *cobra.Command, _ []string) {
 
 		log.Infof("fail2ban version found: %s\n", detectedFail2banVersion)
 
-		versionIsOk := false
-		for _, supportedVersion := range supportedVersions {
-			if supportedVersion == detectedFail2banVersion {
-				versionIsOk = true
+		if !skipVersionCheck {
+			versionIsOk := false
+			for _, supportedVersion := range supportedVersions {
+				if supportedVersion == detectedFail2banVersion {
+					versionIsOk = true
+				}
 			}
-		}
-		if !versionIsOk {
-			log.Errorf("fail2ban version %s not supported\n", detectedFail2banVersion)
-			os.Exit(1)
+			if !versionIsOk {
+				log.Errorf("fail2ban version %s not supported\n", detectedFail2banVersion)
+				os.Exit(1)
+			}
+		} else {
+			log.Info("Skipping version check (dashboard may not work as expected)")
 		}
 
 		fail2banVersion = detectedFail2banVersion
