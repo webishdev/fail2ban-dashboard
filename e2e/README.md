@@ -1,0 +1,19 @@
+# Manual E2E tests
+
+## Build the application
+
+In the root folder do `make`
+
+## Start the E2E env
+
+In the root or `e2e` folder do `./e2e.sh start`
+
+- Run with a specific `fail2ban` version: `./e2e.sh start 0.11.2`
+
+Inside the `fail2ban` container, start the dashboard with `/app/fail2ban-dashboard`
+
+Access the dashboard at `http://localhost:3000`
+
+## Stop the E2E env
+
+In the root or `e2e` folder do `./e2e.sh stop`
