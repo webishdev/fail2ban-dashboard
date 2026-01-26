@@ -7,7 +7,13 @@ A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.
 
 ![Screenshot of fail2ban-dashboard](./images/screenshot.png "Screenshot of fail2ban-dashboard")
 
-Tested with `fail2ban` version `1.1.0`, if the deshboard should be used with another version, please switch off the version check with the `--skip-version-check` flag.
+Tested with the following `fail2ban` versions
+- `0.11.2`
+- `1.0.1`
+- `1.0.2`
+- `1.1.0`
+
+if the deshboard should be used with another version, please switch off the version check with the `--skip-version-check` flag.
 
 ## Build the application
 
@@ -79,10 +85,13 @@ When only `--auth-password` is provided, the user will be named `admin`.
 Environment variables can be used to set parameters without using command line flags.
 
 - `F2BD_ADDRESS`
-- `F2BD_AUTH_USER`
 - `F2BD_AUTH_PASSWORD`
+- `F2BD_AUTH_USER`
 - `F2BD_CACHE_DIR`
+- `F2BD_LOG_LEVEL`
+- `F2BD_SKIP_VERSION_CHECK`
 - `F2BD_SOCKET`
+- `F2BD_TRUST_PROXY_HEADERS`
 
 ## Inspired by
 
