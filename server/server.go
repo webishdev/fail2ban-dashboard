@@ -138,12 +138,17 @@ func Serve(version string, fail2banVersion string, trustProxyHeaders bool, store
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		remoteIP := c.IP()
+		additionalInfo := ""
 		if trustProxyHeaders {
 			xff := c.Get("X-Forwarded-For")
 			xri := c.Get("X-Real-Ip")
 			remoteIP = firstNonEmpty(remoteIP, xff, xri)
+			if xff != "" || xri != "" {
+				additionalInfo += "forwarded"
+			}
+			log.Debugf("X-Forwarded-For: %s, X-Real-Ip: %s", xff, xri)
 		}
-		log.Infof("Access banned overview at %s%s for %s", c.BaseURL(), c.OriginalURL(), remoteIP)
+		log.Infof("Access overview at %s%s for %s (%s)", c.BaseURL(), c.OriginalURL(), remoteIP, additionalInfo)
 		jails := store.GetJails()
 
 		banned := make([]client.BanEntry, 0)
