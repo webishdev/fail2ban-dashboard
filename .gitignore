@@ -5,3 +5,4 @@ fail2ban-dashboard
 generate*
 cached*
 .lint_result
+__debug*

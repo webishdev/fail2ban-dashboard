@@ -1,0 +1,35 @@
+services:
+  fail2ban:
+    ports: []
+    volumes:
+      - f2b-run:/var/run/fail2ban
+
+  dashboard:
+    image: golang:1.25-bookworm
+    working_dir: /workspace
+    environment:
+      F2BD_ADDRESS: ":3000"
+      F2BD_LOG_LEVEL: "debug"
+      F2BD_SKIP_VERSION_CHECK: "true"
+      F2BD_SOCKET: "/var/run/fail2ban/fail2ban.sock"
+    ports:
+      - "40000:40000"
+      - "4000:3000"
+    volumes:
+      - "..:/workspace"
+      - "./data/script:/script"
+      - f2b-run:/var/run/fail2ban
+      - go-cache:/go
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        /usr/bin/sleep infinity
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - "apparmor:unconfined"
+
+volumes:
+  f2b-run:
+  go-cache:
