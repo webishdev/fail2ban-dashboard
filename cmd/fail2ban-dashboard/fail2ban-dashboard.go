@@ -18,7 +18,7 @@ import (
 var Version = "development"
 var GitHash = "none"
 
-var supportedVersions = []string{"0.11.2", "1.0.1", "1.0.2", "1.1.0"}
+var supportedVersions = []string{"0.11.1", "0.11.2", "1.0.1", "1.0.2", "1.1.0"}
 
 var rootCmd = &cobra.Command{
 	Use:   "fail2ban-dashboard",

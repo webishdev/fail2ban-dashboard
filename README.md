@@ -8,6 +8,7 @@ A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.
 ![Screenshot of fail2ban-dashboard](./images/screenshot.png "Screenshot of fail2ban-dashboard")
 
 Tested with the following `fail2ban` versions
+- `0.11.1`
 - `0.11.2`
 - `1.0.1`
 - `1.0.2`
