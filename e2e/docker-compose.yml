@@ -7,6 +7,7 @@ services:
       F2BD_LOG_LEVEL: "debug"
       F2BD_SKIP_VERSION_CHECK: "true"
       F2BD_TRUST_PROXY_HEADERS: "true"
+      F2BD_REFRESH_SECONDS: 15
     ports:
       - "3000:3000"
     volumes:

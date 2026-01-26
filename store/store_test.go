@@ -79,7 +79,7 @@ func (m *MockFail2BanClient) SetBannedError(err error) {
 
 func TestNewDataStore(t *testing.T) {
 	t.Run("with nil client", func(t *testing.T) {
-		ds := NewDataStore(nil)
+		ds := NewDataStore(nil, 30)
 		if ds == nil {
 			t.Error("NewDataStore should not return nil")
 		}
@@ -116,7 +116,7 @@ func TestNewDataStore(t *testing.T) {
 
 func TestDataStore_Start(t *testing.T) {
 	t.Run("with nil client", func(t *testing.T) {
-		ds := NewDataStore(nil)
+		ds := NewDataStore(nil, 30)
 		// This should not panic and should return immediately
 		ds.Start()
 	})

@@ -1,11 +1,12 @@
 package store
 
 import (
-	"github.com/gofiber/fiber/v2/log"
-	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/gofiber/fiber/v2/log"
+	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 )
 
 type Jail struct {
@@ -27,12 +28,12 @@ type DataStore struct {
 	jailInfos     map[string]*client.JailInfo
 }
 
-func NewDataStore(f2bc *client.Fail2BanClient) *DataStore {
+func NewDataStore(f2bc *client.Fail2BanClient, refreshSeconds int) *DataStore {
 	if f2bc == nil {
 		return &DataStore{}
 	}
 	dataStore := &DataStore{
-		ticker:        time.NewTicker(30 * time.Second),
+		ticker:        time.NewTicker(time.Duration(refreshSeconds) * time.Second),
 		f2bc:          f2bc,
 		addressToJail: make(map[string][]string),
 		jails:         make(map[string]*client.JailEntry),

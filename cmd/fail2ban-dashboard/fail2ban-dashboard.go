@@ -99,6 +99,13 @@ func init() {
 		os.Exit(1)
 	}
 
+	flags.Int("refresh-seconds", 30, "refresh seconds for fail2ban data (value from 10 to 600), also F2BD_REFRESH_SECONDS")
+	refreshSecondsErr := viper.BindPFlag("refresh-seconds", flags.Lookup("refresh-seconds"))
+	if refreshSecondsErr != nil {
+		fmt.Printf("Could not bind refresh-seconds flag: %s\n", logLevelErr)
+		os.Exit(1)
+	}
+
 	rootCmd.AddCommand(versionCmd)
 }
 
@@ -120,6 +127,7 @@ func run(_ *cobra.Command, _ []string) {
 	logLevel := viper.GetString("log-level")
 	skipVersionCheck := viper.GetBool("skip-version-check")
 	trustProxyHeaders := viper.GetBool("trust-proxy-headers")
+	refreshSeconds := viper.GetInt("refresh-seconds")
 
 	// Set log level
 	switch logLevel {
@@ -140,6 +148,13 @@ func run(_ *cobra.Command, _ []string) {
 
 	log.Debugf("Log level set to %s", logLevel)
 
+	if refreshSeconds < 10 || refreshSeconds > 600 {
+		log.Warn("Refresh seconds must be between 10 and 600 seconds, resetting to default of 30 seconds")
+		refreshSeconds = 30
+	}
+
+	log.Infof("Refresh seconds set to %d seconds", refreshSeconds)
+
 	log.Infof("Will use socket at %s for fail2ban connection", socketPath)
 	f2bc, socketError := client.NewFail2BanClient(socketPath)
 
@@ -156,25 +171,25 @@ func run(_ *cobra.Command, _ []string) {
 
 		log.Infof("fail2ban version found: %s\n", detectedFail2banVersion)
 
-		if !skipVersionCheck {
-			versionIsOk := false
-			for _, supportedVersion := range supportedVersions {
-				if supportedVersion == detectedFail2banVersion {
-					versionIsOk = true
-				}
+		versionIsOk := false
+		for _, supportedVersion := range supportedVersions {
+			if supportedVersion == detectedFail2banVersion {
+				versionIsOk = true
 			}
-			if !versionIsOk {
-				log.Errorf("fail2ban version %s not supported\n", detectedFail2banVersion)
-				os.Exit(1)
-			}
-		} else {
+		}
+		if !skipVersionCheck && !versionIsOk {
+			log.Errorf("fail2ban version %s not supported\n", detectedFail2banVersion)
+			os.Exit(1)
+		} else if skipVersionCheck && !versionIsOk {
 			log.Info("Skipping version check (dashboard may not work as expected)")
+		} else if skipVersionCheck {
+			log.Debug("Skipping version check but version is supported")
 		}
 
 		fail2banVersion = detectedFail2banVersion
 	}
 
-	dataStore := store.NewDataStore(f2bc)
+	dataStore := store.NewDataStore(f2bc, refreshSeconds)
 
 	if cacheDir == "" {
 		dir, workingDirError := os.Getwd()
