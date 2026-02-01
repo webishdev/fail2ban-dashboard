@@ -54,16 +54,16 @@ Flags:
   -a, --address string         address to serve the dashboard on, also F2BD_ADDRESS (default "127.0.0.1:3000")
       --auth-password string   password for basic auth, also F2BD_AUTH_PASSWORD
       --auth-user string       username for basic auth, also F2BD_AUTH_USER
+      --base-path string       base path of the application, also F2BD_BASE_PATH (default "/")
   -c, --cache-dir string       directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
   -h, --help                   help for fail2ban-dashboard
       --log-level string       log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL (default "info")
-      --refresh-seconds int    refresh seconds for fail2ban dashboard, also F2BD_REFRESH_SECONDS (default 30)
+      --refresh-seconds int    refresh seconds for fail2ban data (value from 10 to 600), also F2BD_REFRESH_SECONDS (default 30)
       --skip-version-check     skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK
   -s, --socket string          fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
       --trust-proxy-headers    trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
-
 ```
 
 ### Docker
@@ -89,6 +89,7 @@ Environment variables can be used to set parameters without using command line f
 - `F2BD_ADDRESS`
 - `F2BD_AUTH_PASSWORD`
 - `F2BD_AUTH_USER`
+- `F2BD_BASE_PATH`
 - `F2BD_CACHE_DIR`
 - `F2BD_LOG_LEVEL`
 - `F2BD_REFRESH_SECONDS`

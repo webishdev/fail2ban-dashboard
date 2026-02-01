@@ -106,6 +106,13 @@ func init() {
 		os.Exit(1)
 	}
 
+	flags.String("base-path", "/", "base path of the application, also F2BD_BASE_PATH")
+	basePathError := viper.BindPFlag("base-path", flags.Lookup("base-path"))
+	if basePathError != nil {
+		fmt.Printf("Could not bind base-path flag: %s\n", logLevelErr)
+		os.Exit(1)
+	}
+
 	rootCmd.AddCommand(versionCmd)
 }
 
@@ -128,6 +135,7 @@ func run(_ *cobra.Command, _ []string) {
 	skipVersionCheck := viper.GetBool("skip-version-check")
 	trustProxyHeaders := viper.GetBool("trust-proxy-headers")
 	refreshSeconds := viper.GetInt("refresh-seconds")
+	basePath := viper.GetString("base-path")
 
 	// Set log level
 	switch logLevel {
@@ -152,6 +160,12 @@ func run(_ *cobra.Command, _ []string) {
 		log.Warn("Refresh seconds must be between 10 and 600 seconds, resetting to default of 30 seconds")
 		refreshSeconds = 30
 	}
+
+	if trustProxyHeaders {
+		log.Info("Trusting proxy headers")
+	}
+
+	log.Infof("Base path set to %s", basePath)
 
 	log.Infof("Refresh seconds set to %d seconds", refreshSeconds)
 
@@ -223,7 +237,7 @@ func run(_ *cobra.Command, _ []string) {
 		AuthPassword: password,
 	}
 
-	serveError := server.Serve(Version, fail2banVersion, trustProxyHeaders, dataStore, geoIP, configuration)
+	serveError := server.Serve(Version, fail2banVersion, basePath, trustProxyHeaders, dataStore, geoIP, configuration)
 	if serveError != nil {
 		log.Errorf("Could not start server: %s\n", serveError)
 		os.Exit(1)

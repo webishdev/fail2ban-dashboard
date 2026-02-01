@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"html/template"
 	"net"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -54,6 +55,7 @@ type Sorted struct {
 type indexData struct {
 	Version         string
 	Fail2BanVersion string
+	BasePath        string
 	Jails           []store.Jail
 	HasBanned       bool
 	Banned          []client.BanEntry
@@ -65,7 +67,7 @@ type indexData struct {
 	OrderEnds       Sorted
 }
 
-func Serve(version string, fail2banVersion string, trustProxyHeaders bool, store *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
+func Serve(version string, fail2banVersion string, basePath string, trustProxyHeaders bool, store *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
 
 	templateFunctions := template.FuncMap{
 		"safe": func(s string) template.URL {
@@ -116,27 +118,30 @@ func Serve(version string, fail2banVersion string, trustProxyHeaders bool, store
 		}))
 	}
 
-	app.Get("images/favicon.ico", func(c *fiber.Ctx) error {
+	cleanedBasePath := cleanBasePath(basePath)
+	dashboard := app.Group(cleanedBasePath)
+
+	dashboard.Get("images/favicon.ico", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
 		return c.Send(faviconICOFile)
 	})
 
-	app.Get("css/main.css", func(c *fiber.Ctx) error {
+	dashboard.Get("css/main.css", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "text/css")
 		return c.Send(mainCSSFile)
 	})
 
-	app.Get("css/daisyui@5.css", func(c *fiber.Ctx) error {
+	dashboard.Get("css/daisyui@5.css", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "text/css")
 		return c.Send(daisyUiCSSFile)
 	})
 
-	app.Get("js/browser@4.js", func(c *fiber.Ctx) error {
+	dashboard.Get("js/browser@4.js", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJavaScript)
 		return c.Send(tailwindJSFile)
 	})
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	dashboard.Get("/", func(c *fiber.Ctx) error {
 		remoteIP := c.IP()
 		additionalInfo := ""
 		if trustProxyHeaders {
@@ -177,6 +182,7 @@ func Serve(version string, fail2banVersion string, trustProxyHeaders bool, store
 		data := &indexData{
 			Version:         version,
 			Fail2BanVersion: fail2banVersion,
+			BasePath:        cleanBasePathForTemplate(cleanedBasePath),
 			Jails:           jails,
 			HasBanned:       len(banned) > 0,
 			Banned:          banned,
@@ -312,4 +318,12 @@ func firstNonEmpty(def string, vals ...string) string {
 		}
 	}
 	return def
+}
+
+func cleanBasePath(basePath string) string {
+	return path.Clean(basePath)
+}
+
+func cleanBasePathForTemplate(basePath string) string {
+	return strings.TrimSuffix(basePath, "/")
 }
