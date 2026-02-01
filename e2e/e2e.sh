@@ -75,6 +75,7 @@ elif [[ "$ACTION" == "debug" ]]; then
 
   prepare_after_start
   prepare_debug
+  "${COMPOSE_CMD[@]}" exec dashboard /script/debug.sh
 
 elif [[ "$ACTION" == "stop" ]]; then
   if [[ -f "$DEBUG_COMPOSE_FILE" ]]; then
