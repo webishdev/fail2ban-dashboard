@@ -65,6 +65,7 @@ if [[ "$ACTION" == "start" ]]; then
   "${COMPOSE_CMD[@]}" up -d
 
   prepare_after_start
+  "${COMPOSE_CMD[@]}" exec fail2ban /app/fail2ban-dashboard
 
 elif [[ "$ACTION" == "debug" ]]; then
   set_compose_cmd debug
