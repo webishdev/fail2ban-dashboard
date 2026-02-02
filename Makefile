@@ -23,6 +23,10 @@ test:
 	@echo "Running tests"
 	go test ./...
 
+test-ci:
+	@echo "Running tests for CI/CD"
+	go test ./... -json > testresults.json
+
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts"

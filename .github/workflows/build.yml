@@ -50,7 +50,12 @@ jobs:
 
       - name: Test
         run: |
-          make test
+          make test-ci
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: test-results
+          path: testresults.json
 
       - name: Build
         run: |

@@ -6,3 +6,4 @@ generate*
 cached*
 .lint_result
 __debug*
+testresults.json
