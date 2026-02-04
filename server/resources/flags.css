@@ -1,0 +1,8 @@
+{{ range $key, $value := . }}
+.flag-{{ $key }} {
+    width: 21px;
+    height: 15px;
+    background: url(data:image/png;base64,{{ $value }}) no-repeat;
+    display: inline-block;
+}
+{{ end }}
