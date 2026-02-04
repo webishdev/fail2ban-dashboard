@@ -68,9 +68,9 @@ type indexData struct {
 	Fail2BanVersion string
 	BasePath        string
 	CountryCodes    template.URL
-	Jails           []store.Jail
 	HasBanned       bool
 	Banned          []client.BanEntry
+	Jails           []store.Jail
 	OrderAddress    Sorted
 	OrderJail       Sorted
 	OrderPenalty    Sorted
@@ -82,7 +82,9 @@ type detailData struct {
 	Version         string
 	Fail2BanVersion string
 	BasePath        string
-	CountryCodes    map[string]string
+	CountryCodes    template.URL
+	HasBanned       bool
+	Banned          []client.BanEntry
 	Jail            store.Jail
 }
 
@@ -114,15 +116,15 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 	}
 
 	// value isn't needed in code as it is used in the index template
-	_, jailCardTemplateError := indexTemplate.New("jailCard").Parse(string(jailCardHtml))
-	if jailCardTemplateError != nil {
-		return jailCardTemplateError
+	_, indexJailCardTemplateError := indexTemplate.New("jailCard").Parse(string(jailCardHtml))
+	if indexJailCardTemplateError != nil {
+		return indexJailCardTemplateError
 	}
 
 	// value isn't needed in code as it is used in the index template
-	_, bannedTemplateError := indexTemplate.New("banned").Parse(string(bannedHtml))
-	if bannedTemplateError != nil {
-		return bannedTemplateError
+	_, indexBannedTemplateError := indexTemplate.New("banned").Parse(string(bannedHtml))
+	if indexBannedTemplateError != nil {
+		return indexBannedTemplateError
 	}
 
 	// value isn't needed in code as it is used in the index template
@@ -135,6 +137,12 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 	_, detailHeadTemplateError := detailTemplate.New("head").Parse(string(headHtml))
 	if detailHeadTemplateError != nil {
 		return detailHeadTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, detailBannedTemplateError := detailTemplate.New("banned").Parse(string(bannedHtml))
+	if detailBannedTemplateError != nil {
+		return detailBannedTemplateError
 	}
 
 	app := fiber.New(fiber.Config{
@@ -266,10 +274,29 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 			return c.Status(404).SendString("Jail not found")
 		}
 
+		banned := make([]client.BanEntry, 0)
+		banned = append(banned, jailByName.BannedEntries...)
+
+		countryCodes := make([]string, 0)
+
+		for index, ban := range banned {
+			countryCode, exists := geoIP.Lookup(ban.Address)
+			if exists {
+				ban.CountryCode = countryCode
+				countryCodes = append(countryCodes, countryCode)
+			} else {
+				ban.CountryCode = "unknown"
+			}
+			banned[index] = ban
+		}
+
 		detail := &detailData{
 			Version:         version,
 			Fail2BanVersion: fail2banVersion,
 			BasePath:        cleanBasePathForTemplate(cleanedBasePath),
+			CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
+			HasBanned:       len(banned) > 0,
+			Banned:          banned,
 			Jail:            jailByName,
 		}
 

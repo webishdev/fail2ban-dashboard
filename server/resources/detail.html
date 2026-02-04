@@ -1,7 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 {{ template "head" . }}
-<body>
-<h1>Details</h1>
-</body>
+    <body>
+        <div class="navbar bg-base-100 shadow-sm">
+            <h1 class="flex-1 text-xl font-bold"><a href="{{ .BasePath }}">fail2ban dashboard</a> - {{ .Version }} <span class="badge badge-soft badge-info">fail2ban - {{ .Fail2BanVersion }}</span></h1>
+            <div class="flex-none">
+                <ul class="menu menu-horizontal px-1">
+                    <li><a href="https://github.com/webishdev/fail2ban-dashboard" rel="noopener" target="_blank">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+        <main class="p-4">
+            {{ if .HasBanned }}
+            <div class="banned shadow-md rounded-md">
+                <div class="text-base font-medium text-center pt-4"><h2>Currently banned</h2></div>
+                <div class="banned">
+                    <div class="overflow-x-auto">
+                        <table class="table table-zebra">
+                            <tbody>
+                            {{ range .Banned }}
+                            {{ template "banned" . }}
+                            {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {{ end }}
+        </main>
+    </body>
 </html>
