@@ -77,18 +77,12 @@ type baseData struct {
 
 type indexData struct {
 	baseData
-	OrderAddress Sorted
-	OrderJail    Sorted
-	OrderPenalty Sorted
-	OrderStarted Sorted
-	OrderEnds    Sorted
-	Jails        []store.Jail
+	Jails []store.Jail
 }
 
 type detailData struct {
 	baseData
 	OrderAddress Sorted
-	OrderJail    Sorted
 	OrderPenalty Sorted
 	OrderStarted Sorted
 	OrderEnds    Sorted
@@ -316,7 +310,6 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 				Banned:          banned,
 			},
 			OrderAddress: toggleSortOrder("address", sorting, order),
-			OrderJail:    toggleSortOrder("jail", sorting, order),
 			OrderPenalty: toggleSortOrder("penalty", sorting, order),
 			OrderStarted: toggleSortOrder("started", sorting, order),
 			OrderEnds:    toggleSortOrder("ends", sorting, order),
@@ -458,16 +451,6 @@ func cleanBasePathForTemplate(basePath string) string {
 		basePath += "/"
 	}
 	return basePath
-}
-
-func getCountryCodes(countries []string) map[string]string {
-	countryCodes := make(map[string]string)
-
-	for _, countryCode := range countries {
-		countryCodes[countryCode] = Flags[countryCode]
-	}
-
-	return countryCodes
 }
 
 func accessLog(trustProxyHeaders bool, name string, c *fiber.Ctx) {
