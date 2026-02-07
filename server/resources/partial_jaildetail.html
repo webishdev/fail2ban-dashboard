@@ -3,18 +3,15 @@
     <div class="stat-value text-secondary text-5xl">{{ .BannedCount }}</div>
     <div class="stat-desc text-base">Currently banned</div>
 </div>
-<div class="stat place-items-center">
+<div class="stat place-items-center hidden md:flex">
     <div class="stat-title">Currently Failed</div>
     <div class="stat-value text-3xl">{{ .CurrentlyFailed }}</div>
-    <div class="stat-desc">Active failures</div>
 </div>
-<div class="stat place-items-center">
+<div class="stat place-items-center hidden md:flex">
     <div class="stat-title">Total Failed</div>
     <div class="stat-value text-3xl">{{ .TotalFailed }}</div>
-    <div class="stat-desc">All time</div>
 </div>
-<div class="stat place-items-center">
+<div class="stat place-items-center hidden md:flex">
     <div class="stat-title">Total Banned</div>
     <div class="stat-value text-3xl">{{ .TotalBanned }}</div>
-    <div class="stat-desc">All time</div>
 </div>

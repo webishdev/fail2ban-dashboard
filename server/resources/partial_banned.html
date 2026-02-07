@@ -1,7 +1,7 @@
 <tr>
     <td class="flex gap-5"><div class="flex-1">{{ .Address }}</div><div class="flag-{{ .CountryCode }} ml-5" title="{{ .CountryCode }}">&nbsp;</div></td>
     <td class="text-ellipsis whitespace-nowrap">{{ .BannedAt | time }}</td>
-    <td>{{ .CurrenPenalty }}</td>
-    <td class="text-ellipsis whitespace-nowrap">{{ .BanEndsAt | time }}
+    <td class="hidden md:table-cell">{{ .CurrenPenalty }}</td>
+    <td class="text-ellipsis whitespace-nowrap hidden md:table-cell">{{ .BanEndsAt | time }}
     </td>
 </tr>
