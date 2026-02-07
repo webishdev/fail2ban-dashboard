@@ -6,6 +6,14 @@
         <main class="p-4">
             <div class="jails">
                 <div class="jails flex flex-col gap-4 mx-auto">
+                    <div class="flex items-center justify-between p-6 bg-base-100 shadow rounded-lg border border-base-300 w-full">
+                        <div class="font-bold text-lg flex-shrink-0 min-w-48">Currently banned</div>
+                        <div class="flex gap-8 items-center flex-1 justify-end">
+                            <div class="text-center">
+                                <div class="font-semibold text-secondary text-xl">{{ .BannedSum }}</div>
+                            </div>
+                        </div>
+                    </div>
                     {{ range .Jails }}
                         {{ template "jailCard" . }}
                     {{ end }}

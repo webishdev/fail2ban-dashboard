@@ -80,7 +80,8 @@ type baseData struct {
 
 type indexData struct {
 	baseData
-	Jails []store.Jail
+	BannedSum int
+	Jails     []store.Jail
 }
 
 type detailData struct {
@@ -244,8 +245,11 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 		accessLog(trustProxyHeaders, "overview", c)
 		jails := dataStore.GetJails()
 
+		sum := 0
+
 		banned := make([]client.BanEntry, 0)
 		for _, jail := range jails {
+			sum += len(jail.BannedEntries)
 			banned = append(banned, jail.BannedEntries...)
 		}
 
@@ -271,7 +275,8 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 				HasBanned:       len(banned) > 0,
 				Banned:          banned,
 			},
-			Jails: jails,
+			BannedSum: sum,
+			Jails:     jails,
 		}
 
 		var sb strings.Builder
