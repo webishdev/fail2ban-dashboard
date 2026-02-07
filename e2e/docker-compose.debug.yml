@@ -12,6 +12,7 @@ services:
       F2BD_LOG_LEVEL: "debug"
       F2BD_SKIP_VERSION_CHECK: "true"
       F2BD_SOCKET: "/var/run/fail2ban/fail2ban.sock"
+      F2BD_BASE_PATH: "/dashboard"
     ports:
       - "40000:40000"
       - "4000:3000"
