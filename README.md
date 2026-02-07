@@ -5,8 +5,6 @@
 
 A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.sock` socket to access `fail2ban`.
 
-![Screenshot of fail2ban-dashboard](./images/screenshot.png "Screenshot of fail2ban-dashboard")
-
 Tested with the following `fail2ban` versions
 - `0.11.1`
 - `0.11.2`
@@ -14,27 +12,20 @@ Tested with the following `fail2ban` versions
 - `1.0.2`
 - `1.1.0`
 
-if the deshboard should be used with another version, please switch off the version check with the `--skip-version-check` flag.
+If the dashboard should be used with another version, please switch off the version check with the `--skip-version-check` flag.
 
-## Build the application
 
-To build the application, use make with the following options:
 
-```
-make
+## Screenshots
 
-    build           - Build the application
-    
-    test            - Run tests
-    
-    clean           - Remove build artifacts
-    
-    help            - Show this help message
-    
-    all             - Run tests and build the application (default)
+### Light mode
+![Screenshot of fail2ban-dashboard overview light](./images/overview_light.png "Screenshot of fail2ban-dashboard overview light")
+![Screenshot of fail2ban-dashboard detail view light](./images/detail_light.png "Screenshot of fail2ban-dashboard detail view light")
 
-```
+### Dark mode
 
+![Screenshot of fail2ban-dashboard overview dark](./images/overview_dark.png "Screenshot of fail2ban-dashboard overview dark")
+![Screenshot of fail2ban-dashboard detail view dark](./images/detail_dark.png "Screenshot of fail2ban-dashboard detail view dark")
 
 ## Usage
 
@@ -96,6 +87,25 @@ Environment variables can be used to set parameters without using command line f
 - `F2BD_SKIP_VERSION_CHECK`
 - `F2BD_SOCKET`
 - `F2BD_TRUST_PROXY_HEADERS`
+
+## Build the application
+
+To build the application, use make with the following options:
+
+```
+make
+
+    build           - Build the application
+    
+    test            - Run tests
+    
+    clean           - Remove build artifacts
+    
+    help            - Show this help message
+    
+    all             - Run tests and build the application (default)
+
+```
 
 ## Inspired by
 
