@@ -1,6 +1,6 @@
-<a href="{{ .Name }}" class="flex items-center justify-between p-4 bg-base-100 hover:bg-base-200 shadow hover:shadow-md transition-all duration-200 rounded-lg border border-base-300">
-    <div class="font-bold text-lg flex-shrink-0 w-48">{{ .Name }}</div>
-    <div class="flex gap-8 items-center">
+<a href="{{ .Name }}" class="flex items-center justify-between p-6 bg-base-100 hover:bg-base-200 shadow hover:shadow-md transition-all duration-200 rounded-lg border border-base-300 w-full">
+    <div class="font-bold text-lg flex-shrink-0 min-w-48">{{ .Name }}</div>
+    <div class="flex gap-8 items-center flex-1 justify-end">
         <div class="text-center">
             <div class="text-sm opacity-70">Banned</div>
             <div class="font-semibold text-secondary">{{ .CurrentlyBanned }}</div>
@@ -18,5 +18,5 @@
             <div class="font-semibold">{{ .TotalFailed }}</div>
         </div>
     </div>
-    <div class="opacity-50">→</div>
+    <div class="opacity-50 ml-4">→</div>
 </a>

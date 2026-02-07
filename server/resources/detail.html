@@ -16,10 +16,10 @@
             </div>
         </div>
         <main class="p-4">
-            <div class="jails">
-                <div class="text-base font-medium text-center"><h2>Details for {{ .Jail.Name }}</h2></div>
-                <div class="jails flex justify-center gap-4 p-4 flex-wrap">
-                    <div class="jail stats shadow stats-vertical lg:stats-horizontal">
+            <div class="jails mx-auto">
+                <div class="text-base font-medium text-center mb-4"><h2>Details for {{ .Jail.Name }}</h2></div>
+                <div class="jails p-4">
+                    <div class="jail stats shadow w-full">
                         {{ template "jailDetail" .Jail }}
                     </div>
                 </div>
