@@ -14,8 +14,11 @@
                             </div>
                         </div>
                     </div>
+                    {{ $curBasePath := .BasePath }}
                     {{ range .Jails }}
+                        <a href="{{ $curBasePath }}{{ .Name }}" class="flex items-center justify-between p-6 bg-base-100 hover:bg-base-200 shadow hover:shadow-md transition-all duration-200 rounded-lg border border-base-300 w-full">
                         {{ template "jailCard" . }}
+                        </a>
                     {{ end }}
                 </div>
             </div>

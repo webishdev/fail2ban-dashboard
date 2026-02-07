@@ -199,7 +199,7 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 		}))
 	}
 
-	cleanedBasePath := cleanBasePath(basePath)
+	cleanedBasePath := path.Clean(basePath)
 	dashboard := app.Group(cleanedBasePath)
 
 	dashboard.Get("images/favicon.ico", func(c *fiber.Ctx) error {
@@ -468,10 +468,6 @@ func firstNonEmpty(def string, vals ...string) string {
 		}
 	}
 	return def
-}
-
-func cleanBasePath(basePath string) string {
-	return path.Clean(basePath)
 }
 
 func cleanBasePathForTemplate(basePath string) string {
