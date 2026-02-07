@@ -66,34 +66,33 @@ type Sorted struct {
 	Class string
 }
 
-type indexData struct {
+type baseData struct {
 	Version         string
 	Fail2BanVersion string
 	BasePath        string
 	CountryCodes    template.URL
 	HasBanned       bool
-	OrderAddress    Sorted
-	OrderJail       Sorted
-	OrderPenalty    Sorted
-	OrderStarted    Sorted
-	OrderEnds       Sorted
 	Banned          []client.BanEntry
-	Jails           []store.Jail
+}
+
+type indexData struct {
+	baseData
+	OrderAddress Sorted
+	OrderJail    Sorted
+	OrderPenalty Sorted
+	OrderStarted Sorted
+	OrderEnds    Sorted
+	Jails        []store.Jail
 }
 
 type detailData struct {
-	Version         string
-	Fail2BanVersion string
-	BasePath        string
-	CountryCodes    template.URL
-	HasBanned       bool
-	OrderAddress    Sorted
-	OrderJail       Sorted
-	OrderPenalty    Sorted
-	OrderStarted    Sorted
-	OrderEnds       Sorted
-	Banned          []client.BanEntry
-	Jail            store.Jail
+	baseData
+	OrderAddress Sorted
+	OrderJail    Sorted
+	OrderPenalty Sorted
+	OrderStarted Sorted
+	OrderEnds    Sorted
+	Jail         store.Jail
 }
 
 func Serve(version string, fail2banVersion string, basePath string, trustProxyHeaders bool, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
@@ -254,24 +253,16 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 			banned[index] = ban
 		}
 
-		sorting := c.Query("sorting", "ends")
-		order := c.Query("order", "asc")
-
-		sort.Slice(banned, sortSlice(sorting, order, banned))
-
 		data := &indexData{
-			Version:         version,
-			Fail2BanVersion: fail2banVersion,
-			BasePath:        cleanBasePathForTemplate(cleanedBasePath),
-			HasBanned:       len(banned) > 0,
-			CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
-			OrderAddress:    toggleSortOrder("address", sorting, order),
-			OrderJail:       toggleSortOrder("jail", sorting, order),
-			OrderPenalty:    toggleSortOrder("penalty", sorting, order),
-			OrderStarted:    toggleSortOrder("started", sorting, order),
-			OrderEnds:       toggleSortOrder("ends", sorting, order),
-			Banned:          banned,
-			Jails:           jails,
+			baseData: baseData{
+				Version:         version,
+				Fail2BanVersion: fail2banVersion,
+				BasePath:        cleanBasePathForTemplate(cleanedBasePath),
+				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
+				HasBanned:       len(banned) > 0,
+				Banned:          banned,
+			},
+			Jails: jails,
 		}
 
 		var sb strings.Builder
@@ -316,18 +307,20 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 		sort.Slice(banned, sortSlice(sorting, order, banned))
 
 		detail := &detailData{
-			Version:         version,
-			Fail2BanVersion: fail2banVersion,
-			BasePath:        cleanBasePathForTemplate(cleanedBasePath),
-			CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
-			HasBanned:       len(banned) > 0,
-			OrderAddress:    toggleSortOrder("address", sorting, order),
-			OrderJail:       toggleSortOrder("jail", sorting, order),
-			OrderPenalty:    toggleSortOrder("penalty", sorting, order),
-			OrderStarted:    toggleSortOrder("started", sorting, order),
-			OrderEnds:       toggleSortOrder("ends", sorting, order),
-			Banned:          banned,
-			Jail:            jailByName,
+			baseData: baseData{
+				Version:         version,
+				Fail2BanVersion: fail2banVersion,
+				BasePath:        cleanBasePathForTemplate(cleanedBasePath),
+				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
+				HasBanned:       len(banned) > 0,
+				Banned:          banned,
+			},
+			OrderAddress: toggleSortOrder("address", sorting, order),
+			OrderJail:    toggleSortOrder("jail", sorting, order),
+			OrderPenalty: toggleSortOrder("penalty", sorting, order),
+			OrderStarted: toggleSortOrder("started", sorting, order),
+			OrderEnds:    toggleSortOrder("ends", sorting, order),
+			Jail:         jailByName,
 		}
 
 		var sb strings.Builder
@@ -461,7 +454,10 @@ func cleanBasePath(basePath string) string {
 }
 
 func cleanBasePathForTemplate(basePath string) string {
-	return strings.TrimSuffix(basePath, "/")
+	if !strings.HasSuffix(basePath, "/") {
+		basePath += "/"
+	}
+	return basePath
 }
 
 func getCountryCodes(countries []string) map[string]string {

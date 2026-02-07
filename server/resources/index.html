@@ -17,7 +17,6 @@
         </div>
         <main class="p-4">
             <div class="jails">
-                <div class="text-base font-medium text-center mb-4"><h2>Current jails</h2></div>
                 <div class="jails flex flex-col gap-4 mx-auto">
                     {{ range .Jails }}
                         {{ template "jailCard" . }}
