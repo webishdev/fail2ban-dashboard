@@ -4,12 +4,14 @@ import (
 	"crypto/rand"
 	_ "embed"
 	"encoding/binary"
+	"fmt"
 	"html/template"
 	"net"
 	"path"
 	"sort"
 	"strconv"
 	"strings"
+	textTemplate "text/template"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -23,6 +25,9 @@ import (
 //go:embed resources/css/daisyui@5.css
 var daisyUiCSSFile []byte
 
+//go:embed resources/css/themes.css
+var themesUiCSSFile []byte
+
 //go:embed resources/css/main.css
 var mainCSSFile []byte
 
@@ -35,11 +40,26 @@ var faviconICOFile []byte
 //go:embed resources/index.html
 var indexHtml []byte
 
-//go:embed resources/jailcard.html
+//go:embed resources/detail.html
+var detailHtml []byte
+
+//go:embed resources/partial_jailcard.html
 var jailCardHtml []byte
 
-//go:embed resources/banned.html
+//go:embed resources/partial_jaildetail.html
+var jailDetailHtml []byte
+
+//go:embed resources/partial_banned.html
 var bannedHtml []byte
+
+//go:embed resources/partial_head.html
+var headHtml []byte
+
+//go:embed resources/partial_header.html
+var headerHtml []byte
+
+//go:embed resources/flags.css
+var flagsCss []byte
 
 type Configuration struct {
 	Address      string
@@ -52,22 +72,31 @@ type Sorted struct {
 	Class string
 }
 
-type indexData struct {
+type baseData struct {
 	Version         string
 	Fail2BanVersion string
 	BasePath        string
-	Jails           []store.Jail
+	CountryCodes    template.URL
 	HasBanned       bool
 	Banned          []client.BanEntry
-	CountryCodes    map[string]string
-	OrderAddress    Sorted
-	OrderJail       Sorted
-	OrderPenalty    Sorted
-	OrderStarted    Sorted
-	OrderEnds       Sorted
 }
 
-func Serve(version string, fail2banVersion string, basePath string, trustProxyHeaders bool, store *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
+type indexData struct {
+	baseData
+	BannedSum int
+	Jails     []store.Jail
+}
+
+type detailData struct {
+	baseData
+	OrderAddress Sorted
+	OrderPenalty Sorted
+	OrderStarted Sorted
+	OrderEnds    Sorted
+	Jail         store.Jail
+}
+
+func Serve(version string, fail2banVersion string, basePath string, trustProxyHeaders bool, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
 
 	templateFunctions := template.FuncMap{
 		"safe": func(s string) template.URL {
@@ -84,16 +113,68 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 		return indexTemplateError
 	}
 
-	// value not needed in code as it is used in the index template
-	_, jailCardTemplateError := indexTemplate.New("jailCard").Parse(string(jailCardHtml))
-	if jailCardTemplateError != nil {
-		return jailCardTemplateError
+	detailTemplate, detailTemplateError := template.New("detail").Funcs(templateFunctions).Parse(string(detailHtml))
+	if detailTemplateError != nil {
+		return detailTemplateError
 	}
 
-	// value not needed in code as it is used in the index template
-	_, bannedTemplateError := indexTemplate.New("banned").Parse(string(bannedHtml))
-	if bannedTemplateError != nil {
-		return bannedTemplateError
+	flagsTemplate, flagsTemplateError := textTemplate.New("flags").Parse(string(flagsCss))
+	if flagsTemplateError != nil {
+		return flagsTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, indexJailCardTemplateError := indexTemplate.New("jailCard").Parse(string(jailCardHtml))
+	if indexJailCardTemplateError != nil {
+		return indexJailCardTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, indexBannedTemplateError := indexTemplate.New("banned").Parse(string(bannedHtml))
+	if indexBannedTemplateError != nil {
+		return indexBannedTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, indexHeadTemplateError := indexTemplate.New("head").Parse(string(headHtml))
+	if indexHeadTemplateError != nil {
+		return indexHeadTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, indexHeaderTemplateError := indexTemplate.New("header").Parse(string(headerHtml))
+	if indexHeaderTemplateError != nil {
+		return indexHeaderTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, detailHeadTemplateError := detailTemplate.New("head").Parse(string(headHtml))
+	if detailHeadTemplateError != nil {
+		return detailHeadTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, detailHeaderTemplateError := detailTemplate.New("header").Parse(string(headerHtml))
+	if detailHeaderTemplateError != nil {
+		return detailHeaderTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, detailJailCardTemplateError := detailTemplate.New("jailCard").Parse(string(jailCardHtml))
+	if detailJailCardTemplateError != nil {
+		return detailJailCardTemplateError
+	}
+
+	// value isn't needed in code as it is used in the detail template
+	_, detailJailDetailTemplateError := detailTemplate.New("jailDetail").Parse(string(jailDetailHtml))
+	if detailJailDetailTemplateError != nil {
+		return detailJailDetailTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, detailBannedTemplateError := detailTemplate.New("banned").Parse(string(bannedHtml))
+	if detailBannedTemplateError != nil {
+		return detailBannedTemplateError
 	}
 
 	app := fiber.New(fiber.Config{
@@ -118,7 +199,7 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 		}))
 	}
 
-	cleanedBasePath := cleanBasePath(basePath)
+	cleanedBasePath := path.Clean(basePath)
 	dashboard := app.Group(cleanedBasePath)
 
 	dashboard.Get("images/favicon.ico", func(c *fiber.Ctx) error {
@@ -136,62 +217,74 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 		return c.Send(daisyUiCSSFile)
 	})
 
+	dashboard.Get("css/themes.css", func(c *fiber.Ctx) error {
+		c.Set(fiber.HeaderContentType, "text/css")
+		return c.Send(themesUiCSSFile)
+	})
+
+	dashboard.Get("css/flags.css", func(c *fiber.Ctx) error {
+		codeQuery := c.Query("c")
+		if codeQuery == "" {
+			return c.SendStatus(fiber.StatusNotFound)
+		}
+		countryCodeValues := strings.Split(codeQuery, ",")
+
+		countryCodes := make(map[string]string)
+
+		for _, countryCode := range countryCodeValues {
+			countryCodes[countryCode] = Flags[strings.ToUpper(countryCode)]
+		}
+
+		var sb strings.Builder
+		err := flagsTemplate.Execute(&sb, countryCodes)
+		if err != nil {
+			return err
+		}
+		c.Set(fiber.HeaderContentType, "text/css")
+		return c.SendString(sb.String())
+	})
+
 	dashboard.Get("js/browser@4.js", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJavaScript)
 		return c.Send(tailwindJSFile)
 	})
 
 	dashboard.Get("/", func(c *fiber.Ctx) error {
-		remoteIP := c.IP()
-		additionalInfo := ""
-		if trustProxyHeaders {
-			xff := c.Get("X-Forwarded-For")
-			xri := c.Get("X-Real-Ip")
-			remoteIP = firstNonEmpty(remoteIP, xff, xri)
-			if xff != "" || xri != "" {
-				additionalInfo += "forwarded"
-			}
-			log.Debugf("X-Forwarded-For: %s, X-Real-Ip: %s", xff, xri)
-		}
-		log.Infof("Access overview at %s%s for %s (%s)", c.BaseURL(), c.OriginalURL(), remoteIP, additionalInfo)
-		jails := store.GetJails()
+		accessLog(trustProxyHeaders, "overview", c)
+		jails := dataStore.GetJails()
+
+		sum := 0
 
 		banned := make([]client.BanEntry, 0)
 		for _, jail := range jails {
+			sum += len(jail.BannedEntries)
 			banned = append(banned, jail.BannedEntries...)
 		}
 
-		countryCodes := make(map[string]string)
+		countryCodes := make([]string, 0)
 
 		for index, ban := range banned {
 			countryCode, exists := geoIP.Lookup(ban.Address)
 			if exists {
 				ban.CountryCode = countryCode
-				countryCodes[countryCode] = Flags[countryCode]
+				countryCodes = append(countryCodes, countryCode)
 			} else {
 				ban.CountryCode = "unknown"
 			}
 			banned[index] = ban
 		}
 
-		sorting := c.Query("sorting", "ends")
-		order := c.Query("order", "asc")
-
-		sort.Slice(banned, sortSlice(sorting, order, banned))
-
 		data := &indexData{
-			Version:         version,
-			Fail2BanVersion: fail2banVersion,
-			BasePath:        cleanBasePathForTemplate(cleanedBasePath),
-			Jails:           jails,
-			HasBanned:       len(banned) > 0,
-			Banned:          banned,
-			CountryCodes:    countryCodes,
-			OrderAddress:    toggleSortOrder("address", sorting, order),
-			OrderJail:       toggleSortOrder("jail", sorting, order),
-			OrderPenalty:    toggleSortOrder("penalty", sorting, order),
-			OrderStarted:    toggleSortOrder("started", sorting, order),
-			OrderEnds:       toggleSortOrder("ends", sorting, order),
+			baseData: baseData{
+				Version:         version,
+				Fail2BanVersion: fail2banVersion,
+				BasePath:        cleanBasePathForTemplate(cleanedBasePath),
+				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
+				HasBanned:       len(banned) > 0,
+				Banned:          banned,
+			},
+			BannedSum: sum,
+			Jails:     jails,
 		}
 
 		var sb strings.Builder
@@ -203,7 +296,64 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 		return c.SendString(sb.String())
 	})
 
-	store.Start()
+	dashboard.Get("/:jail", func(c *fiber.Ctx) error {
+		jailName := c.Params("jail")
+		name := fmt.Sprintf("%s details", jailName)
+		accessLog(trustProxyHeaders, name, c)
+
+		jailByName, exists := dataStore.GetJailByName(jailName)
+
+		if !exists {
+			return c.Status(404).SendString("Jail not found")
+		}
+
+		banned := make([]client.BanEntry, 0)
+		banned = append(banned, jailByName.BannedEntries...)
+
+		countryCodes := make([]string, 0)
+
+		for index, ban := range banned {
+			countryCode, exists := geoIP.Lookup(ban.Address)
+			if exists {
+				ban.CountryCode = countryCode
+				countryCodes = append(countryCodes, countryCode)
+			} else {
+				ban.CountryCode = "unknown"
+			}
+			banned[index] = ban
+		}
+
+		sorting := c.Query("sorting", "ends")
+		order := c.Query("order", "asc")
+
+		sort.Slice(banned, sortSlice(sorting, order, banned))
+
+		detail := &detailData{
+			baseData: baseData{
+				Version:         version,
+				Fail2BanVersion: fail2banVersion,
+				BasePath:        cleanBasePathForTemplate(cleanedBasePath),
+				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
+				HasBanned:       len(banned) > 0,
+				Banned:          banned,
+			},
+			OrderAddress: toggleSortOrder("address", sorting, order),
+			OrderPenalty: toggleSortOrder("penalty", sorting, order),
+			OrderStarted: toggleSortOrder("started", sorting, order),
+			OrderEnds:    toggleSortOrder("ends", sorting, order),
+			Jail:         jailByName,
+		}
+
+		var sb strings.Builder
+		err := detailTemplate.Execute(&sb, detail)
+		if err != nil {
+			return err
+		}
+		c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+		return c.SendString(sb.String())
+	})
+
+	dataStore.Start()
 
 	log.Infof("Listening on address %s", configuration.Address)
 
@@ -320,10 +470,27 @@ func firstNonEmpty(def string, vals ...string) string {
 	return def
 }
 
-func cleanBasePath(basePath string) string {
-	return path.Clean(basePath)
+func cleanBasePathForTemplate(basePath string) string {
+	if !strings.HasSuffix(basePath, "/") {
+		basePath += "/"
+	}
+	return basePath
 }
 
-func cleanBasePathForTemplate(basePath string) string {
-	return strings.TrimSuffix(basePath, "/")
+func accessLog(trustProxyHeaders bool, name string, c *fiber.Ctx) {
+	remoteIP := c.IP()
+	additionalInfo := ""
+	if trustProxyHeaders {
+		xff := c.Get("X-Forwarded-For")
+		xri := c.Get("X-Real-Ip")
+		remoteIP = firstNonEmpty(remoteIP, xff, xri)
+		if xff != "" || xri != "" {
+			additionalInfo += "forwarded"
+		}
+		log.Debugf("X-Forwarded-For: %s, X-Real-Ip: %s", xff, xri)
+		if len(additionalInfo) > 0 {
+			additionalInfo = fmt.Sprintf("(%s)", additionalInfo)
+		}
+	}
+	log.Infof("Access %s at %s%s for %s %s", name, c.BaseURL(), c.OriginalURL(), remoteIP, additionalInfo)
 }

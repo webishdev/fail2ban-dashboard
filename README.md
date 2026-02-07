@@ -5,8 +5,6 @@
 
 A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.sock` socket to access `fail2ban`.
 
-![Screenshot of fail2ban-dashboard](./images/screenshot.png "Screenshot of fail2ban-dashboard")
-
 Tested with the following `fail2ban` versions
 - `0.11.1`
 - `0.11.2`
@@ -14,27 +12,20 @@ Tested with the following `fail2ban` versions
 - `1.0.2`
 - `1.1.0`
 
-if the deshboard should be used with another version, please switch off the version check with the `--skip-version-check` flag.
+If the dashboard should be used with another version, please switch off the version check with the `--skip-version-check` flag.
 
-## Build the application
 
-To build the application, use make with the following options:
 
-```
-make
+## Screenshots
 
-    build           - Build the application
-    
-    test            - Run tests
-    
-    clean           - Remove build artifacts
-    
-    help            - Show this help message
-    
-    all             - Run tests and build the application (default)
+### Light mode
+![Screenshot of fail2ban-dashboard overview light](./images/overview_light.png "Screenshot of fail2ban-dashboard overview light")
+![Screenshot of fail2ban-dashboard detail view light](./images/detail_light.png "Screenshot of fail2ban-dashboard detail view light")
 
-```
+### Dark mode
 
+![Screenshot of fail2ban-dashboard overview dark](./images/overview_dark.png "Screenshot of fail2ban-dashboard overview dark")
+![Screenshot of fail2ban-dashboard detail view dark](./images/detail_dark.png "Screenshot of fail2ban-dashboard detail view dark")
 
 ## Usage
 
@@ -86,16 +77,37 @@ When only `--auth-password` is provided, the user will be named `admin`.
 
 Environment variables can be used to set parameters without using command line flags.
 
-- `F2BD_ADDRESS`
-- `F2BD_AUTH_PASSWORD`
-- `F2BD_AUTH_USER`
-- `F2BD_BASE_PATH`
-- `F2BD_CACHE_DIR`
-- `F2BD_LOG_LEVEL`
-- `F2BD_REFRESH_SECONDS`
-- `F2BD_SKIP_VERSION_CHECK`
-- `F2BD_SOCKET`
-- `F2BD_TRUST_PROXY_HEADERS`
+| Environment Variable | Command Line Flag | Description | Default |
+|---------------------|-------------------|-------------|---------|
+| `F2BD_ADDRESS` | `-a, --address` | Address to serve the dashboard on | `127.0.0.1:3000` |
+| `F2BD_AUTH_PASSWORD` | `--auth-password` | Password for basic auth | - |
+| `F2BD_AUTH_USER` | `--auth-user` | Username for basic auth | - |
+| `F2BD_BASE_PATH` | `--base-path` | Base path of the application | `/` |
+| `F2BD_CACHE_DIR` | `-c, --cache-dir` | Directory to cache GeoIP data | Current working directory |
+| `F2BD_LOG_LEVEL` | `--log-level` | Log level (trace, debug, info, warn, error) | `info` |
+| `F2BD_REFRESH_SECONDS` | `--refresh-seconds` | Refresh seconds for fail2ban data (10-600) | `30` |
+| `F2BD_SKIP_VERSION_CHECK` | `--skip-version-check` | Skip fail2ban version check | `false` |
+| `F2BD_SOCKET` | `-s, --socket` | Fail2ban socket path | `/var/run/fail2ban/fail2ban.sock` |
+| `F2BD_TRUST_PROXY_HEADERS` | `--trust-proxy-headers` | Trust proxy headers like X-Forwarded-For | `false` |
+
+## Build the application
+
+To build the application, use make with the following options:
+
+```
+make
+
+    build           - Build the application
+    
+    test            - Run tests
+    
+    clean           - Remove build artifacts
+    
+    help            - Show this help message
+    
+    all             - Run tests and build the application (default)
+
+```
 
 ## Inspired by
 

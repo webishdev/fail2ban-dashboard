@@ -1,71 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta http-equiv="refresh" content="60">
-        <link rel="icon" href="images/favicon.ico" sizes="48x48" >
-        <link href="{{ .BasePath }}/css/daisyui@5.css" rel="stylesheet" type="text/css" />
-        <link href="{{ .BasePath }}/css/main.css" rel="stylesheet" type="text/css" />
-        <script src="{{ .BasePath }}/js/browser@4.js"></script>
-        <title>fail2ban dashboard - {{ .Version }}</title>
-        <style>
-{{ range $key, $value := .CountryCodes }}
-    .flag-{{ $key }} {
-        width: 21px;
-        height: 15px;
-        background: url(data:image/png;base64,{{ $value | safe }}) no-repeat;
-        display: inline-block;
-    }
-{{ end }}
-        </style>
-    </head>
+<html lang="en" data-theme="emerald">
+{{ template "head" . }}
     <body>
-        <div class="navbar bg-base-100 shadow-sm">
-            <h1 class="flex-1 text-xl font-bold"><a href="{{ .BasePath }}">fail2ban dashboard</a> - {{ .Version }} <span class="badge badge-soft badge-info">fail2ban - {{ .Fail2BanVersion }}</span></h1>
-            <div class="flex-none">
-                <ul class="menu menu-horizontal px-1">
-                    <li><a href="https://github.com/webishdev/fail2ban-dashboard" rel="noopener" target="_blank">GitHub</a></li>
-                </ul>
-            </div>
-        </div>
+        {{ template "header" . }}
         <main class="p-4">
             <div class="jails">
-                <div class="text-base font-medium text-center"><h2>Current jails</h2></div>
-                <div class="jails flex justify-center gap-4 p-4 flex-wrap">
-                    <div class="jail stats shadow stats-vertical lg:stats-horizontal">
+                <div class="jails flex flex-col gap-4 mx-auto">
+                    <div class="flex items-center justify-between p-6 bg-base-100 shadow rounded-lg border border-base-300 w-full">
+                        <div class="font-bold text-lg flex-shrink-0 min-w-48">Currently banned</div>
+                        <div class="flex gap-8 items-center flex-1 justify-end">
+                            <div class="text-center">
+                                <div class="font-semibold text-secondary text-xl">{{ .BannedSum }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {{ $curBasePath := .BasePath }}
                     {{ range .Jails }}
+                        <a href="{{ $curBasePath }}{{ .Name }}" class="flex items-center justify-between p-6 bg-base-100 hover:bg-base-200 shadow hover:shadow-md transition-all duration-200 rounded-lg border border-base-300 w-full">
                         {{ template "jailCard" . }}
+                        </a>
                     {{ end }}
-                    </div>
                 </div>
             </div>
-            {{ if .HasBanned }}
-            <div class="banned shadow-md rounded-md">
-                <div class="text-base font-medium text-center pt-4"><h2>Currently banned</h2></div>
-                <div class="banned">
-                    <div class="overflow-x-auto">
-                        <table class="table table-zebra">
-                            <thead>
-                            <tr>
-                                <th>Address<a href="?sorting=address&order={{ .OrderAddress.Order }}"><span class="{{ .OrderAddress.Class }} inline-block">&nbsp;</span></a></th>
-                                <th>Jail<a href="?sorting=jail&order={{ .OrderJail.Order }}"><span class="{{ .OrderJail.Class }} inline-block">&nbsp;</span></a></th>
-                                <th>Banned at<a href="?sorting=started&order={{ .OrderStarted.Order }}"><span class="{{ .OrderStarted.Class }} inline-block">&nbsp;</span></a></th>
-                                <th>Curren penalty<a href="?sorting=penalty&order={{ .OrderPenalty.Order }}"><span class="{{ .OrderPenalty.Class }} inline-block">&nbsp;</span></a></th>
-                                <th>Ban ends at<a href="?sorting=ends&order={{ .OrderEnds.Order }}"><span class="{{ .OrderEnds.Class }} inline-block">&nbsp;</span></a>
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {{ range .Banned }}
-                                {{ template "banned" . }}
-                            {{ end }}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            {{ end }}
         </main>
     </body>
 </html>

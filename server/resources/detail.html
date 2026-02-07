@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+{{ template "head" . }}
+    <body>
+        {{ template "header" . }}
+        <main class="p-4">
+            <div class="jails mx-auto">
+                <div class="jails">
+                    <h2 class="text-4xl font-bold mb-6">Jail: {{ .Jail.Name }}</h2>
+                    <div class="jail stats shadow w-full">
+                        {{ template "jailDetail" .Jail }}
+                    </div>
+                </div>
+            </div>
+            {{ if .HasBanned }}
+            <div class="divider">Banned addresses</div>
+            <div class="banned shadow-md rounded-md">
+                <div class="banned">
+                    <div class="overflow-x-auto">
+                        <table class="table table-zebra">
+                            <thead>
+                            <tr>
+                                <th>Address<a href="?sorting=address&order={{ .OrderAddress.Order }}"><span class="{{ .OrderAddress.Class }} inline-block">&nbsp;</span></a></th>
+                                <th>Banned at<a href="?sorting=started&order={{ .OrderStarted.Order }}"><span class="{{ .OrderStarted.Class }} inline-block">&nbsp;</span></a></th>
+                                <th class="hidden md:table-cell">Current penalty<a href="?sorting=penalty&order={{ .OrderPenalty.Order }}"><span class="{{ .OrderPenalty.Class }} inline-block">&nbsp;</span></a></th>
+                                <th class="hidden md:table-cell">Ban ends at<a href="?sorting=ends&order={{ .OrderEnds.Order }}"><span class="{{ .OrderEnds.Class }} inline-block">&nbsp;</span></a>
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {{ range .Banned }}
+                            {{ template "banned" . }}
+                            {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {{ end }}
+        </main>
+    </body>
+</html>
