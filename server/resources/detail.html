@@ -6,6 +6,11 @@
             <h1 class="flex-1 text-xl font-bold"><a href="{{ .BasePath }}">fail2ban dashboard</a> - {{ .Version }} <span class="badge badge-soft badge-info">fail2ban - {{ .Fail2BanVersion }}</span></h1>
             <div class="flex-none">
                 <ul class="menu menu-horizontal px-1">
+                    <li>
+                        <button onclick="setTheme(getTheme() === 'light' ? 'dark' : 'light'); this.querySelector('span').textContent = getTheme() === 'light' ? '☀️' : '🌙';" class="btn btn-ghost btn-circle">
+                            <span>🌙</span>
+                        </button>
+                    </li>
                     <li><a href="https://github.com/webishdev/fail2ban-dashboard" rel="noopener" target="_blank">GitHub</a></li>
                 </ul>
             </div>
@@ -15,7 +20,7 @@
                 <div class="text-base font-medium text-center"><h2>Details for {{ .Jail.Name }}</h2></div>
                 <div class="jails flex justify-center gap-4 p-4 flex-wrap">
                     <div class="jail stats shadow stats-vertical lg:stats-horizontal">
-                        {{ template "jailCard" .Jail }}
+                        {{ template "jailDetail" .Jail }}
                     </div>
                 </div>
             </div>

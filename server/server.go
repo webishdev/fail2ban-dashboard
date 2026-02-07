@@ -43,6 +43,9 @@ var detailHtml []byte
 //go:embed resources/partial_jailcard.html
 var jailCardHtml []byte
 
+//go:embed resources/partial_jaildetail.html
+var jailDetailHtml []byte
+
 //go:embed resources/partial_banned.html
 var bannedHtml []byte
 
@@ -148,6 +151,12 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 	_, detailJailCardTemplateError := detailTemplate.New("jailCard").Parse(string(jailCardHtml))
 	if detailJailCardTemplateError != nil {
 		return detailJailCardTemplateError
+	}
+
+	// value isn't needed in code as it is used in the detail template
+	_, detailJailDetailTemplateError := detailTemplate.New("jailDetail").Parse(string(jailDetailHtml))
+	if detailJailDetailTemplateError != nil {
+		return detailJailDetailTemplateError
 	}
 
 	// value isn't needed in code as it is used in the index template

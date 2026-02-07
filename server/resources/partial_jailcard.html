@@ -1,6 +1,22 @@
-<div class="stat">
-    <div class="stat-title"><a href="{{ .Name }}">{{ .Name }}</a></div>
-    <div class="stat-value text-secondary">{{ .BannedCount }}</div>
-    <div class="stat-desc">failed {{ .CurrentlyFailed }} / {{ .TotalFailed }}</div>
-    <div class="stat-desc">banned {{ .CurrentlyBanned }} / {{ .TotalBanned }}</div>
-</div>
+<a href="{{ .Name }}" class="flex items-center justify-between p-4 bg-base-100 hover:bg-base-200 shadow hover:shadow-md transition-all duration-200 rounded-lg border border-base-300">
+    <div class="font-bold text-lg flex-shrink-0 w-48">{{ .Name }}</div>
+    <div class="flex gap-8 items-center">
+        <div class="text-center">
+            <div class="text-sm opacity-70">Banned</div>
+            <div class="font-semibold text-secondary">{{ .CurrentlyBanned }}</div>
+        </div>
+        <div class="text-center">
+            <div class="text-sm opacity-70">Failed</div>
+            <div class="font-semibold">{{ .CurrentlyFailed }}</div>
+        </div>
+        <div class="text-center">
+            <div class="text-sm opacity-70">Total Banned</div>
+            <div class="font-semibold">{{ .TotalBanned }}</div>
+        </div>
+        <div class="text-center">
+            <div class="text-sm opacity-70">Total Failed</div>
+            <div class="font-semibold">{{ .TotalFailed }}</div>
+        </div>
+    </div>
+    <div class="opacity-50">→</div>
+</a>
