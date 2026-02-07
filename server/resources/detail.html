@@ -11,12 +11,30 @@
             </div>
         </div>
         <main class="p-4">
+            <div class="jails">
+                <div class="text-base font-medium text-center"><h2>Details for {{ .Jail.Name }}</h2></div>
+                <div class="jails flex justify-center gap-4 p-4 flex-wrap">
+                    <div class="jail stats shadow stats-vertical lg:stats-horizontal">
+                        {{ template "jailCard" .Jail }}
+                    </div>
+                </div>
+            </div>
             {{ if .HasBanned }}
             <div class="banned shadow-md rounded-md">
                 <div class="text-base font-medium text-center pt-4"><h2>Currently banned</h2></div>
                 <div class="banned">
                     <div class="overflow-x-auto">
                         <table class="table table-zebra">
+                            <thead>
+                            <tr>
+                                <th>Address<a href="?sorting=address&order={{ .OrderAddress.Order }}"><span class="{{ .OrderAddress.Class }} inline-block">&nbsp;</span></a></th>
+                                <th>Jail<a href="?sorting=jail&order={{ .OrderJail.Order }}"><span class="{{ .OrderJail.Class }} inline-block">&nbsp;</span></a></th>
+                                <th>Banned at<a href="?sorting=started&order={{ .OrderStarted.Order }}"><span class="{{ .OrderStarted.Class }} inline-block">&nbsp;</span></a></th>
+                                <th>Curren penalty<a href="?sorting=penalty&order={{ .OrderPenalty.Order }}"><span class="{{ .OrderPenalty.Class }} inline-block">&nbsp;</span></a></th>
+                                <th>Ban ends at<a href="?sorting=ends&order={{ .OrderEnds.Order }}"><span class="{{ .OrderEnds.Class }} inline-block">&nbsp;</span></a>
+                                </th>
+                            </tr>
+                            </thead>
                             <tbody>
                             {{ range .Banned }}
                             {{ template "banned" . }}

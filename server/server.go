@@ -69,13 +69,13 @@ type indexData struct {
 	BasePath        string
 	CountryCodes    template.URL
 	HasBanned       bool
-	Banned          []client.BanEntry
-	Jails           []store.Jail
 	OrderAddress    Sorted
 	OrderJail       Sorted
 	OrderPenalty    Sorted
 	OrderStarted    Sorted
 	OrderEnds       Sorted
+	Banned          []client.BanEntry
+	Jails           []store.Jail
 }
 
 type detailData struct {
@@ -84,6 +84,11 @@ type detailData struct {
 	BasePath        string
 	CountryCodes    template.URL
 	HasBanned       bool
+	OrderAddress    Sorted
+	OrderJail       Sorted
+	OrderPenalty    Sorted
+	OrderStarted    Sorted
+	OrderEnds       Sorted
 	Banned          []client.BanEntry
 	Jail            store.Jail
 }
@@ -137,6 +142,12 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 	_, detailHeadTemplateError := detailTemplate.New("head").Parse(string(headHtml))
 	if detailHeadTemplateError != nil {
 		return detailHeadTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, detailJailCardTemplateError := detailTemplate.New("jailCard").Parse(string(jailCardHtml))
+	if detailJailCardTemplateError != nil {
+		return detailJailCardTemplateError
 	}
 
 	// value isn't needed in code as it is used in the index template
@@ -243,15 +254,15 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 			Version:         version,
 			Fail2BanVersion: fail2banVersion,
 			BasePath:        cleanBasePathForTemplate(cleanedBasePath),
-			Jails:           jails,
 			HasBanned:       len(banned) > 0,
-			Banned:          banned,
 			CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
 			OrderAddress:    toggleSortOrder("address", sorting, order),
 			OrderJail:       toggleSortOrder("jail", sorting, order),
 			OrderPenalty:    toggleSortOrder("penalty", sorting, order),
 			OrderStarted:    toggleSortOrder("started", sorting, order),
 			OrderEnds:       toggleSortOrder("ends", sorting, order),
+			Banned:          banned,
+			Jails:           jails,
 		}
 
 		var sb strings.Builder
@@ -290,12 +301,22 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 			banned[index] = ban
 		}
 
+		sorting := c.Query("sorting", "ends")
+		order := c.Query("order", "asc")
+
+		sort.Slice(banned, sortSlice(sorting, order, banned))
+
 		detail := &detailData{
 			Version:         version,
 			Fail2BanVersion: fail2banVersion,
 			BasePath:        cleanBasePathForTemplate(cleanedBasePath),
 			CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
 			HasBanned:       len(banned) > 0,
+			OrderAddress:    toggleSortOrder("address", sorting, order),
+			OrderJail:       toggleSortOrder("jail", sorting, order),
+			OrderPenalty:    toggleSortOrder("penalty", sorting, order),
+			OrderStarted:    toggleSortOrder("started", sorting, order),
+			OrderEnds:       toggleSortOrder("ends", sorting, order),
 			Banned:          banned,
 			Jail:            jailByName,
 		}
