@@ -77,16 +77,18 @@ When only `--auth-password` is provided, the user will be named `admin`.
 
 Environment variables can be used to set parameters without using command line flags.
 
-- `F2BD_ADDRESS`
-- `F2BD_AUTH_PASSWORD`
-- `F2BD_AUTH_USER`
-- `F2BD_BASE_PATH`
-- `F2BD_CACHE_DIR`
-- `F2BD_LOG_LEVEL`
-- `F2BD_REFRESH_SECONDS`
-- `F2BD_SKIP_VERSION_CHECK`
-- `F2BD_SOCKET`
-- `F2BD_TRUST_PROXY_HEADERS`
+| Environment Variable | Command Line Flag | Description | Default |
+|---------------------|-------------------|-------------|---------|
+| `F2BD_ADDRESS` | `-a, --address` | Address to serve the dashboard on | `127.0.0.1:3000` |
+| `F2BD_AUTH_PASSWORD` | `--auth-password` | Password for basic auth | - |
+| `F2BD_AUTH_USER` | `--auth-user` | Username for basic auth | - |
+| `F2BD_BASE_PATH` | `--base-path` | Base path of the application | `/` |
+| `F2BD_CACHE_DIR` | `-c, --cache-dir` | Directory to cache GeoIP data | Current working directory |
+| `F2BD_LOG_LEVEL` | `--log-level` | Log level (trace, debug, info, warn, error) | `info` |
+| `F2BD_REFRESH_SECONDS` | `--refresh-seconds` | Refresh seconds for fail2ban data (10-600) | `30` |
+| `F2BD_SKIP_VERSION_CHECK` | `--skip-version-check` | Skip fail2ban version check | `false` |
+| `F2BD_SOCKET` | `-s, --socket` | Fail2ban socket path | `/var/run/fail2ban/fail2ban.sock` |
+| `F2BD_TRUST_PROXY_HEADERS` | `--trust-proxy-headers` | Trust proxy headers like X-Forwarded-For | `false` |
 
 ## Build the application
 
