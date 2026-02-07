@@ -52,6 +52,9 @@ var bannedHtml []byte
 //go:embed resources/partial_head.html
 var headHtml []byte
 
+//go:embed resources/partial_header.html
+var headerHtml []byte
+
 //go:embed resources/flags.css
 var flagsCss []byte
 
@@ -135,9 +138,21 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 	}
 
 	// value isn't needed in code as it is used in the index template
+	_, indexHeaderTemplateError := indexTemplate.New("header").Parse(string(headerHtml))
+	if indexHeaderTemplateError != nil {
+		return indexHeaderTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
 	_, detailHeadTemplateError := detailTemplate.New("head").Parse(string(headHtml))
 	if detailHeadTemplateError != nil {
 		return detailHeadTemplateError
+	}
+
+	// value isn't needed in code as it is used in the index template
+	_, detailHeaderTemplateError := detailTemplate.New("header").Parse(string(headerHtml))
+	if detailHeaderTemplateError != nil {
+		return detailHeaderTemplateError
 	}
 
 	// value isn't needed in code as it is used in the index template
