@@ -25,6 +25,9 @@ import (
 //go:embed resources/css/daisyui@5.css
 var daisyUiCSSFile []byte
 
+//go:embed resources/css/themes.css
+var themesUiCSSFile []byte
+
 //go:embed resources/css/main.css
 var mainCSSFile []byte
 
@@ -212,6 +215,11 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 	dashboard.Get("css/daisyui@5.css", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "text/css")
 		return c.Send(daisyUiCSSFile)
+	})
+
+	dashboard.Get("css/themes.css", func(c *fiber.Ctx) error {
+		c.Set(fiber.HeaderContentType, "text/css")
+		return c.Send(themesUiCSSFile)
 	})
 
 	dashboard.Get("css/flags.css", func(c *fiber.Ctx) error {
