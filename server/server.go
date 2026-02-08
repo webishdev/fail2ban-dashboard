@@ -474,6 +474,9 @@ func cleanBasePathForTemplate(basePath string) string {
 	if !strings.HasSuffix(basePath, "/") {
 		basePath += "/"
 	}
+	if !strings.HasPrefix(basePath, "/") {
+		basePath = "/" + basePath
+	}
 	return basePath
 }
 
