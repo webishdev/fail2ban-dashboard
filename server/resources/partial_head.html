@@ -11,10 +11,18 @@
     <link href="{{ .BasePath }}css/{{ .CountryCodes }}" rel="stylesheet" type="text/css" />
     <script>
         // Theme toggle functionality
-        const getTheme = () => localStorage.getItem('theme') || 'light';
+        const getTheme = () => localStorage.getItem('f2b-dashboard.theme') || 'emerald';
         const setTheme = (theme) => {
-            localStorage.setItem('theme', theme);
+            localStorage.setItem('f2b-dashboard.theme', theme);
             document.documentElement.setAttribute('data-theme', theme);
+        };
+        const setThemeIcon = () => {
+            const theme = getTheme()
+            document.getElementById("theme-icon").textContent = theme === 'dim' ? '☀️' : '🌙';
+        };
+        const toggleTheme = () => {
+            const theme = getTheme() === 'emerald' ? 'dim' : 'emerald';
+            setTheme(theme);
         };
         // Apply theme before page renders
         document.documentElement.setAttribute('data-theme', getTheme());
