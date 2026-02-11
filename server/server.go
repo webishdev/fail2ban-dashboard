@@ -62,9 +62,13 @@ var headerHtml []byte
 var flagsCss []byte
 
 type Configuration struct {
-	Address      string
-	AuthUser     string
-	AuthPassword string
+	Address           string
+	AuthUser          string
+	AuthPassword      string
+	BasePath          string
+	TrustProxyHeaders bool
+	Fail2BanVersion   string
+	Version           string
 }
 
 type Sorted struct {
@@ -96,7 +100,7 @@ type detailData struct {
 	Jail         store.Jail
 }
 
-func Serve(version string, fail2banVersion string, basePath string, trustProxyHeaders bool, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
+func Serve(dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
 
 	templateFunctions := template.FuncMap{
 		"safe": func(s string) template.URL {
@@ -199,7 +203,7 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 		}))
 	}
 
-	cleanedBasePath := path.Clean(basePath)
+	cleanedBasePath := path.Clean(configuration.BasePath)
 	dashboard := app.Group(cleanedBasePath)
 
 	dashboard.Get("images/favicon.ico", func(c *fiber.Ctx) error {
@@ -250,7 +254,7 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 	})
 
 	dashboard.Get("/", func(c *fiber.Ctx) error {
-		accessLog(trustProxyHeaders, "overview", c)
+		accessLog(configuration.TrustProxyHeaders, "overview", c)
 		jails := dataStore.GetJails()
 
 		sum := 0
@@ -276,8 +280,8 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 
 		data := &indexData{
 			baseData: baseData{
-				Version:         version,
-				Fail2BanVersion: fail2banVersion,
+				Version:         configuration.Version,
+				Fail2BanVersion: configuration.Fail2BanVersion,
 				BasePath:        cleanBasePathForTemplate(cleanedBasePath),
 				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
 				HasBanned:       len(banned) > 0,
@@ -299,7 +303,7 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 	dashboard.Get("/:jail", func(c *fiber.Ctx) error {
 		jailName := c.Params("jail")
 		name := fmt.Sprintf("%s details", jailName)
-		accessLog(trustProxyHeaders, name, c)
+		accessLog(configuration.TrustProxyHeaders, name, c)
 
 		jailByName, exists := dataStore.GetJailByName(jailName)
 
@@ -330,8 +334,8 @@ func Serve(version string, fail2banVersion string, basePath string, trustProxyHe
 
 		detail := &detailData{
 			baseData: baseData{
-				Version:         version,
-				Fail2BanVersion: fail2banVersion,
+				Version:         configuration.Version,
+				Fail2BanVersion: configuration.Fail2BanVersion,
 				BasePath:        cleanBasePathForTemplate(cleanedBasePath),
 				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
 				HasBanned:       len(banned) > 0,

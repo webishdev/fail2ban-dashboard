@@ -19,6 +19,8 @@ type Jail struct {
 	TotalBanned     int
 }
 
+type UpdateHandler func()
+
 type DataStore struct {
 	mutex         sync.RWMutex
 	ticker        *time.Ticker
@@ -26,6 +28,7 @@ type DataStore struct {
 	addressToJail map[string][]string
 	jails         map[string]*client.JailEntry
 	jailInfos     map[string]*client.JailInfo
+	handlers      []UpdateHandler
 }
 
 func NewDataStore(f2bc *client.Fail2BanClient, refreshSeconds int) *DataStore {
@@ -73,6 +76,19 @@ func (dataStore *DataStore) initialize(names []string) {
 		dataStore.jails[jailName] = jailEntry
 		dataStore.jailInfos[jailName] = jailInfo
 	}
+	dataStore.notifyHandlers()
+}
+
+func (dataStore *DataStore) notifyHandlers() {
+	for _, handler := range dataStore.handlers {
+		go handler()
+	}
+}
+
+func (dataStore *DataStore) RegisterUpdateHandler(handler UpdateHandler) {
+	dataStore.mutex.Lock()
+	defer dataStore.mutex.Unlock()
+	dataStore.handlers = append(dataStore.handlers, handler)
 }
 
 func (dataStore *DataStore) Start() {
