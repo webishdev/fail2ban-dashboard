@@ -4,7 +4,6 @@ import (
 	"compress/gzip"
 	"encoding/binary"
 	"encoding/csv"
-	"github.com/gofiber/fiber/v2/log"
 	"io"
 	"net"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/gofiber/fiber/v2/log"
 )
 
 const (
@@ -34,17 +35,33 @@ type geoData struct {
 	countryCode string
 }
 
-func NewGeoIP(dir string) *GeoIP {
+func NewGeoIP(dir string, enableSchedule bool) *GeoIP {
 	geoIP := &GeoIP{
 		dir: dir,
 	}
-	go geoIP.download()
+	if enableSchedule {
+		geoIP.scheduledDownload()
+	} else {
+		geoIP.download()
+	}
 	return geoIP
 }
 
 func (geoIP *GeoIP) Lookup(value string) (string, bool) {
 	geoIP.download()
 	return geoIP.findCountry(value)
+}
+
+func (geoIP *GeoIP) scheduledDownload() {
+	duration := cacheTTL + 10*time.Minute
+	ticker := time.NewTicker(duration)
+	go func() {
+		geoIP.download()
+		log.Infof("Scheduled GeoIP download every %s", duration)
+		for range ticker.C {
+			geoIP.download()
+		}
+	}()
 }
 
 func (geoIP *GeoIP) download() {

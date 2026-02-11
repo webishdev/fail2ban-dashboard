@@ -79,7 +79,7 @@ var testGeoData = []geoData{
 func TestNewGeoIP(t *testing.T) {
 	tempDir := t.TempDir()
 
-	geoIP := NewGeoIP(tempDir)
+	geoIP := NewGeoIP(tempDir, true)
 
 	if geoIP == nil {
 		t.Fatal("NewGeoIP returned nil")
@@ -469,7 +469,7 @@ func TestGeoIP_Lookup_Integration(t *testing.T) {
 	recentTime := time.Now().Add(-1 * time.Hour)
 	_ = os.Chtimes(testFile, recentTime, recentTime)
 
-	geoIP := NewGeoIP(tempDir)
+	geoIP := NewGeoIP(tempDir, true)
 
 	// Wait a bit for data to load
 	time.Sleep(100 * time.Millisecond)

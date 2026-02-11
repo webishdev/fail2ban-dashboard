@@ -99,7 +99,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	flags.Int("refresh-seconds", 30, "refresh seconds for fail2ban data (value from 10 to 600), also F2BD_REFRESH_SECONDS")
+	flags.Int("refresh-seconds", 30, "fail2ban data refresh in seconds (value from 10 to 600), also F2BD_REFRESH_SECONDS")
 	refreshSecondsErr := viper.BindPFlag("refresh-seconds", flags.Lookup("refresh-seconds"))
 	if refreshSecondsErr != nil {
 		fmt.Printf("Could not bind refresh-seconds flag: %s\n", logLevelErr)
@@ -110,6 +110,13 @@ func init() {
 	basePathError := viper.BindPFlag("base-path", flags.Lookup("base-path"))
 	if basePathError != nil {
 		fmt.Printf("Could not bind base-path flag: %s\n", logLevelErr)
+		os.Exit(1)
+	}
+
+	flags.Bool("scheduled-geoip-download", true, "will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD")
+	scheduledGeoIPDownloadErr := viper.BindPFlag("scheduled-geoip-download", flags.Lookup("scheduled-geoip-download"))
+	if scheduledGeoIPDownloadErr != nil {
+		fmt.Printf("Could not bind scheduled-geoip-download flag: %s\n", logLevelErr)
 		os.Exit(1)
 	}
 
@@ -136,6 +143,7 @@ func run(_ *cobra.Command, _ []string) {
 	trustProxyHeaders := viper.GetBool("trust-proxy-headers")
 	refreshSeconds := viper.GetInt("refresh-seconds")
 	basePath := viper.GetString("base-path")
+	enableSchedule := viper.GetBool("scheduled-geoip-download")
 
 	// Set log level
 	switch logLevel {
@@ -157,7 +165,7 @@ func run(_ *cobra.Command, _ []string) {
 	log.Debugf("Log level set to %s", logLevel)
 
 	if refreshSeconds < 10 || refreshSeconds > 600 {
-		log.Warn("Refresh seconds must be between 10 and 600 seconds, resetting to default of 30 seconds")
+		log.Warn("fail2ban data refresh must be between 10 and 600 seconds, resetting to default of 30 seconds")
 		refreshSeconds = 30
 	}
 
@@ -167,7 +175,7 @@ func run(_ *cobra.Command, _ []string) {
 
 	log.Infof("Base path set to %s", basePath)
 
-	log.Infof("Refresh seconds set to %d seconds", refreshSeconds)
+	log.Infof("Data refresh from fail2ban set to %d seconds", refreshSeconds)
 
 	log.Infof("Will use socket at %s for fail2ban connection", socketPath)
 	f2bc, socketError := client.NewFail2BanClient(socketPath)
@@ -229,7 +237,7 @@ func run(_ *cobra.Command, _ []string) {
 
 	}
 
-	geoIP := geoip.NewGeoIP(absolutCacheDir)
+	geoIP := geoip.NewGeoIP(absolutCacheDir, enableSchedule)
 
 	configuration := &server.Configuration{
 		Address:      address,
