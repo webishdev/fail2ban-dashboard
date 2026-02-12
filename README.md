@@ -1,3 +1,11 @@
+<p align="center">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/content/assets/fail2ban-dashboard-mascot_250.png">
+      <source media="(prefers-color-scheme: light)" srcset="docs/content/assets/fail2ban-dashboard-mascot_250.png">
+      <img alt="fail2ban dashboard mascot" title="fail2ban dashboard mascot" src="docs/content/assets/fail2ban-dashboard-mascot_250.png">
+    </picture>
+</p>
+
 # fail2ban-dashboard
 
 ![build](https://github.com/webishdev/fail2ban-dashboard/actions/workflows/build.yml/badge.svg)
