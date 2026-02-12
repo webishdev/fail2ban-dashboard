@@ -57,10 +57,12 @@ Flags:
   -c, --cache-dir string           directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
   -h, --help                       help for fail2ban-dashboard
       --log-level string           log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL (default "info")
+  -m, --metrics                    will provide metrics endpoint, also F2BD_METRICS
+      --metrics-address string     address to make metrics available, also F2BD_METRICS_ADDRESS (default "127.0.0.1:9100")
       --refresh-seconds int        fail2ban data refresh in seconds (value from 10 to 600), also F2BD_REFRESH_SECONDS (default 30)
       --scheduled-geoip-download   will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD (default true)
       --skip-version-check         skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK
-  -s, --socket string              fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
+  -s, --socket string              location of the fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
       --trust-proxy-headers        trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
