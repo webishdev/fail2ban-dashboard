@@ -78,11 +78,42 @@ The `root` user is necessary as by default the `fail2ban` socket is only accessi
 
 ## Dashboard
 
-When started, check http://localhost:3000/
+When started, check http://127.0.0.1:3000/
 
 Basic authentication can be enabled with the `--auth-user` and/or `--auth-password` flags.  
 When only `--auth-user` is provided, the password will be generated and show in the logs/console.  
 When only `--auth-password` is provided, the user will be named `admin`.
+
+### Metrics
+
+When metrics are enabled with `-m` the metrics endpoint is available at http://127.0.0.1:9100/metrics and the address can be changed with `--metrics-address`.
+
+The following example shows which metrics are provided
+
+```text
+# HELP f2b_jail_banned_current Amount of banned IPs currently in jail
+# TYPE f2b_jail_banned_current gauge
+f2b_jail_banned_current{jail="postfix"} 13
+f2b_jail_banned_current{jail="sshd"} 33
+# HELP f2b_jail_banned_total Amount of banned IPs total in jail
+# TYPE f2b_jail_banned_total gauge
+f2b_jail_banned_total{jail="postfix"} 13
+f2b_jail_banned_total{jail="sshd"} 33
+# HELP f2b_jail_count The number of jails in fail2ban
+# TYPE f2b_jail_count gauge
+f2b_jail_count 2
+# HELP f2b_jail_failed_current Amount of failed IPs currently in jail
+# TYPE f2b_jail_failed_current gauge
+f2b_jail_failed_current{jail="postfix"} 0
+f2b_jail_failed_current{jail="sshd"} 0
+# HELP f2b_jail_failed_total Amount of failed IPs total in jail
+# TYPE f2b_jail_failed_total gauge
+f2b_jail_failed_total{jail="postfix"} 0
+f2b_jail_failed_total{jail="sshd"} 0
+# HELP fail2ban_dashboard_info The fail2ban Dashboard build information
+# TYPE fail2ban_dashboard_info gauge
+fail2ban_dashboard_info{fail2ban_version="1.1.0",version="development"} 1
+```
 
 ### Environment variables
 
