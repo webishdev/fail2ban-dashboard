@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
+	"github.com/webishdev/fail2ban-dashboard/metrics"
 	"github.com/webishdev/fail2ban-dashboard/server"
 	"github.com/webishdev/fail2ban-dashboard/store"
 )
@@ -71,7 +72,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	flags.StringP("socket", "s", "/var/run/fail2ban/fail2ban.sock", "fail2ban socket, also F2BD_SOCKET")
+	flags.StringP("socket", "s", "/var/run/fail2ban/fail2ban.sock", "location of the fail2ban socket, also F2BD_SOCKET")
 	socketError := viper.BindPFlag("socket", flags.Lookup("socket"))
 	if socketError != nil {
 		fmt.Printf("Could not bind socket flag: %s\n", socketError)
@@ -120,6 +121,20 @@ func init() {
 		os.Exit(1)
 	}
 
+	flags.BoolP("metrics", "m", false, "will provide metrics endpoint, also F2BD_METRICS")
+	metricsErr := viper.BindPFlag("metrics", flags.Lookup("metrics"))
+	if metricsErr != nil {
+		fmt.Printf("Could not bind metrics flag: %s\n", logLevelErr)
+		os.Exit(1)
+	}
+
+	flags.String("metrics-address", "127.0.0.1:9100", "address to make metrics available, also F2BD_METRICS_ADDRESS")
+	metricsAddressErr := viper.BindPFlag("metrics-address", flags.Lookup("metrics-address"))
+	if metricsAddressErr != nil {
+		fmt.Printf("Could not bind metrics-address flag: %s\n", logLevelErr)
+		os.Exit(1)
+	}
+
 	rootCmd.AddCommand(versionCmd)
 }
 
@@ -144,6 +159,8 @@ func run(_ *cobra.Command, _ []string) {
 	refreshSeconds := viper.GetInt("refresh-seconds")
 	basePath := viper.GetString("base-path")
 	enableSchedule := viper.GetBool("scheduled-geoip-download")
+	metricsEnabled := viper.GetBool("metrics")
+	metricsAddress := viper.GetString("metrics-address")
 
 	// Set log level
 	switch logLevel {
@@ -240,12 +257,28 @@ func run(_ *cobra.Command, _ []string) {
 	geoIP := geoip.NewGeoIP(absolutCacheDir, enableSchedule)
 
 	configuration := &server.Configuration{
-		Address:      address,
-		AuthUser:     user,
-		AuthPassword: password,
+		Address:           address,
+		AuthUser:          user,
+		AuthPassword:      password,
+		BasePath:          basePath,
+		TrustProxyHeaders: trustProxyHeaders,
+		Fail2BanVersion:   fail2banVersion,
+		Version:           Version,
 	}
 
-	serveError := server.Serve(Version, fail2banVersion, basePath, trustProxyHeaders, dataStore, geoIP, configuration)
+	if metricsEnabled {
+		metricConfiguration := &metrics.Configuration{
+			Address:         metricsAddress,
+			Fail2BanVersion: fail2banVersion,
+			Version:         Version,
+		}
+		metrics.ServeMetrics(dataStore, metricConfiguration)
+
+	} else {
+		log.Info("Metrics disabled")
+	}
+
+	serveError := server.Serve(dataStore, geoIP, configuration)
 	if serveError != nil {
 		log.Errorf("Could not start server: %s\n", serveError)
 		os.Exit(1)

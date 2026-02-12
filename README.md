@@ -1,3 +1,11 @@
+<p align="center">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/content/assets/fail2ban-dashboard-mascot_250.png">
+      <source media="(prefers-color-scheme: light)" srcset="docs/content/assets/fail2ban-dashboard-mascot_250.png">
+      <img alt="fail2ban dashboard mascot" title="fail2ban dashboard mascot" src="docs/content/assets/fail2ban-dashboard-mascot_250.png">
+    </picture>
+</p>
+
 # fail2ban-dashboard
 
 ![build](https://github.com/webishdev/fail2ban-dashboard/actions/workflows/build.yml/badge.svg)
@@ -49,10 +57,12 @@ Flags:
   -c, --cache-dir string           directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
   -h, --help                       help for fail2ban-dashboard
       --log-level string           log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL (default "info")
+  -m, --metrics                    will provide metrics endpoint, also F2BD_METRICS
+      --metrics-address string     address to make metrics available, also F2BD_METRICS_ADDRESS (default "127.0.0.1:9100")
       --refresh-seconds int        fail2ban data refresh in seconds (value from 10 to 600), also F2BD_REFRESH_SECONDS (default 30)
       --scheduled-geoip-download   will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD (default true)
       --skip-version-check         skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK
-  -s, --socket string              fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
+  -s, --socket string              location of the fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
       --trust-proxy-headers        trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
@@ -68,11 +78,42 @@ The `root` user is necessary as by default the `fail2ban` socket is only accessi
 
 ## Dashboard
 
-When started, check http://localhost:3000/
+When started, check http://127.0.0.1:3000/
 
 Basic authentication can be enabled with the `--auth-user` and/or `--auth-password` flags.  
 When only `--auth-user` is provided, the password will be generated and show in the logs/console.  
 When only `--auth-password` is provided, the user will be named `admin`.
+
+### Metrics
+
+When metrics are enabled with `-m` the metrics endpoint is available at http://127.0.0.1:9100/metrics and the address can be changed with `--metrics-address`.
+
+The following example shows which metrics are provided
+
+```text
+# HELP f2b_jail_banned_current Amount of banned IPs currently in jail
+# TYPE f2b_jail_banned_current gauge
+f2b_jail_banned_current{jail="postfix"} 13
+f2b_jail_banned_current{jail="sshd"} 33
+# HELP f2b_jail_banned_total Amount of banned IPs total in jail
+# TYPE f2b_jail_banned_total gauge
+f2b_jail_banned_total{jail="postfix"} 13
+f2b_jail_banned_total{jail="sshd"} 33
+# HELP f2b_jail_count The number of jails in fail2ban
+# TYPE f2b_jail_count gauge
+f2b_jail_count 2
+# HELP f2b_jail_failed_current Amount of failed IPs currently in jail
+# TYPE f2b_jail_failed_current gauge
+f2b_jail_failed_current{jail="postfix"} 0
+f2b_jail_failed_current{jail="sshd"} 0
+# HELP f2b_jail_failed_total Amount of failed IPs total in jail
+# TYPE f2b_jail_failed_total gauge
+f2b_jail_failed_total{jail="postfix"} 0
+f2b_jail_failed_total{jail="sshd"} 0
+# HELP fail2ban_dashboard_info The fail2ban Dashboard build information
+# TYPE fail2ban_dashboard_info gauge
+fail2ban_dashboard_info{fail2ban_version="1.1.0",version="development"} 1
+```
 
 ### Environment variables
 
