@@ -11,7 +11,8 @@
 ![build](https://github.com/webishdev/fail2ban-dashboard/actions/workflows/build.yml/badge.svg)
 ![GitHub Release](https://img.shields.io/github/v/release/webishdev/fail2ban-dashboard)
 
-A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.sock` socket to access `fail2ban`.
+A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.sock` socket to access `fail2ban`.  
+In addition to the dashboard, the application can provide Prometheus metrics related to `fail2ban` when enabled.
 
 Tested with the following `fail2ban` versions
 - `0.11.1`
@@ -20,8 +21,22 @@ Tested with the following `fail2ban` versions
 - `1.0.2`
 - `1.1.0`
 
-If the dashboard should be used with another version, please switch off the version check with the `--skip-version-check` flag.
+If the dashboard should be used with another version, please switch off the version check with the `--skip-version-check` flag, otherwise the application won't start.
 
+
+## Table of Contents
+- [Screenshots](#screenshots)
+  - [Light mode](#light-mode)
+  - [Dark mode](#dark-mode)
+- [Usage](#usage) 
+  - [Command line](#command-line)
+  - [Docker](#docker)
+  - [Environment variables](#environment-variables)
+- [Dashboard](#dashboard)
+  - [Web application](#web-application)
+  - [Metrics](#metrics)
+- [Building the application](#building-the-application)
+- [Inspired by](#inspired-by) 
 
 
 ## Screenshots
@@ -76,7 +91,28 @@ With Docker use
 
 The `root` user is necessary as by default the `fail2ban` socket is only accessible for the `root` user.
 
+### Environment variables
+
+Environment variables can be used to set parameters without using command line flags.
+
+| Environment Variable       | Command Line Flag       | Description                                 | Default                           |
+|----------------------------|-------------------------|---------------------------------------------|-----------------------------------|
+| `F2BD_ADDRESS`             | `-a, --address`         | Address to serve the dashboard on           | `127.0.0.1:3000`                  |
+| `F2BD_AUTH_PASSWORD`       | `--auth-password`       | Password for basic auth                     | -                                 |
+| `F2BD_AUTH_USER`           | `--auth-user`           | Username for basic auth                     | -                                 |
+| `F2BD_BASE_PATH`           | `--base-path`           | Base path of the application                | `/`                               |
+| `F2BD_CACHE_DIR`           | `-c, --cache-dir`       | Directory to cache GeoIP data               | Current working directory         |
+| `F2BD_LOG_LEVEL`           | `--log-level`           | Log level (trace, debug, info, warn, error) | `info`                            |
+| `F2BD_METRICS`             | `-m, --metrics`         | Enables Prometheus metrics                  | `false`                           |
+| `F2BD_METRICS_ADDRESS`     | `--metrics-address`     | Address to serve the metrics                | `127.0.0.1:9100`                  |
+| `F2BD_REFRESH_SECONDS`     | `--refresh-seconds`     | Refresh seconds for fail2ban data (10-600)  | `30`                              |
+| `F2BD_SKIP_VERSION_CHECK`  | `--skip-version-check`  | Skip fail2ban version check                 | `false`                           |
+| `F2BD_SOCKET`              | `-s, --socket`          | Fail2ban socket path                        | `/var/run/fail2ban/fail2ban.sock` |
+| `F2BD_TRUST_PROXY_HEADERS` | `--trust-proxy-headers` | Trust proxy headers like X-Forwarded-For    | `false`                           |
+
 ## Dashboard
+
+### Web application
 
 When started, check http://127.0.0.1:3000/
 
@@ -91,6 +127,9 @@ When metrics are enabled with `-m` the metrics endpoint is available at http://1
 The following example shows which metrics are provided
 
 ```text
+# HELP f2b_banned_sum The overall number of banned addressees
+# TYPE f2b_banned_sum gauge
+f2b_banned_sum 46
 # HELP f2b_jail_banned_current Amount of banned IPs currently in jail
 # TYPE f2b_jail_banned_current gauge
 f2b_jail_banned_current{jail="postfix"} 13
@@ -115,26 +154,7 @@ f2b_jail_failed_total{jail="sshd"} 0
 fail2ban_dashboard_info{fail2ban_version="1.1.0",version="development"} 1
 ```
 
-### Environment variables
-
-Environment variables can be used to set parameters without using command line flags.
-
-| Environment Variable       | Command Line Flag       | Description                                 | Default                           |
-|----------------------------|-------------------------|---------------------------------------------|-----------------------------------|
-| `F2BD_ADDRESS`             | `-a, --address`         | Address to serve the dashboard on           | `127.0.0.1:3000`                  |
-| `F2BD_AUTH_PASSWORD`       | `--auth-password`       | Password for basic auth                     | -                                 |
-| `F2BD_AUTH_USER`           | `--auth-user`           | Username for basic auth                     | -                                 |
-| `F2BD_BASE_PATH`           | `--base-path`           | Base path of the application                | `/`                               |
-| `F2BD_CACHE_DIR`           | `-c, --cache-dir`       | Directory to cache GeoIP data               | Current working directory         |
-| `F2BD_LOG_LEVEL`           | `--log-level`           | Log level (trace, debug, info, warn, error) | `info`                            |
-| `F2BD_METRICS`             | `-m, --metrics`         | Enables Prometheus metrics                  | `false`                           |
-| `F2BD_METRICS_ADDRESS`     | `--metrics-address`     | Address to serve the metrics                | `127.0.0.1:9100`                  |
-| `F2BD_REFRESH_SECONDS`     | `--refresh-seconds`     | Refresh seconds for fail2ban data (10-600)  | `30`                              |
-| `F2BD_SKIP_VERSION_CHECK`  | `--skip-version-check`  | Skip fail2ban version check                 | `false`                           |
-| `F2BD_SOCKET`              | `-s, --socket`          | Fail2ban socket path                        | `/var/run/fail2ban/fail2ban.sock` |
-| `F2BD_TRUST_PROXY_HEADERS` | `--trust-proxy-headers` | Trust proxy headers like X-Forwarded-For    | `false`                           |
-
-## Build the application
+## Building the application
 
 To build the application, use make with the following options:
 
