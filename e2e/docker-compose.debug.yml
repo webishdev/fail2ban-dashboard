@@ -5,7 +5,7 @@ services:
       - f2b-run:/var/run/fail2ban
 
   dashboard:
-    image: golang:1.25-bookworm
+    image: golang:1.26-bookworm
     working_dir: /workspace
     environment:
       F2BD_ADDRESS: ":3000"
