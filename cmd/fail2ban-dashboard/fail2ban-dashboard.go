@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -256,6 +259,10 @@ func run(_ *cobra.Command, _ []string) {
 
 	geoIP := geoip.NewGeoIP(absolutCacheDir, enableSchedule)
 
+	dashboardApp := fiber.New(fiber.Config{
+		DisableStartupMessage: true,
+	})
+
 	configuration := &server.Configuration{
 		Address:           address,
 		AuthUser:          user,
@@ -272,15 +279,49 @@ func run(_ *cobra.Command, _ []string) {
 			Fail2BanVersion: fail2banVersion,
 			Version:         Version,
 		}
-		metrics.ServeMetrics(dataStore, metricConfiguration)
+		if address != metricsAddress {
+			metricsApp := fiber.New(fiber.Config{
+				DisableStartupMessage: true,
+			})
+
+			metrics.RegisterMetricsEndpoints(metricsApp, dataStore, metricConfiguration)
+
+			go func() {
+				log.Infof("Metrics available at address %s", metricsAddress)
+				serveError := metricsApp.Listen(metricsAddress)
+				if serveError != nil {
+					log.Errorf("Could not start server: %s\n", serveError)
+					os.Exit(1)
+				}
+			}()
+		} else {
+			log.Warn("Metrics address is identical to dashboard address, your metrics will be exposed the same way as the dashboard")
+			metrics.RegisterMetricsEndpoints(dashboardApp, dataStore, metricConfiguration)
+		}
 
 	} else {
 		log.Info("Metrics disabled")
 	}
 
-	serveError := server.Serve(dataStore, geoIP, configuration)
-	if serveError != nil {
-		log.Errorf("Could not start server: %s\n", serveError)
+	dashboardRegError := server.RegisterDashboardEndpoints(dashboardApp, dataStore, geoIP, configuration)
+	if dashboardRegError != nil {
+		log.Errorf("Register dashboard endpoints: %s\n", dashboardRegError)
 		os.Exit(1)
 	}
+
+	go func() {
+		log.Infof("Dashboard available at address %s", configuration.Address)
+		serveError := dashboardApp.Listen(configuration.Address)
+		if serveError != nil {
+			log.Errorf("Could not start server: %s\n", serveError)
+			os.Exit(1)
+		}
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	sig := <-sigCh // blocks here
+	log.Infof("Exited because of signal: %v", sig)
+
 }

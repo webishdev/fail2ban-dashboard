@@ -83,7 +83,7 @@ func createTestApp(mockStore *MockDataStore, mockGeoIP *MockGeoIP, config *Confi
 		DisableStartupMessage: true,
 	})
 
-	// Set up basic routes similar to the main Serve function
+	// Set up basic routes similar to the main RegisterDashboardEndpoints function
 	app.Get("images/favicon.ico", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
 		return c.Send(faviconICOFile)

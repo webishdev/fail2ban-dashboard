@@ -1,5 +1,9 @@
 <div class="navbar bg-base-100 shadow-sm">
-    <h1 class="flex-1 text-xl font-bold"><a href="{{ .BasePath }}">fail2ban dashboard</a> <span class="badge badge-soft badge-accent">{{ .Version }}</span> <span class="badge badge-soft badge-info hidden sm:inline">fail2ban - {{ .Fail2BanVersion }}</span></h1>
+    <div class="flex flex-1 items-center-safe">
+        <a href="{{ .BasePath }}" title="fail2ban dashboard"><img class="mascot" src="{{ .BasePath }}images/mascot.png" /></a>
+        <span class="badge badge-soft badge-accent">{{ .Version }}</span>
+        <span class="badge badge-soft badge-info hidden sm:inline">fail2ban - {{ .Fail2BanVersion }}</span>
+    </div>
     <div class="flex-none">
         <ul class="menu menu-horizontal px-1">
             <li>

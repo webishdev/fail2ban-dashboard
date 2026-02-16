@@ -37,6 +37,9 @@ var tailwindJSFile []byte
 //go:embed resources/images/favicon.ico
 var faviconICOFile []byte
 
+//go:embed resources/images/fail2ban-dashboard-mascot_250.png
+var mascotPNGFile []byte
+
 //go:embed resources/index.html
 var indexHtml []byte
 
@@ -100,7 +103,7 @@ type detailData struct {
 	Jail         store.Jail
 }
 
-func Serve(dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
+func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
 
 	templateFunctions := template.FuncMap{
 		"safe": func(s string) template.URL {
@@ -181,10 +184,6 @@ func Serve(dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Config
 		return detailBannedTemplateError
 	}
 
-	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-	})
-
 	if configuration.AuthUser != "" || configuration.AuthPassword != "" {
 		log.Info("Basic authentication enabled")
 		if configuration.AuthUser == "" {
@@ -209,6 +208,11 @@ func Serve(dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Config
 	dashboard.Get("images/favicon.ico", func(c *fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
 		return c.Send(faviconICOFile)
+	})
+
+	dashboard.Get("images/mascot.png", func(c *fiber.Ctx) error {
+		c.Set(fiber.HeaderContentType, "image/png")
+		return c.Send(mascotPNGFile)
 	})
 
 	dashboard.Get("css/main.css", func(c *fiber.Ctx) error {
@@ -359,9 +363,7 @@ func Serve(dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Config
 
 	dataStore.Start()
 
-	log.Infof("Listening on address %s", configuration.Address)
-
-	return app.Listen(configuration.Address)
+	return nil
 }
 
 func sortSlice(sorting string, order string, banned []client.BanEntry) func(i, j int) bool {
