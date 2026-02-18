@@ -54,8 +54,8 @@ func setupRegistry() *metrics {
 		),
 		bannedSumMetrics: prometheus.NewGauge(
 			prometheus.GaugeOpts{
-				Name: "f2b_banned_sum",
-				Help: "The overall number of banned addressees",
+				Name: "f2b_banned_total",
+				Help: "The total number of banned addressees",
 			},
 		),
 		jailBannedCurrentMetrics: prometheus.NewGaugeVec(
