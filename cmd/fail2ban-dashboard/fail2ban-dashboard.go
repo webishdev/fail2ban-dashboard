@@ -3,16 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
-	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"github.com/webishdev/fail2ban-dashboard/bootstrap"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
 	"github.com/webishdev/fail2ban-dashboard/metrics"
 	"github.com/webishdev/fail2ban-dashboard/server"
@@ -21,8 +18,6 @@ import (
 
 var Version = "development"
 var GitHash = "none"
-
-var supportedVersions = []string{"0.11.1", "0.11.2", "1.0.1", "1.0.2", "1.1.0"}
 
 var rootCmd = &cobra.Command{
 	Use:   "fail2ban-dashboard",
@@ -168,10 +163,10 @@ func run(_ *cobra.Command, _ []string) {
 	metricsAddress := viper.GetString("metrics-address")
 
 	// Configure logging
-	configureLogging(logLevel)
+	bootstrap.ConfigureLogging(logLevel)
 
 	// Validate and fix a refresh interval
-	refreshSeconds = validateRefreshSeconds(refreshSeconds)
+	refreshSeconds = bootstrap.ValidateRefreshSeconds(refreshSeconds)
 
 	// Log configuration
 	if trustProxyHeaders {
@@ -181,13 +176,13 @@ func run(_ *cobra.Command, _ []string) {
 	log.Infof("Data refresh from fail2ban set to %d seconds", refreshSeconds)
 
 	// Connect to fail2ban and verify version
-	f2bc, fail2banVersion := connectToFail2ban(socketPath, skipVersionCheck)
+	f2bc, fail2banVersion := bootstrap.ConnectToFail2ban(socketPath, skipVersionCheck)
 
 	// Initialize data store
 	dataStore := store.NewDataStore(f2bc, refreshSeconds)
 
 	// Set up cache directory
-	absoluteCacheDir := setupCacheDirectory(cacheDir)
+	absoluteCacheDir := bootstrap.SetupCacheDirectory(cacheDir)
 
 	// Initialize GeoIP
 	geoIP := geoip.NewGeoIP(absoluteCacheDir, enableSchedule)
@@ -220,7 +215,7 @@ func run(_ *cobra.Command, _ []string) {
 
 			metrics.RegisterMetricsEndpoints(metricsApp, dataStore, metricConfiguration)
 
-			go startMetricsServer(metricsApp, metricConfiguration)
+			go bootstrap.StartMetricsServer(metricsApp, metricConfiguration)
 		} else {
 			log.Warn("Metrics address is identical to dashboard address, your metrics will be exposed the same way as the dashboard")
 			metrics.RegisterMetricsEndpoints(dashboardApp, dataStore, metricConfiguration)
@@ -238,128 +233,8 @@ func run(_ *cobra.Command, _ []string) {
 	}
 
 	// Start dashboard server
-	go startDashboardServer(dashboardApp, configuration)
+	go bootstrap.StartDashboardServer(dashboardApp, configuration)
 
 	// Wait for a shutdown signal
-	blockUntilSignalReceived()
-}
-
-func configureLogging(logLevel string) {
-	switch logLevel {
-	case "trace":
-		log.SetLevel(log.LevelTrace)
-	case "debug":
-		log.SetLevel(log.LevelDebug)
-	case "info":
-		log.SetLevel(log.LevelInfo)
-	case "warn":
-		log.SetLevel(log.LevelWarn)
-	case "error":
-		log.SetLevel(log.LevelError)
-	default:
-		log.SetLevel(log.LevelInfo)
-		log.Warnf("Invalid log level '%s', using 'info'", logLevel)
-	}
-
-	log.Debugf("Log level set to %s", logLevel)
-}
-
-func validateRefreshSeconds(refreshSeconds int) int {
-	if refreshSeconds < 10 || refreshSeconds > 600 {
-		log.Warn("fail2ban data refresh must be between 10 and 600 seconds, resetting to default of 30 seconds")
-		return 30
-	}
-	return refreshSeconds
-}
-
-func connectToFail2ban(socketPath string, skipVersionCheck bool) (*client.Fail2BanClient, string) {
-	log.Infof("Will use socket at %s for fail2ban connection", socketPath)
-	f2bc, socketError := client.NewFail2BanClient(socketPath)
-
-	fail2banVersion := "unknown"
-
-	if socketError != nil {
-		log.Errorf("Could not connect to fail2ban socket at %s", socketPath)
-		return f2bc, fail2banVersion
-	}
-
-	detectedFail2banVersion, versionError := f2bc.GetVersion()
-	if versionError != nil {
-		log.Error("Could not get fail2ban version, using 'unknown'")
-		os.Exit(1)
-	}
-
-	log.Infof("fail2ban version found: %s\n", detectedFail2banVersion)
-
-	versionIsOk := false
-	for _, supportedVersion := range supportedVersions {
-		if supportedVersion == detectedFail2banVersion {
-			versionIsOk = true
-			break
-		}
-	}
-
-	if !skipVersionCheck && !versionIsOk {
-		log.Errorf("fail2ban version %s not supported\n", detectedFail2banVersion)
-		os.Exit(1)
-	} else if skipVersionCheck && !versionIsOk {
-		log.Info("Skipping version check (dashboard may not work as expected)")
-	} else if skipVersionCheck {
-		log.Debug("Skipping version check but version is supported")
-	}
-
-	return f2bc, detectedFail2banVersion
-}
-
-func setupCacheDirectory(cacheDir string) string {
-	if cacheDir == "" {
-		dir, workingDirError := os.Getwd()
-		if workingDirError != nil {
-			log.Error("Could not access current working directory")
-			os.Exit(1)
-		}
-		cacheDir = dir
-	}
-
-	absoluteCacheDir, absolutePathError := filepath.Abs(cacheDir)
-	if absolutePathError != nil {
-		log.Error(absolutePathError)
-		os.Exit(1)
-	}
-
-	if _, statError := os.Stat(absoluteCacheDir); os.IsNotExist(statError) {
-		log.Infof("Creating cache directory %s", absoluteCacheDir)
-		if mkdirError := os.MkdirAll(absoluteCacheDir, os.ModePerm); mkdirError != nil {
-			log.Errorf("Cache directory could not be created at %s", absoluteCacheDir)
-			os.Exit(1)
-		}
-	}
-
-	return absoluteCacheDir
-}
-
-func startDashboardServer(app *fiber.App, config *server.Configuration) {
-	log.Infof("Dashboard available at address %s", config.Address)
-	serveError := app.Listen(config.Address)
-	if serveError != nil {
-		log.Errorf("Could not start server: %s\n", serveError)
-		os.Exit(1)
-	}
-}
-
-func startMetricsServer(metricsApp *fiber.App, config *metrics.Configuration) {
-	log.Infof("Metrics available at address %s", config.Address)
-	serveError := metricsApp.Listen(config.Address)
-	if serveError != nil {
-		log.Errorf("Could not start server: %s\n", serveError)
-		os.Exit(1)
-	}
-}
-
-func blockUntilSignalReceived() {
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-
-	sig := <-sigCh // blocks here
-	log.Debugf("Exited because of signal: %v", sig)
+	bootstrap.BlockUntilSignalReceived()
 }
