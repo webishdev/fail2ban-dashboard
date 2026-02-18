@@ -17,7 +17,12 @@ func findAvailablePort(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("Failed to find available port: %v", err)
 	}
-	defer listener.Close()
+	defer func(listener net.Listener) {
+		closeErr := listener.Close()
+		if closeErr != nil {
+			panic(closeErr)
+		}
+	}(listener)
 	return listener.Addr().String()
 }
 
@@ -49,7 +54,10 @@ func TestStartDashboardServer_Success(t *testing.T) {
 	if err != nil {
 		t.Errorf("Server not listening on %s: %v", address, err)
 	} else {
-		conn.Close()
+		closeErr := conn.Close()
+		if closeErr != nil {
+			return
+		}
 	}
 
 	// Cleanup
@@ -86,7 +94,10 @@ func TestStartMetricsServer_Success(t *testing.T) {
 	if err != nil {
 		t.Errorf("Server not listening on %s: %v", address, err)
 	} else {
-		conn.Close()
+		closeErr := conn.Close()
+		if closeErr != nil {
+			return
+		}
 	}
 
 	// Cleanup
@@ -112,7 +123,12 @@ func TestStartDashboardServer_PortAlreadyInUse(t *testing.T) {
 		t.Fatalf("Failed to create listener: %v", err)
 	}
 	address := listener.Addr().String()
-	defer listener.Close()
+	defer func(listener net.Listener) {
+		closeErr := listener.Close()
+		if closeErr != nil {
+			panic(closeErr)
+		}
+	}(listener)
 
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
@@ -148,7 +164,12 @@ func TestStartMetricsServer_PortAlreadyInUse(t *testing.T) {
 		t.Fatalf("Failed to create listener: %v", err)
 	}
 	address := listener.Addr().String()
-	defer listener.Close()
+	defer func(listener net.Listener) {
+		closeErr := listener.Close()
+		if closeErr != nil {
+			panic(closeErr)
+		}
+	}(listener)
 
 	metricsApp := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
