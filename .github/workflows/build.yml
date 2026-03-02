@@ -57,6 +57,6 @@ jobs:
           name: test-results
           path: testresults.json
 
-      - name: Build
+      - name: Build all variants
         run: |
-          make build
+          make build-all

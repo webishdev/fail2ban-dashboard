@@ -2,22 +2,34 @@
 
 # Variables
 VERSION ?= development
+GOOS ?= linux
+GOARCH ?= amd64
 GIT_HASH := $(shell git rev-parse --short=11 HEAD)
 BIN_DIR := bin
 BINARY_NAME := fail2ban-dashboard
 MAIN_PATH := ./cmd/fail2ban-dashboard
 
 # Default target
-all: test lint build
+all: test lint build-all
+
+build-all: clean build-intel build-arm
+
+# Build Linux version for Intel CPUs
+build-intel:
+	$(MAKE) build GOOS=linux GOARCH=amd64
+
+# Build Linux version for ARM CPUs
+build-arm:
+	$(MAKE) build GOOS=linux GOARCH=arm64
 
 # Build the application
-build: clean
+build:
 	@echo "Building $(BINARY_NAME) version $(VERSION) ($(GIT_HASH))"
-	@mkdir -p $(BIN_DIR)
-	GOOS=linux GOARCH=amd64 go build \
+	@mkdir -p $(BIN_DIR)/$(GOOS)/$(GOARCH)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-ldflags="-s -w -X 'main.Version=$(VERSION)' -X 'main.GitHash=$(GIT_HASH)'" \
-		-o $(BIN_DIR)/$(BINARY_NAME) $(MAIN_PATH)
-	cd $(BIN_DIR) && sha256sum $(BINARY_NAME) >> SHA256SUMS
+		-o $(BIN_DIR)/$(GOOS)/$(GOARCH)/$(BINARY_NAME) $(MAIN_PATH)
+	cd $(BIN_DIR)/$(GOOS)/$(GOARCH) && sha256sum $(BINARY_NAME) >> SHA256SUMS
 
 .PHONY: lint
 lint:

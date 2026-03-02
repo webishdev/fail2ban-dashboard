@@ -41,7 +41,7 @@ jobs:
         run: |
           VERSION_INPUT=${{ github.event.release.tag_name }}
           CURRENT_VERSION=${VERSION_INPUT:-"ci"}
-          make build VERSION=$CURRENT_VERSION
+          make build-all VERSION=$CURRENT_VERSION
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
@@ -101,7 +101,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:${{ github.event.release.tag_name }},ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:latest
           labels: ${{ steps.meta.outputs.labels }}
@@ -130,7 +130,8 @@ jobs:
       - name: Create compressed archives
         run: |          
           # Create tar.gz archive
-          cd bin && tar -czf ../fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.tar.gz . && cd ..
+          cd bin/linux/amd64 && tar -czf ../fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.tar.gz . && cd ..
+          cd bin/linux/arm64 && tar -czf ../fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-arm64.tar.gz . && cd ..
                    
           sha256sum fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.tar.gz >> SHA256SUMS
           
@@ -145,7 +146,7 @@ jobs:
           append_body: true
           body: |
             ## Binary Downloads
-            The compiled binary for Linux (amd64) is attached to this release as compressed archives.
+            The compiled binary for Linux are attached to this release as compressed archives.
             
             ## Docker Container
             Docker images are available at:
