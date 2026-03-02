@@ -127,9 +127,9 @@ When metrics are enabled with `-m` the metrics endpoint is available at http://1
 The following example shows which metrics are provided
 
 ```text
-# HELP f2b_banned_sum The overall number of banned addressees
-# TYPE f2b_banned_sum gauge
-f2b_banned_sum 46
+# HELP f2b_banned_total The total number of banned addresses
+# TYPE f2b_banned_total gauge
+f2b_banned_total 46
 # HELP f2b_jail_banned_current Amount of banned IPs currently in jail
 # TYPE f2b_jail_banned_current gauge
 f2b_jail_banned_current{jail="postfix"} 13
