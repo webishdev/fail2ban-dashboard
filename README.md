@@ -28,9 +28,11 @@ If the dashboard should be used with another version, please switch off the vers
 - [Screenshots](#screenshots)
   - [Light mode](#light-mode)
   - [Dark mode](#dark-mode)
+- [Installation](#installation)
+  - [Standalone application](#standalone-application)
+  - [Docker](#docker)
 - [Usage](#usage) 
   - [Command line](#command-line)
-  - [Docker](#docker)
   - [Environment variables](#environment-variables)
 - [Dashboard](#dashboard)
   - [Web application](#web-application)
@@ -49,6 +51,22 @@ If the dashboard should be used with another version, please switch off the vers
 
 ![Screenshot of fail2ban-dashboard overview dark](./images/overview_dark.png "Screenshot of fail2ban-dashboard overview dark")
 ![Screenshot of fail2ban-dashboard detail view dark](./images/detail_dark.png "Screenshot of fail2ban-dashboard detail view dark")
+
+## Installation
+
+### Standalone application
+
+When using `fail2ban-dashboard` as a standalone application, grab a released version from the [releases page](https://github.com/webishdev/fail2ban-dashboard/releases).
+
+### Docker
+
+With Docker use
+
+`docker run --user=root -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro -p 3000:3000 ghcr.io/webishdev/fail2ban-dashboard:latest`
+
+The `root` user is necessary as by default the `fail2ban` socket is only accessible for the `root` user.
+
+Instead of `latest` you can use a specific version like `v0.8.1`
 
 ## Usage
 
@@ -82,14 +100,6 @@ Flags:
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
 ```
-
-### Docker
-
-With Docker use
-
-`docker run --user=root -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro -p 3000:3000 ghcr.io/webishdev/fail2ban-dashboard:latest`
-
-The `root` user is necessary as by default the `fail2ban` socket is only accessible for the `root` user.
 
 ### Environment variables
 
