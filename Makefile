@@ -8,7 +8,7 @@ BINARY_NAME := fail2ban-dashboard
 MAIN_PATH := ./cmd/fail2ban-dashboard
 
 # Default target
-all: test build
+all: test lint build
 
 # Build the application
 build: clean
@@ -18,6 +18,12 @@ build: clean
 		-ldflags="-s -w -X 'main.Version=$(VERSION)' -X 'main.GitHash=$(GIT_HASH)'" \
 		-o $(BIN_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	cd $(BIN_DIR) && sha256sum $(BINARY_NAME) >> SHA256SUMS
+
+.PHONY: lint
+lint:
+	@echo "Linting"
+	@command -v golangci-lint >/dev/null 2>&1 && golangci-lint run || \
+        echo "golangci-lint not installed; skipping"
 
 # Run tests
 test:
