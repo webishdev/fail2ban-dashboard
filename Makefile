@@ -11,12 +11,13 @@ MAIN_PATH := ./cmd/fail2ban-dashboard
 all: test build
 
 # Build the application
-build:
+build: clean
 	@echo "Building $(BINARY_NAME) version $(VERSION) ($(GIT_HASH))"
 	@mkdir -p $(BIN_DIR)
 	GOOS=linux GOARCH=amd64 go build \
 		-ldflags="-s -w -X 'main.Version=$(VERSION)' -X 'main.GitHash=$(GIT_HASH)'" \
 		-o $(BIN_DIR)/$(BINARY_NAME) $(MAIN_PATH)
+	cd $(BIN_DIR) && sha256sum $(BINARY_NAME) >> SHA256SUMS
 
 # Run tests
 test:

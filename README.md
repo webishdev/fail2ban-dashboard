@@ -117,7 +117,7 @@ Environment variables can be used to set parameters without using command line f
 When started, check http://127.0.0.1:3000/
 
 Basic authentication can be enabled with the `--auth-user` and/or `--auth-password` flags.  
-When only `--auth-user` is provided, the password will be generated and show in the logs/console.  
+When only `--auth-user` is provided, the password will be generated and shown in the logs/console.  
 When only `--auth-password` is provided, the user will be named `admin`.
 
 ### Metrics
@@ -156,20 +156,32 @@ fail2ban_dashboard_info{fail2ban_version="1.1.0",version="development"} 1
 
 ## Building the application
 
+### Requirements
+
+To build the application, the Go version specificed in the `go.mod` file must be installed.
+Furthermore, the `make` utility must be installed.
+
+### Building
+
 To build the application, use make with the following options:
 
 ```
-make
+> make help
 
-    build           - Build the application
-    
-    test            - Run tests
-    
-    clean           - Remove build artifacts
-    
-    help            - Show this help message
-    
-    all             - Run tests and build the application (default)
+Available targets:
+  all     - Run tests and build the application (default)
+  test    - Run tests
+  build   - Build the application
+  clean   - Remove build artifacts
+  help    - Show this help message
+
+Variables:
+  VERSION - Version to embed in binary (default: development)
+
+Examples:
+  make build
+  make build VERSION=v1.0.0
+  make clean
 
 ```
 

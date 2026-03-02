@@ -134,6 +134,8 @@ jobs:
           
           # List created archives
           ls -la *.tar.gz
+          
+          sha256sum fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.tar.gz >> SHA256SUMS
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -147,10 +149,6 @@ jobs:
             Docker images are available at:
             - **Tagged version**: `ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:${{ github.event.release.tag_name }}`
             - **Latest version**: `ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:latest`
-            
-            ### Usage
-            ```bash
-            docker pull ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:${{ github.event.release.tag_name }}
-            docker run --user=root -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro -p 3000:3000 ghcr.io/${{ github.repository_owner }}/fail2ban-dashboard:${{ github.event.release.tag_name }}
-            ```
-          files: "fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.tar.gz"
+          files: |
+            "fail2ban-dashboard-${{ github.event.release.tag_name }}-linux-amd64.tar.gz"
+            "SHA256SUMS"
