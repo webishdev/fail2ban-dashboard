@@ -14,7 +14,7 @@ services:
       - "3000:3000"
       - "9100:9100"
     volumes:
-      - "../bin:/app"
+      - "../bin/linux/amd64:/app"
       - "./data/script:/script"
       - "./data/jail.d:/data/jail.d"
       - "./data/filter.d:/data/filter.d"

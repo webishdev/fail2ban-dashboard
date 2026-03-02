@@ -54,8 +54,8 @@ prepare_debug() {
 }
 
 if [[ "$ACTION" == "start" ]]; then
-  if [[ ! -x "$ROOT_DIR/bin/fail2ban-dashboard" ]]; then
-    echo "Missing executable: $ROOT_DIR/bin/fail2ban-dashboard"
+  if [[ ! -x "$ROOT_DIR/bin/linux/amd64/fail2ban-dashboard" ]]; then
+    echo "Missing executable: $ROOT_DIR/bin/linux/amd64/fail2ban-dashboard"
     echo "Build the dashboard before starting."
     exit 1
   fi

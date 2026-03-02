@@ -169,20 +169,27 @@ To build the application, use make with the following options:
 > make help
 
 Available targets:
-  all     - Run tests and build the application (default)
-  test    - Run tests
-  build   - Build the application
-  clean   - Remove build artifacts
-  help    - Show this help message
+  all         - Run tests, lint, and build for all platforms (default)
+  build-all   - Build for all platforms (Intel and ARM)
+  build-intel - Build Linux binary for Intel CPUs (amd64)
+  build-arm   - Build Linux binary for ARM CPUs (arm64)
+  build       - Build for specified GOOS/GOARCH
+  lint        - Run golangci-lint
+  test        - Run tests
+  test-ci     - Run tests with JSON output for CI/CD
+  clean       - Remove build artifacts
+  help        - Show this help message
 
 Variables:
   VERSION - Version to embed in binary (default: development)
+  GOOS    - Target operating system (default: linux)
+  GOARCH  - Target architecture (default: amd64)
 
 Examples:
-  make build
-  make build VERSION=v1.0.0
+  make build-all
+  make build-intel VERSION=v1.0.0
+  make build GOOS=darwin GOARCH=arm64
   make clean
-
 ```
 
 ## Inspired by
