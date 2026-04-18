@@ -250,7 +250,7 @@ func (f2bc *Fail2BanClient) GetBanned(jailName string) (*JailEntry, error) {
 			for index := 0; index < banListLen; index++ {
 				if listEnty, listEntyOk := banList.Get(index).(string); listEntyOk {
 					log.Tracef("GetBanned: Parsing ban entry: %s", listEnty)
-					re := regexp.MustCompile(`^(\d{1,3}(?:\.\d{1,3}){3}) \t(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \+ (\d+) = (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$`)
+					re := regexp.MustCompile(`^(\d{1,3}(?:\.\d{1,3}){3})[ \t]+(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \+ (-?\d+) = (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$`)
 
 					matches := re.FindStringSubmatch(listEnty)
 					if matches == nil {
