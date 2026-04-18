@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net"
 	"reflect"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -255,34 +254,10 @@ func (m *mockFail2BanClient) GetBanned(jailName string) (*JailEntry, error) {
 			banListLen := banList.Len()
 			for index := 0; index < banListLen; index++ {
 				if listEntry, listEntryOk := banList.Get(index).(string); listEntryOk {
-					re := regexp.MustCompile(`^(\d{1,3}(?:\.\d{1,3}){3}) \t(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \+ (\d+) = (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$`)
 
-					matches := re.FindStringSubmatch(listEntry)
-					if matches == nil {
-						return nil, errors.New("could not parse banned IPs entry")
-					}
-
-					layout := "2006-01-02 15:04:05" // reference layout
-
-					bannedAt, bannedAtErr := time.Parse(layout, matches[2])
-					if bannedAtErr != nil {
-						return nil, bannedAtErr
-					}
-
-					banEndsAt, banEndsAtErr := time.Parse(layout, matches[4])
-					if banEndsAtErr != nil {
-						return nil, banEndsAtErr
-					}
-
-					ipAddress := matches[1]
-					currenPenalty := matches[3]
-
-					banEntry := &BanEntry{
-						Address:       ipAddress,
-						BannedAt:      bannedAt,
-						CurrenPenalty: currenPenalty,
-						BanEndsAt:     banEndsAt,
-						JailName:      jailName,
+					banEntry, parseErr := m.parseEntry(jailName, listEntry)
+					if parseErr != nil {
+						return nil, parseErr
 					}
 
 					bannedEntries = append(bannedEntries, banEntry)
@@ -561,6 +536,8 @@ func TestFail2BanClient_GetBanned(t *testing.T) {
 						items: []interface{}{
 							"192.168.1.100 \t2023-08-29 10:30:00 + 600 = 2023-08-29 10:40:00",
 							"10.0.0.50 \t2023-08-29 11:00:00 + 1800 = 2023-08-29 11:30:00",
+							"78.88.88.99 \t2026-04-18 20:00:26 + -1 = 9999-12-31 23:59:59",
+							"13.12.5.54 \t \t2023-08-29 11:00:00 + 1800 = 2023-08-29 11:30:00",
 						},
 					},
 				},
@@ -577,6 +554,20 @@ func TestFail2BanClient_GetBanned(t *testing.T) {
 					},
 					{
 						Address:       "10.0.0.50",
+						BannedAt:      time.Date(2023, 8, 29, 11, 0, 0, 0, time.UTC),
+						CurrenPenalty: "1800",
+						BanEndsAt:     time.Date(2023, 8, 29, 11, 30, 0, 0, time.UTC),
+						JailName:      "test-jail",
+					},
+					{
+						Address:       "78.88.88.99",
+						BannedAt:      time.Date(2026, 4, 18, 20, 0, 26, 0, time.UTC),
+						CurrenPenalty: "-1",
+						BanEndsAt:     time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC),
+						JailName:      "test-jail",
+					},
+					{
+						Address:       "13.12.5.54",
 						BannedAt:      time.Date(2023, 8, 29, 11, 0, 0, 0, time.UTC),
 						CurrenPenalty: "1800",
 						BanEndsAt:     time.Date(2023, 8, 29, 11, 30, 0, 0, time.UTC),
