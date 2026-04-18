@@ -785,6 +785,95 @@ func TestFail2BanClient_sendCommand(t *testing.T) {
 	}
 }
 
+func TestFail2BanClient_parseEntry(t *testing.T) {
+	tests := []struct {
+		name      string
+		jailName  string
+		listEntry string
+		want      *BanEntry
+		wantErr   bool
+	}{
+		{
+			name:      "valid entry",
+			jailName:  "test-jail",
+			listEntry: "192.168.1.100 \t2023-08-29 10:30:00 + 600 = 2023-08-29 10:40:00",
+			want: &BanEntry{
+				Address:       "192.168.1.100",
+				BannedAt:      time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
+				CurrenPenalty: "600",
+				BanEndsAt:     time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
+				JailName:      "test-jail",
+			},
+			wantErr: false,
+		},
+		{
+			name:      "valid entry with negative penalty and far future date",
+			jailName:  "sshd",
+			listEntry: "78.88.88.99 \t2026-04-18 20:00:26 + -1 = 9999-12-31 23:59:59",
+			want: &BanEntry{
+				Address:       "78.88.88.99",
+				BannedAt:      time.Date(2026, 4, 18, 20, 0, 26, 0, time.UTC),
+				CurrenPenalty: "-1",
+				BanEndsAt:     time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC),
+				JailName:      "sshd",
+			},
+			wantErr: false,
+		},
+		{
+			name:      "invalid format - missing parts",
+			jailName:  "test-jail",
+			listEntry: "192.168.1.100 2023-08-29 10:30:00",
+			want:      nil,
+			wantErr:   true,
+		},
+		{
+			name:      "invalid format - wrong separator",
+			jailName:  "test-jail",
+			listEntry: "192.168.1.100 | 2023-08-29 10:30:00 + 600 = 2023-08-29 10:40:00",
+			want:      nil,
+			wantErr:   true,
+		},
+		{
+			name:      "invalid date format",
+			jailName:  "test-jail",
+			listEntry: "192.168.1.100 \t29-08-2023 10:30:00 + 600 = 2023-08-29 10:40:00",
+			want:      nil,
+			wantErr:   true,
+		},
+		{
+			name:      "invalid end date format",
+			jailName:  "test-jail",
+			listEntry: "192.168.1.100 \t2023-08-29 10:30:00 + 600 = 29-08-2023 10:40:00",
+			want:      nil,
+			wantErr:   true,
+		},
+	}
+
+	client := &Fail2BanClient{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := client.parseEntry(tt.jailName, tt.listEntry)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseEntry() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			if got.Address != tt.want.Address ||
+				!got.BannedAt.Equal(tt.want.BannedAt) ||
+				got.CurrenPenalty != tt.want.CurrenPenalty ||
+				!got.BanEndsAt.Equal(tt.want.BanEndsAt) ||
+				got.JailName != tt.want.JailName {
+				t.Errorf("parseEntry() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestBanEntry(t *testing.T) {
 	now := time.Now()
 	later := now.Add(time.Hour)
