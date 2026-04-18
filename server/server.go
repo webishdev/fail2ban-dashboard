@@ -113,6 +113,12 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		"time": func(t time.Time) string {
 			return formatTime(t)
 		},
+		"formatPenalty": func(p string) string {
+			if p == "-1" {
+				return "permanent"
+			}
+			return p
+		},
 	}
 
 	indexTemplate, indexTemplateError := template.New("index").Funcs(templateFunctions).Parse(string(indexHtml))
