@@ -535,9 +535,12 @@ func TestFail2BanClient_GetBanned(t *testing.T) {
 					&mockList{
 						items: []interface{}{
 							"192.168.1.100 \t2023-08-29 10:30:00 + 600 = 2023-08-29 10:40:00",
+							"2602:fb54:1a00::10f \t2023-08-29 10:30:00 + 600 = 2023-08-29 10:40:00",
+							"fd12:3456:789a::25 \t2024-08-29 10:30:00 + 600 = 2024-08-29 10:40:00",
 							"10.0.0.50 \t2023-08-29 11:00:00 + 1800 = 2023-08-29 11:30:00",
 							"78.88.88.99 \t2026-04-18 20:00:26 + -1 = 9999-12-31 23:59:59",
 							"13.12.5.54 \t \t2023-08-29 11:00:00 + 1800 = 2023-08-29 11:30:00",
+							"2001:db8::dead:beef \t \t2023-08-29 11:00:00 + 1800 = 2023-08-29 11:30:00",
 						},
 					},
 				},
@@ -550,6 +553,20 @@ func TestFail2BanClient_GetBanned(t *testing.T) {
 						BannedAt:      time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
 						CurrenPenalty: "600",
 						BanEndsAt:     time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
+						JailName:      "test-jail",
+					},
+					{
+						Address:       "2602:fb54:1a00::10f",
+						BannedAt:      time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
+						CurrenPenalty: "600",
+						BanEndsAt:     time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
+						JailName:      "test-jail",
+					},
+					{
+						Address:       "fd12:3456:789a::25",
+						BannedAt:      time.Date(2024, 8, 29, 10, 30, 0, 0, time.UTC),
+						CurrenPenalty: "600",
+						BanEndsAt:     time.Date(2024, 8, 29, 10, 40, 0, 0, time.UTC),
 						JailName:      "test-jail",
 					},
 					{
@@ -568,6 +585,13 @@ func TestFail2BanClient_GetBanned(t *testing.T) {
 					},
 					{
 						Address:       "13.12.5.54",
+						BannedAt:      time.Date(2023, 8, 29, 11, 0, 0, 0, time.UTC),
+						CurrenPenalty: "1800",
+						BanEndsAt:     time.Date(2023, 8, 29, 11, 30, 0, 0, time.UTC),
+						JailName:      "test-jail",
+					},
+					{
+						Address:       "2001:db8::dead:beef",
 						BannedAt:      time.Date(2023, 8, 29, 11, 0, 0, 0, time.UTC),
 						CurrenPenalty: "1800",
 						BanEndsAt:     time.Date(2023, 8, 29, 11, 30, 0, 0, time.UTC),
@@ -794,11 +818,24 @@ func TestFail2BanClient_parseEntry(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name:      "valid entry",
+			name:      "valid IPv4 entry",
 			jailName:  "test-jail",
 			listEntry: "192.168.1.100 \t2023-08-29 10:30:00 + 600 = 2023-08-29 10:40:00",
 			want: &BanEntry{
 				Address:       "192.168.1.100",
+				BannedAt:      time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
+				CurrenPenalty: "600",
+				BanEndsAt:     time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
+				JailName:      "test-jail",
+			},
+			wantErr: false,
+		},
+		{
+			name:      "valid IPv6 entry",
+			jailName:  "test-jail",
+			listEntry: "2001:db8::dead:beef \t2023-08-29 10:30:00 + 600 = 2023-08-29 10:40:00",
+			want: &BanEntry{
+				Address:       "2001:db8::dead:beef",
 				BannedAt:      time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
 				CurrenPenalty: "600",
 				BanEndsAt:     time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),

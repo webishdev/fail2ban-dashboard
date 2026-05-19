@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -58,8 +57,6 @@ type Fail2BanClient struct {
 	socket  net.Conn
 	encoder *ogórek.Encoder
 }
-
-var banRegex = regexp.MustCompile(`^(\d{1,3}(?:\.\d{1,3}){3})[ \t]+(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \+ (-?\d+) = (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$`)
 
 func NewFail2BanClient(address string) (*Fail2BanClient, error) {
 	log.Tracef("Attempting to connect to fail2ban socket at %s", address)
@@ -268,32 +265,17 @@ func (f2bc *Fail2BanClient) GetBanned(jailName string) (*JailEntry, error) {
 func (f2bc *Fail2BanClient) parseEntry(jailName string, listEntry string) (*BanEntry, error) {
 	log.Tracef("GetBanned: Parsing ban entry: %s", listEntry)
 
-	matches := banRegex.FindStringSubmatch(listEntry)
-	if matches == nil {
+	parsed, err := parse(listEntry)
+	if err != nil {
 		log.Errorf("GetBanned: Failed to parse ban entry: %s", listEntry)
-		return nil, errors.New("could not parse banned IPs entry")
+		return nil, err
 	}
-
-	layout := "2006-01-02 15:04:05" // reference layout
-
-	bannedAt, bannedAtErr := time.Parse(layout, matches[2])
-	if bannedAtErr != nil {
-		return nil, bannedAtErr
-	}
-
-	banEndsAt, banEndsAtErr := time.Parse(layout, matches[4])
-	if banEndsAtErr != nil {
-		return nil, banEndsAtErr
-	}
-
-	ipAddress := matches[1]
-	currenPenalty := matches[3]
 
 	banEntry := &BanEntry{
-		Address:       ipAddress,
-		BannedAt:      bannedAt,
-		CurrenPenalty: currenPenalty,
-		BanEndsAt:     banEndsAt,
+		Address:       parsed.ipAddress,
+		BannedAt:      parsed.bannedAt,
+		CurrenPenalty: parsed.currentPenalty,
+		BanEndsAt:     parsed.banEndsAt,
 		JailName:      jailName,
 	}
 
