@@ -248,6 +248,10 @@ func downloadFile(url, dest string) error {
 		}
 	}(resp.Body)
 
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code during download: %d", resp.StatusCode)
+	}
+
 	out, err := os.Create(dest)
 	if err != nil {
 		return err

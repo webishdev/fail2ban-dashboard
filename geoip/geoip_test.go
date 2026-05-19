@@ -475,7 +475,7 @@ func TestDownloadFile_InvalidURL(t *testing.T) {
 	}
 }
 
-func TestLoadDataFromFile(t *testing.T) {
+func TestLoadDataFromFile4(t *testing.T) {
 	// Create a temporary gzipped TSV file for testing
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "test_load.tsv.gz")
@@ -511,6 +511,42 @@ func TestLoadDataFromFile(t *testing.T) {
 	}
 }
 
+func TestLoadDataFromFile6(t *testing.T) {
+	// Create a temporary gzipped TSV file for testing
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "test_load.tsv.gz")
+
+	// Create test data
+	testTSV := "2001:4:112::\t2001:4:112:ffff:ffff:ffff:ffff:ffff\tUS\n2001:410:103::\t2001:410:10a:ffff:ffff:ffff:ffff:ffff\tCA\n"
+
+	// Create gzipped file
+	file, err := os.Create(testFile)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	gzWriter := gzip.NewWriter(file)
+	_, err = gzWriter.Write([]byte(testTSV))
+	if err != nil {
+		t.Fatalf("Failed to write test data: %v", err)
+	}
+	_ = gzWriter.Close()
+	_ = file.Close()
+
+	// Test loading data
+	data := loadDataFromFile6(testFile)
+
+	if len(data) != 2 {
+		t.Errorf("Expected 2 records, got %d", len(data))
+	}
+
+	if len(data) > 0 {
+		if data[0].countryCode != "US" {
+			t.Errorf("Expected first country US, got %s", data[0].countryCode)
+		}
+	}
+}
+
 func TestLoadDataFromFile_NonExistent(t *testing.T) {
 	data := loadDataFromFile4("/non/existent/file.gz")
 	if len(data) != 0 {
@@ -518,7 +554,7 @@ func TestLoadDataFromFile_NonExistent(t *testing.T) {
 	}
 }
 
-func TestGeoIP_Lookup_Integration(t *testing.T) {
+func TestGeoIP_Lookup_Integration4(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create test gzip file
@@ -563,7 +599,52 @@ func TestGeoIP_Lookup_Integration(t *testing.T) {
 	}
 }
 
-func TestGeoIP_download_CacheHit(t *testing.T) {
+func TestGeoIP_Lookup_Integration6(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create test gzip file
+	testFile := filepath.Join(tempDir, cacheName6)
+	testTSV := "2001:4:112::\t2001:4:112:ffff:ffff:ffff:ffff:ffff\tUS\n2001:410:103::\t2001:410:10a:ffff:ffff:ffff:ffff:ffff\tCA\n"
+
+	file, err := os.Create(testFile)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	gzWriter := gzip.NewWriter(file)
+	_, _ = gzWriter.Write([]byte(testTSV))
+	_ = gzWriter.Close()
+	_ = file.Close()
+
+	// Set file modification time to recent to avoid download
+	recentTime := time.Now().Add(-1 * time.Hour)
+	_ = os.Chtimes(testFile, recentTime, recentTime)
+
+	geoIP := NewGeoIP(tempDir, true)
+
+	// Wait a bit for data to load
+	time.Sleep(100 * time.Millisecond)
+
+	// Test lookup
+	cc, ok := geoIP.Lookup("2001:4:112:abcd::1")
+	if !ok {
+		t.Error("Expected successful lookup")
+	}
+	if cc != "US" {
+		t.Errorf("Expected country US, got %s", cc)
+	}
+
+	// Test invalid IP
+	cc, ok = geoIP.Lookup("invalid")
+	if ok {
+		t.Error("Expected failed lookup for invalid IP")
+	}
+	if cc != "" {
+		t.Errorf("Expected empty country code, got %s", cc)
+	}
+}
+
+func TestGeoIP_download_CacheHit4(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create cached file with recent timestamp
@@ -590,11 +671,42 @@ func TestGeoIP_download_CacheHit(t *testing.T) {
 	geoIP.download4()
 
 	if len(geoIP.data4) != 1 {
-		t.Errorf("Expected 1 record loaded from cache, got %d", len(geoIP.data4))
+		t.Errorf("Expected 1 IPv4 record loaded from cache, got %d", len(geoIP.data4))
 	}
 }
 
-func TestGeoIP_download_CacheMiss_OldFile(t *testing.T) {
+func TestGeoIP_download_CacheHit6(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create cached file with recent timestamp
+	testFile := filepath.Join(tempDir, cacheName6)
+	testTSV := "2001:4:112::\t2001:4:112:ffff:ffff:ffff:ffff:ffff\tUS\n"
+
+	file, err := os.Create(testFile)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	gzWriter := gzip.NewWriter(file)
+	_, _ = gzWriter.Write([]byte(testTSV))
+	_ = gzWriter.Close()
+	_ = file.Close()
+
+	// Set recent modification time
+	recentTime := time.Now().Add(-1 * time.Hour)
+	_ = os.Chtimes(testFile, recentTime, recentTime)
+
+	geoIP := &GeoIP{dir: tempDir}
+
+	// Call download - should use cache
+	geoIP.download6()
+
+	if len(geoIP.data6) != 1 {
+		t.Errorf("Expected 1 IPv6 record loaded from cache, got %d", len(geoIP.data6))
+	}
+}
+
+func TestGeoIP_download_CacheMiss_OldFile4(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create old cached file
@@ -625,12 +737,53 @@ func TestGeoIP_download_CacheMiss_OldFile(t *testing.T) {
 	// by checking that it attempted to download (old file detected)
 }
 
-func TestGeoIP_download_NoFile(t *testing.T) {
+func TestGeoIP_download_CacheMiss_OldFile6(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create old cached file
+	testFile := filepath.Join(tempDir, cacheName6)
+	testTSV := "2001:4:112::\t2001:4:112:ffff:ffff:ffff:ffff:ffff\tUS\n"
+
+	file, err := os.Create(testFile)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	gzWriter := gzip.NewWriter(file)
+	_, _ = gzWriter.Write([]byte(testTSV))
+	_ = gzWriter.Close()
+	_ = file.Close()
+
+	// Set old modification time (older than cacheTTL)
+	oldTime := time.Now().Add(-24 * time.Hour)
+	_ = os.Chtimes(testFile, oldTime, oldTime)
+
+	geoIP := &GeoIP{dir: tempDir}
+
+	// This will attempt to download but fail due to network
+	// The test verifies the cache logic works
+	geoIP.download6()
+
+	// The download will fail, but we can verify cache logic worked
+	// by checking that it attempted to download (old file detected)
+}
+
+func TestGeoIP_download_NoFile4(t *testing.T) {
 	tempDir := t.TempDir()
 	geoIP := &GeoIP{dir: tempDir}
 
 	// This will attempt to download since no file exists
 	geoIP.download4()
+
+	// Download will fail due to network, but cache logic is tested
+}
+
+func TestGeoIP_download_NoFile6(t *testing.T) {
+	tempDir := t.TempDir()
+	geoIP := &GeoIP{dir: tempDir}
+
+	// This will attempt to download since no file exists
+	geoIP.download6()
 
 	// Download will fail due to network, but cache logic is tested
 }
@@ -647,6 +800,7 @@ func TestGeoIP_download_ConcurrentAccess(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			geoIP.download4()
+			geoIP.download6()
 		}()
 	}
 
