@@ -2,78 +2,63 @@ package geoip
 
 import (
 	"compress/gzip"
-	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 )
 
-// Mock implementations for testing
-
-// MockHTTPClient mocks the HTTP client
-type MockHTTPClient struct {
-	GetFunc func(url string) (*http.Response, error)
-}
-
-func (m *MockHTTPClient) Get(url string) (*http.Response, error) {
-	if m.GetFunc != nil {
-		return m.GetFunc(url)
+func mustIPv6Pair(value string) (hi, lo uint64) {
+	hi, lo, err := toUint64Pair(value)
+	if err != nil {
+		panic(err)
 	}
-	return nil, errors.New("mock not implemented")
+
+	return hi, lo
 }
 
-// MockFileSystem mocks file system operations
-type MockFileSystem struct {
-	StatFunc   func(name string) (os.FileInfo, error)
-	CreateFunc func(name string) (*os.File, error)
-	OpenFunc   func(name string) (*os.File, error)
-}
+var (
+	usStartHi, usStartLo = mustIPv6Pair("2001:db8::")
+	usEndHi, usEndLo     = mustIPv6Pair("2001:db8:0:0:ffff:ffff:ffff:ffff")
 
-func (m *MockFileSystem) Stat(name string) (os.FileInfo, error) {
-	if m.StatFunc != nil {
-		return m.StatFunc(name)
-	}
-	return nil, errors.New("mock not implemented")
-}
+	caStartHi, caStartLo = mustIPv6Pair("2001:db8:1::")
+	caEndHi, caEndLo     = mustIPv6Pair("2001:db8:1:0:ffff:ffff:ffff:ffff")
 
-func (m *MockFileSystem) Create(name string) (*os.File, error) {
-	if m.CreateFunc != nil {
-		return m.CreateFunc(name)
-	}
-	return nil, errors.New("mock not implemented")
-}
-
-func (m *MockFileSystem) Open(name string) (*os.File, error) {
-	if m.OpenFunc != nil {
-		return m.OpenFunc(name)
-	}
-	return nil, errors.New("mock not implemented")
-}
-
-// MockFileInfo implements os.FileInfo
-type MockFileInfo struct {
-	name    string
-	size    int64
-	mode    os.FileMode
-	modTime time.Time
-}
-
-func (m MockFileInfo) Name() string       { return m.name }
-func (m MockFileInfo) Size() int64        { return m.size }
-func (m MockFileInfo) Mode() os.FileMode  { return m.mode }
-func (m MockFileInfo) ModTime() time.Time { return m.modTime }
-func (m MockFileInfo) IsDir() bool        { return false }
-func (m MockFileInfo) Sys() interface{}   { return nil }
+	gbStartHi, gbStartLo = mustIPv6Pair("2001:db8:a::")
+	gbEndHi, gbEndLo     = mustIPv6Pair("2001:db8:a:0:ffff:ffff:ffff:ffff")
+)
 
 // Test data for GeoIP
-var testGeoData = []geoData{
+var testGeoData4 = []geoData4{
 	{rangeStart: 0, rangeEnd: 16777215, countryCode: "US"},          // 0.0.0.0 - 0.255.255.255
 	{rangeStart: 16777216, rangeEnd: 33554431, countryCode: "CA"},   // 1.0.0.0 - 1.255.255.255
 	{rangeStart: 167772160, rangeEnd: 184549375, countryCode: "GB"}, // 10.0.0.0 - 10.255.255.255
+}
+
+var testGeoData6 = []geoData6{
+	{
+		rangeStartHi: usStartHi,
+		rangeStartLo: usStartLo,
+		rangeEndHi:   usEndHi,
+		rangeEndLo:   usEndLo,
+		countryCode:  "US",
+	},
+	{
+		rangeStartHi: caStartHi,
+		rangeStartLo: caStartLo,
+		rangeEndHi:   caEndHi,
+		rangeEndLo:   caEndLo,
+		countryCode:  "CA",
+	},
+	{
+		rangeStartHi: gbStartHi,
+		rangeStartLo: gbStartLo,
+		rangeEndHi:   gbEndHi,
+		rangeEndLo:   gbEndLo,
+		countryCode:  "GB",
+	},
 }
 
 func TestNewGeoIP(t *testing.T) {
@@ -89,8 +74,12 @@ func TestNewGeoIP(t *testing.T) {
 		t.Errorf("Expected dir %s, got %s", tempDir, geoIP.dir)
 	}
 
-	if geoIP.data != nil {
-		t.Error("Expected data slice to be nil initially")
+	if geoIP.data4 != nil {
+		t.Error("Expected IPv4 data slice to be nil initially")
+	}
+
+	if geoIP.data6 != nil {
+		t.Error("Expected IPv6 data slice to be nil initially")
 	}
 
 	// Give time for the goroutine to start
@@ -99,7 +88,8 @@ func TestNewGeoIP(t *testing.T) {
 
 func TestGeoIP_findCountry(t *testing.T) {
 	geoIP := &GeoIP{
-		data: testGeoData,
+		data4: testGeoData4,
+		data6: testGeoData6,
 	}
 
 	testCases := []struct {
@@ -109,26 +99,62 @@ func TestGeoIP_findCountry(t *testing.T) {
 		expectedOK bool
 	}{
 		{
-			name:       "Valid IP in US range",
+			name:       "Valid IPv4 in US range",
 			ip:         "0.1.0.0",
 			expectedCC: "US",
 			expectedOK: true,
 		},
 		{
-			name:       "Valid IP in CA range",
+			name:       "Valid IPv4 in CA range",
 			ip:         "1.1.0.0",
 			expectedCC: "CA",
 			expectedOK: true,
 		},
 		{
-			name:       "Valid IP in GB range",
+			name:       "Valid IPv4 in GB range",
 			ip:         "10.0.0.1",
 			expectedCC: "GB",
 			expectedOK: true,
 		},
 		{
-			name:       "IP not in any range",
+			name:       "IPv4 not in any range",
 			ip:         "192.168.1.1",
+			expectedCC: "",
+			expectedOK: false,
+		},
+		{
+			name:       "Valid IPv6 in US range",
+			ip:         "2001:db8::1",
+			expectedCC: "US",
+			expectedOK: true,
+		},
+		{
+			name:       "Valid IPv6 in CA range",
+			ip:         "2001:db8:1::1",
+			expectedCC: "CA",
+			expectedOK: true,
+		},
+		{
+			name:       "Valid IPv6 in GB range",
+			ip:         "2001:db8:a::1",
+			expectedCC: "GB",
+			expectedOK: true,
+		},
+		{
+			name:       "IPv6 at start of range",
+			ip:         "2001:db8::",
+			expectedCC: "US",
+			expectedOK: true,
+		},
+		{
+			name:       "IPv6 at end of range",
+			ip:         "2001:db8:0:0:ffff:ffff:ffff:ffff",
+			expectedCC: "US",
+			expectedOK: true,
+		},
+		{
+			name:       "IPv6 not in any range",
+			ip:         "2001:db8:ffff::1",
 			expectedCC: "",
 			expectedOK: false,
 		},
@@ -167,7 +193,31 @@ func TestGeoIP_findCountry(t *testing.T) {
 
 func TestGeoIP_findCountry_EmptyData(t *testing.T) {
 	geoIP := &GeoIP{
-		data: []geoData{},
+		data4: []geoData4{},
+		data6: []geoData6{},
+	}
+
+	cc, ok := geoIP.findCountry("1.1.1.1")
+	if cc != "" {
+		t.Errorf("Expected empty country code, got %s", cc)
+	}
+	if ok {
+		t.Error("Expected ok to be false for empty data")
+	}
+
+	cc, ok = geoIP.findCountry("2602:fb54:1a00::10f")
+	if cc != "" {
+		t.Errorf("Expected empty country code, got %s", cc)
+	}
+	if ok {
+		t.Error("Expected ok to be false for empty data")
+	}
+}
+
+func TestGeoIP_findCountry_EmptyData4(t *testing.T) {
+	geoIP := &GeoIP{
+		data4: []geoData4{},
+		data6: testGeoData6,
 	}
 
 	cc, ok := geoIP.findCountry("1.1.1.1")
@@ -179,9 +229,24 @@ func TestGeoIP_findCountry_EmptyData(t *testing.T) {
 	}
 }
 
+func TestGeoIP_findCountry_EmptyData6(t *testing.T) {
+	geoIP := &GeoIP{
+		data4: testGeoData4,
+		data6: []geoData6{},
+	}
+
+	cc, ok := geoIP.findCountry("2602:fb54:1a00::10f")
+	if cc != "" {
+		t.Errorf("Expected empty country code, got %s", cc)
+	}
+	if ok {
+		t.Error("Expected ok to be false for empty data")
+	}
+}
+
 func TestGeoIP_findCountry_ConcurrentAccess(t *testing.T) {
 	geoIP := &GeoIP{
-		data: testGeoData,
+		data4: testGeoData4,
 	}
 
 	var wg sync.WaitGroup
@@ -276,7 +341,7 @@ func TestToInt(t *testing.T) {
 	}
 }
 
-func TestReadGzip(t *testing.T) {
+func TestReadGzip4(t *testing.T) {
 	// Create a temporary gzipped TSV file for testing
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "test.tsv.gz")
@@ -299,7 +364,7 @@ func TestReadGzip(t *testing.T) {
 	_ = file.Close()
 
 	// Test reading the file
-	data, err := readGzip(testFile)
+	data, err := readGzip4(testFile)
 	if err != nil {
 		t.Fatalf("readGzip failed: %v", err)
 	}
@@ -320,13 +385,13 @@ func TestReadGzip(t *testing.T) {
 }
 
 func TestReadGzip_NonExistentFile(t *testing.T) {
-	_, err := readGzip("/non/existent/file.gz")
+	_, err := readGzip4("/non/existent/file.gz")
 	if err == nil {
 		t.Error("Expected error for non-existent file")
 	}
 }
 
-func TestReadGzip_InvalidGzip(t *testing.T) {
+func TestReadGzip_InvalidGzip4(t *testing.T) {
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "invalid.gz")
 
@@ -336,21 +401,26 @@ func TestReadGzip_InvalidGzip(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
-	_, err = readGzip(testFile)
+	_, err = readGzip4(testFile)
 	if err == nil {
 		t.Error("Expected error for invalid gzip file")
 	}
 }
 
-// Mock response body for HTTP tests
-type MockResponseBody struct {
-	*strings.Reader
-	closed bool
-}
+func TestReadGzip_InvalidGzip6(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "invalid.gz")
 
-func (m *MockResponseBody) Close() error {
-	m.closed = true
-	return nil
+	// Create a non-gzip file with .gz extension
+	err := os.WriteFile(testFile, []byte("not gzipped content"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	_, err = readGzip6(testFile)
+	if err == nil {
+		t.Error("Expected error for invalid gzip file")
+	}
 }
 
 func TestDownloadFile_Success(t *testing.T) {
@@ -405,7 +475,7 @@ func TestDownloadFile_InvalidURL(t *testing.T) {
 	}
 }
 
-func TestLoadDataFromFile(t *testing.T) {
+func TestLoadDataFromFile4(t *testing.T) {
 	// Create a temporary gzipped TSV file for testing
 	tempDir := t.TempDir()
 	testFile := filepath.Join(tempDir, "test_load.tsv.gz")
@@ -428,7 +498,43 @@ func TestLoadDataFromFile(t *testing.T) {
 	_ = file.Close()
 
 	// Test loading data
-	data := loadDataFromFile(testFile)
+	data := loadDataFromFile4(testFile)
+
+	if len(data) != 2 {
+		t.Errorf("Expected 2 records, got %d", len(data))
+	}
+
+	if len(data) > 0 {
+		if data[0].countryCode != "US" {
+			t.Errorf("Expected first country US, got %s", data[0].countryCode)
+		}
+	}
+}
+
+func TestLoadDataFromFile6(t *testing.T) {
+	// Create a temporary gzipped TSV file for testing
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "test_load.tsv.gz")
+
+	// Create test data
+	testTSV := "2001:4:112::\t2001:4:112:ffff:ffff:ffff:ffff:ffff\tUS\n2001:410:103::\t2001:410:10a:ffff:ffff:ffff:ffff:ffff\tCA\n"
+
+	// Create gzipped file
+	file, err := os.Create(testFile)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	gzWriter := gzip.NewWriter(file)
+	_, err = gzWriter.Write([]byte(testTSV))
+	if err != nil {
+		t.Fatalf("Failed to write test data: %v", err)
+	}
+	_ = gzWriter.Close()
+	_ = file.Close()
+
+	// Test loading data
+	data := loadDataFromFile6(testFile)
 
 	if len(data) != 2 {
 		t.Errorf("Expected 2 records, got %d", len(data))
@@ -442,17 +548,17 @@ func TestLoadDataFromFile(t *testing.T) {
 }
 
 func TestLoadDataFromFile_NonExistent(t *testing.T) {
-	data := loadDataFromFile("/non/existent/file.gz")
+	data := loadDataFromFile4("/non/existent/file.gz")
 	if len(data) != 0 {
 		t.Error("Expected empty data for non-existent file")
 	}
 }
 
-func TestGeoIP_Lookup_Integration(t *testing.T) {
+func TestGeoIP_Lookup_Integration4(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create test gzip file
-	testFile := filepath.Join(tempDir, cacheName)
+	testFile := filepath.Join(tempDir, cacheName4)
 	testTSV := "0\t16777215\tUS\n16777216\t33554431\tCA\n"
 
 	file, err := os.Create(testFile)
@@ -493,11 +599,56 @@ func TestGeoIP_Lookup_Integration(t *testing.T) {
 	}
 }
 
-func TestGeoIP_download_CacheHit(t *testing.T) {
+func TestGeoIP_Lookup_Integration6(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create test gzip file
+	testFile := filepath.Join(tempDir, cacheName6)
+	testTSV := "2001:4:112::\t2001:4:112:ffff:ffff:ffff:ffff:ffff\tUS\n2001:410:103::\t2001:410:10a:ffff:ffff:ffff:ffff:ffff\tCA\n"
+
+	file, err := os.Create(testFile)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	gzWriter := gzip.NewWriter(file)
+	_, _ = gzWriter.Write([]byte(testTSV))
+	_ = gzWriter.Close()
+	_ = file.Close()
+
+	// Set file modification time to recent to avoid download
+	recentTime := time.Now().Add(-1 * time.Hour)
+	_ = os.Chtimes(testFile, recentTime, recentTime)
+
+	geoIP := NewGeoIP(tempDir, true)
+
+	// Wait a bit for data to load
+	time.Sleep(100 * time.Millisecond)
+
+	// Test lookup
+	cc, ok := geoIP.Lookup("2001:4:112:abcd::1")
+	if !ok {
+		t.Error("Expected successful lookup")
+	}
+	if cc != "US" {
+		t.Errorf("Expected country US, got %s", cc)
+	}
+
+	// Test invalid IP
+	cc, ok = geoIP.Lookup("invalid")
+	if ok {
+		t.Error("Expected failed lookup for invalid IP")
+	}
+	if cc != "" {
+		t.Errorf("Expected empty country code, got %s", cc)
+	}
+}
+
+func TestGeoIP_download_CacheHit4(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create cached file with recent timestamp
-	testFile := filepath.Join(tempDir, cacheName)
+	testFile := filepath.Join(tempDir, cacheName4)
 	testTSV := "0\t16777215\tUS\n"
 
 	file, err := os.Create(testFile)
@@ -517,18 +668,49 @@ func TestGeoIP_download_CacheHit(t *testing.T) {
 	geoIP := &GeoIP{dir: tempDir}
 
 	// Call download - should use cache
-	geoIP.download()
+	geoIP.download4()
 
-	if len(geoIP.data) != 1 {
-		t.Errorf("Expected 1 record loaded from cache, got %d", len(geoIP.data))
+	if len(geoIP.data4) != 1 {
+		t.Errorf("Expected 1 IPv4 record loaded from cache, got %d", len(geoIP.data4))
 	}
 }
 
-func TestGeoIP_download_CacheMiss_OldFile(t *testing.T) {
+func TestGeoIP_download_CacheHit6(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create cached file with recent timestamp
+	testFile := filepath.Join(tempDir, cacheName6)
+	testTSV := "2001:4:112::\t2001:4:112:ffff:ffff:ffff:ffff:ffff\tUS\n"
+
+	file, err := os.Create(testFile)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	gzWriter := gzip.NewWriter(file)
+	_, _ = gzWriter.Write([]byte(testTSV))
+	_ = gzWriter.Close()
+	_ = file.Close()
+
+	// Set recent modification time
+	recentTime := time.Now().Add(-1 * time.Hour)
+	_ = os.Chtimes(testFile, recentTime, recentTime)
+
+	geoIP := &GeoIP{dir: tempDir}
+
+	// Call download - should use cache
+	geoIP.download6()
+
+	if len(geoIP.data6) != 1 {
+		t.Errorf("Expected 1 IPv6 record loaded from cache, got %d", len(geoIP.data6))
+	}
+}
+
+func TestGeoIP_download_CacheMiss_OldFile4(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create old cached file
-	testFile := filepath.Join(tempDir, cacheName)
+	testFile := filepath.Join(tempDir, cacheName4)
 	testTSV := "0\t16777215\tUS\n"
 
 	file, err := os.Create(testFile)
@@ -549,18 +731,59 @@ func TestGeoIP_download_CacheMiss_OldFile(t *testing.T) {
 
 	// This will attempt to download but fail due to network
 	// The test verifies the cache logic works
-	geoIP.download()
+	geoIP.download4()
 
 	// The download will fail, but we can verify cache logic worked
 	// by checking that it attempted to download (old file detected)
 }
 
-func TestGeoIP_download_NoFile(t *testing.T) {
+func TestGeoIP_download_CacheMiss_OldFile6(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create old cached file
+	testFile := filepath.Join(tempDir, cacheName6)
+	testTSV := "2001:4:112::\t2001:4:112:ffff:ffff:ffff:ffff:ffff\tUS\n"
+
+	file, err := os.Create(testFile)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	gzWriter := gzip.NewWriter(file)
+	_, _ = gzWriter.Write([]byte(testTSV))
+	_ = gzWriter.Close()
+	_ = file.Close()
+
+	// Set old modification time (older than cacheTTL)
+	oldTime := time.Now().Add(-24 * time.Hour)
+	_ = os.Chtimes(testFile, oldTime, oldTime)
+
+	geoIP := &GeoIP{dir: tempDir}
+
+	// This will attempt to download but fail due to network
+	// The test verifies the cache logic works
+	geoIP.download6()
+
+	// The download will fail, but we can verify cache logic worked
+	// by checking that it attempted to download (old file detected)
+}
+
+func TestGeoIP_download_NoFile4(t *testing.T) {
 	tempDir := t.TempDir()
 	geoIP := &GeoIP{dir: tempDir}
 
 	// This will attempt to download since no file exists
-	geoIP.download()
+	geoIP.download4()
+
+	// Download will fail due to network, but cache logic is tested
+}
+
+func TestGeoIP_download_NoFile6(t *testing.T) {
+	tempDir := t.TempDir()
+	geoIP := &GeoIP{dir: tempDir}
+
+	// This will attempt to download since no file exists
+	geoIP.download6()
 
 	// Download will fail due to network, but cache logic is tested
 }
@@ -576,7 +799,8 @@ func TestGeoIP_download_ConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			geoIP.download()
+			geoIP.download4()
+			geoIP.download6()
 		}()
 	}
 

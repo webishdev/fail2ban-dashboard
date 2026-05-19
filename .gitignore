@@ -1,5 +1,6 @@
 bin/
 .idea/
+.junie/
 fail2ban-dashboard
 *.sqlite3
 generate*
