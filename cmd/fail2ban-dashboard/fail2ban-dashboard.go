@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/webishdev/fail2ban-dashboard/bootstrap"
@@ -188,9 +188,7 @@ func run(_ *cobra.Command, _ []string) {
 	geoIP := geoip.NewGeoIP(absoluteCacheDir, enableSchedule)
 
 	// Create dashboard application
-	dashboardApp := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-	})
+	dashboardApp := fiber.New(fiber.Config{})
 
 	configuration := &server.Configuration{
 		Address:           address,
@@ -209,9 +207,7 @@ func run(_ *cobra.Command, _ []string) {
 			Version:         Version,
 		}
 		if address != metricsAddress {
-			metricsApp := fiber.New(fiber.Config{
-				DisableStartupMessage: true,
-			})
+			metricsApp := fiber.New(fiber.Config{})
 
 			metrics.RegisterMetricsEndpoints(metricsApp, dataStore, metricConfiguration)
 

@@ -1,6 +1,6 @@
 package bootstrap
 
-import "github.com/gofiber/fiber/v2/log"
+import "github.com/gofiber/fiber/v3/log"
 
 func ValidateRefreshSeconds(refreshSeconds int) int {
 	if refreshSeconds < 10 || refreshSeconds > 600 {
