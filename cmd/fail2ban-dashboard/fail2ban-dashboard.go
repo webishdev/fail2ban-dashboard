@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -36,6 +37,19 @@ var versionCmd = &cobra.Command{
 }
 
 func setupRootCommand() {
+	// Add search paths to find the file
+	viper.SetConfigName("config")
+	viper.AddConfigPath("/etc/fail2ban-dashboard/")
+	viper.AddConfigPath("$HOME/.config/fail2ban-dashboard")
+	viper.AddConfigPath(".")
+
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := errors.AsType[viper.ConfigFileNotFoundError](err); !ok {
+			fmt.Printf("Could not parse config file: %s\n", err)
+			os.Exit(1)
+		}
+	}
+
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("F2BD")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
