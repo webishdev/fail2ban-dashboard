@@ -14,9 +14,9 @@ import (
 	textTemplate "text/template"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
-	"github.com/gofiber/fiber/v2/middleware/basicauth"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
+	"github.com/gofiber/fiber/v3/middleware/basicauth"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
 	"github.com/webishdev/fail2ban-dashboard/store"
@@ -211,32 +211,32 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 	cleanedBasePath := path.Clean(configuration.BasePath)
 	dashboard := app.Group(cleanedBasePath)
 
-	dashboard.Get("images/favicon.ico", func(c *fiber.Ctx) error {
+	dashboard.Get("images/favicon.ico", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
 		return c.Send(faviconICOFile)
 	})
 
-	dashboard.Get("images/mascot.png", func(c *fiber.Ctx) error {
+	dashboard.Get("images/mascot.png", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/png")
 		return c.Send(mascotPNGFile)
 	})
 
-	dashboard.Get("css/main.css", func(c *fiber.Ctx) error {
+	dashboard.Get("css/main.css", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "text/css")
 		return c.Send(mainCSSFile)
 	})
 
-	dashboard.Get("css/daisyui@5.css", func(c *fiber.Ctx) error {
+	dashboard.Get("css/daisyui@5.css", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "text/css")
 		return c.Send(daisyUiCSSFile)
 	})
 
-	dashboard.Get("css/themes.css", func(c *fiber.Ctx) error {
+	dashboard.Get("css/themes.css", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "text/css")
 		return c.Send(themesUiCSSFile)
 	})
 
-	dashboard.Get("css/flags.css", func(c *fiber.Ctx) error {
+	dashboard.Get("css/flags.css", func(c fiber.Ctx) error {
 		codeQuery := c.Query("c")
 		if codeQuery == "" {
 			return c.SendStatus(fiber.StatusNotFound)
@@ -258,12 +258,12 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		return c.SendString(sb.String())
 	})
 
-	dashboard.Get("js/browser@4.js", func(c *fiber.Ctx) error {
+	dashboard.Get("js/browser@4.js", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJavaScript)
 		return c.Send(tailwindJSFile)
 	})
 
-	dashboard.Get("/", func(c *fiber.Ctx) error {
+	dashboard.Get("/", func(c fiber.Ctx) error {
 		accessLog(configuration.TrustProxyHeaders, "overview", c)
 		jails := dataStore.GetJails()
 
@@ -310,7 +310,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		return c.SendString(sb.String())
 	})
 
-	dashboard.Get("/:jail", func(c *fiber.Ctx) error {
+	dashboard.Get("/:jail", func(c fiber.Ctx) error {
 		jailName := c.Params("jail")
 		name := fmt.Sprintf("%s details", jailName)
 		accessLog(configuration.TrustProxyHeaders, name, c)
@@ -492,7 +492,7 @@ func cleanBasePathForTemplate(basePath string) string {
 	return basePath
 }
 
-func accessLog(trustProxyHeaders bool, name string, c *fiber.Ctx) {
+func accessLog(trustProxyHeaders bool, name string, c fiber.Ctx) {
 	remoteIP := c.IP()
 	additionalInfo := ""
 	if trustProxyHeaders {

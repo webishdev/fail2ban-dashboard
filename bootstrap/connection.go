@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"os"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 )
 

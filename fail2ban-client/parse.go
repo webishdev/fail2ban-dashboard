@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 )
 
 var banRegex = regexp.MustCompile(`^(\S+)[ \t]+(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \+ (-?\d+) = (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})$`)

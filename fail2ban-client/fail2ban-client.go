@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3/log"
 	ogórek "github.com/kisielk/og-rek"
 	"github.com/nlpodyssey/gopickle/pickle"
 	"github.com/nlpodyssey/gopickle/types"

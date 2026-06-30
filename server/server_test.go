@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/store"
 )
@@ -79,27 +79,25 @@ func createTestApp(mockStore *MockDataStore, mockGeoIP *MockGeoIP, config *Confi
 	}
 	_ = config // Use config to avoid ineffassign warning
 
-	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-	})
+	app := fiber.New(fiber.Config{})
 
 	// Set up basic routes similar to the main RegisterDashboardEndpoints function
-	app.Get("images/favicon.ico", func(c *fiber.Ctx) error {
+	app.Get("images/favicon.ico", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
 		return c.Send(faviconICOFile)
 	})
 
-	app.Get("css/main.css", func(c *fiber.Ctx) error {
+	app.Get("css/main.css", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "text/css")
 		return c.Send(mainCSSFile)
 	})
 
-	app.Get("css/daisyui@5.css", func(c *fiber.Ctx) error {
+	app.Get("css/daisyui@5.css", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "text/css")
 		return c.Send(daisyUiCSSFile)
 	})
 
-	app.Get("js/browser@4.js", func(c *fiber.Ctx) error {
+	app.Get("js/browser@4.js", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJavaScript)
 		return c.Send(tailwindJSFile)
 	})
@@ -606,7 +604,7 @@ func TestIndexRouteHandler(t *testing.T) {
 	app := createTestApp(mockStore, mockGeoIP, nil)
 
 	// Add the main route handler for testing
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/", func(c fiber.Ctx) error {
 		jails := mockStore.GetJails()
 
 		banned := make([]client.BanEntry, 0)

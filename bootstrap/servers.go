@@ -3,8 +3,8 @@ package bootstrap
 import (
 	"os"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/log"
 	"github.com/webishdev/fail2ban-dashboard/metrics"
 	"github.com/webishdev/fail2ban-dashboard/server"
 )
@@ -13,7 +13,9 @@ var osExit = os.Exit
 
 func StartDashboardServer(app *fiber.App, config *server.Configuration) {
 	log.Infof("Dashboard available at address %s", config.Address)
-	serveError := app.Listen(config.Address)
+	serveError := app.Listen(config.Address, fiber.ListenConfig{
+		DisableStartupMessage: true,
+	})
 	if serveError != nil {
 		log.Errorf("Could not start server: %s\n", serveError)
 		osExit(1)
@@ -22,7 +24,9 @@ func StartDashboardServer(app *fiber.App, config *server.Configuration) {
 
 func StartMetricsServer(metricsApp *fiber.App, config *metrics.Configuration) {
 	log.Infof("Metrics available at address %s", config.Address)
-	serveError := metricsApp.Listen(config.Address)
+	serveError := metricsApp.Listen(config.Address, fiber.ListenConfig{
+		DisableStartupMessage: true,
+	})
 	if serveError != nil {
 		log.Errorf("Could not start server: %s\n", serveError)
 		osExit(1)

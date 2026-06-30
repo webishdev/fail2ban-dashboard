@@ -1,6 +1,6 @@
 package bootstrap
 
-import "github.com/gofiber/fiber/v2/log"
+import "github.com/gofiber/fiber/v3/log"
 
 func ConfigureLogging(logLevel string) {
 	switch logLevel {

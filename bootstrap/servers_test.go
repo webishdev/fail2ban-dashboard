@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/webishdev/fail2ban-dashboard/metrics"
 	"github.com/webishdev/fail2ban-dashboard/server"
 )
@@ -29,9 +29,7 @@ func findAvailablePort(t *testing.T) string {
 func TestStartDashboardServer_Success(t *testing.T) {
 	address := findAvailablePort(t)
 
-	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-	})
+	app := fiber.New(fiber.Config{})
 
 	config := &server.Configuration{
 		Address: address,
@@ -69,9 +67,7 @@ func TestStartDashboardServer_Success(t *testing.T) {
 func TestStartMetricsServer_Success(t *testing.T) {
 	address := findAvailablePort(t)
 
-	metricsApp := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-	})
+	metricsApp := fiber.New(fiber.Config{})
 
 	config := &metrics.Configuration{
 		Address: address,
@@ -130,9 +126,7 @@ func TestStartDashboardServer_PortAlreadyInUse(t *testing.T) {
 		}
 	}(listener)
 
-	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-	})
+	app := fiber.New(fiber.Config{})
 
 	config := &server.Configuration{
 		Address: address,
@@ -171,9 +165,7 @@ func TestStartMetricsServer_PortAlreadyInUse(t *testing.T) {
 		}
 	}(listener)
 
-	metricsApp := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-	})
+	metricsApp := fiber.New(fiber.Config{})
 
 	config := &metrics.Configuration{
 		Address: address,
@@ -199,9 +191,7 @@ func TestStartDashboardServer_InvalidAddress(t *testing.T) {
 		osExit = originalExit
 	}()
 
-	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-	})
+	app := fiber.New(fiber.Config{})
 
 	config := &server.Configuration{
 		Address: "invalid:address:format:with:too:many:colons",
@@ -227,9 +217,7 @@ func TestStartMetricsServer_InvalidAddress(t *testing.T) {
 		osExit = originalExit
 	}()
 
-	metricsApp := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-	})
+	metricsApp := fiber.New(fiber.Config{})
 
 	config := &metrics.Configuration{
 		Address: "invalid:address:format:with:too:many:colons",
