@@ -34,6 +34,7 @@ If the dashboard should be used with another version, please switch off the vers
 - [Usage](#usage) 
   - [Command line](#command-line)
   - [Environment variables](#environment-variables)
+  - [Config file](#config-file)
 - [Dashboard](#dashboard)
   - [Web application](#web-application)
   - [Metrics](#metrics)
@@ -122,18 +123,18 @@ Environment variables can be used to set parameters without using command line f
 
 ### Config file
 
-It is also possible to configure the application using a config file.
-Supported config file formats are the ones supported by the [viper](https://github.com/spf13/viper) library.
+It is also possible to configure `fail2ban-dashboard` using a config file.
+Supported config file formats are the ones supported by the [viper](https://github.com/spf13/viper#reading-config-files) library.
 
 The config file can be located at `/etc/fail2ban-dashboard/`, the user home directory `~/.config/fail2ban-dashboard/` or the current working directory.
 
-For example, for a TOML file located at `/etc/fail2ban-dashboard/config.toml` the chaning the address is like
+For example, for a TOML file located at `/etc/fail2ban-dashboard/config.toml` to change the address should look like:
 
 ```toml
-address="127.0.0.1:4000"
+address = "127.0.0.1:4000"
 ```
 
-Supported configurations are
+Supported configurations are similar to flags and environment variables:
 
 | Configuration   |
 |-----------------|
