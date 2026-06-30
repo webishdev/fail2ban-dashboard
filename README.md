@@ -120,6 +120,32 @@ Environment variables can be used to set parameters without using command line f
 | `F2BD_SOCKET`              | `-s, --socket`          | Fail2ban socket path                        | `/var/run/fail2ban/fail2ban.sock` |
 | `F2BD_TRUST_PROXY_HEADERS` | `--trust-proxy-headers` | Trust proxy headers like X-Forwarded-For    | `false`                           |
 
+### Config file
+
+It is also possible to configure the application using a config file.
+Supported config file formats are the ones supported by the [viper](https://github.com/spf13/viper) library.
+
+The config file can be located at `/etc/fail2ban-dashboard/`, the user home directory `~/.config/fail2ban-dashboard/` or the current working directory.
+
+For example, for a TOML file located at `/etc/fail2ban-dashboard/config.toml` the chaning the address is like
+
+```toml
+address="127.0.0.1:4000"
+```
+
+Supported configurations are
+
+| Configuration   |
+|-----------------|
+| socket          |
+| address         |
+| auth-user       |
+| auth-password   |
+| cache-dir       |
+| log-level       |
+| base-path       |
+| metrics-address |
+
 ## Dashboard
 
 ### Web application

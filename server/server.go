@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	_ "embed"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"html/template"
 	"net"
@@ -103,6 +104,14 @@ type detailData struct {
 	Jail         store.Jail
 }
 
+func generateRandomPassword() string {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "default-password-change-me"
+	}
+	return hex.EncodeToString(b)
+}
+
 func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
 
 	templateFunctions := template.FuncMap{
@@ -197,13 +206,13 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		}
 		log.Infof("Basic authentication username set to %s", configuration.AuthUser)
 		if configuration.AuthPassword == "" {
-			configuration.AuthPassword = rand.Text()
+			configuration.AuthPassword = generateRandomPassword()
 			log.Infof("Basic authentication password set to %s", configuration.AuthPassword)
 		}
 
 		app.Use(basicauth.New(basicauth.Config{
-			Users: map[string]string{
-				configuration.AuthUser: configuration.AuthPassword,
+			Authorizer: func(user, password string, c fiber.Ctx) bool {
+				return user == configuration.AuthUser && password == configuration.AuthPassword
 			},
 		}))
 	}
