@@ -39,9 +39,10 @@ var versionCmd = &cobra.Command{
 func setupRootCommand() {
 	// Add search paths to find the file
 	viper.SetConfigName("config")
+
+	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/fail2ban-dashboard/")
 	viper.AddConfigPath("$HOME/.config/fail2ban-dashboard")
-	viper.AddConfigPath(".")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := errors.AsType[viper.ConfigFileNotFoundError](err); !ok {

@@ -126,7 +126,7 @@ Environment variables can be used to set parameters without using command line f
 It is also possible to configure `fail2ban-dashboard` using a config file.
 Supported config file formats are the ones supported by the [viper](https://github.com/spf13/viper#reading-config-files) library.
 
-The config file can be located at `/etc/fail2ban-dashboard/`, the user home directory `~/.config/fail2ban-dashboard/` or the current working directory.
+The config file can be located at the current working directory, the user home directory `~/.config/fail2ban-dashboard/` or `/etc/fail2ban-dashboard/`.
 
 For example, for a TOML file located at `/etc/fail2ban-dashboard/config.toml` to change the address should look like:
 
