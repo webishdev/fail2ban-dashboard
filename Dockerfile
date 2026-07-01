@@ -10,4 +10,4 @@ STOPSIGNAL SIGTERM
 
 ENV F2BD_ADDRESS=:3000
 
-ENTRYPOINT ["/fail2ban-dashboard"]
+ENTRYPOINT ["/fail2ban-dashboard", "serve"]
