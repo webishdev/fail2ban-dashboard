@@ -237,6 +237,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		RedirectURL: fmt.Sprintf("%s/callback", "http://localhost:3000"),
 	}
 
+	// TODO: Only add OAuth2 middleware if OAuth2 configuration is set
 	dashboard.Use(oauth.CreateOAuth2Middleware(sessionStore, oauthConfig))
 	dashboard.Get("/callback", oauth.CreateOAuth2CallbackHandler(sessionStore, oauthConfig))
 
