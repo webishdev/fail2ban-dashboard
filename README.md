@@ -85,20 +85,24 @@ Available Commands:
   version     Print the version number and git hash
 
 Flags:
-  -a, --address string             address to serve the dashboard on, also F2BD_ADDRESS (default "127.0.0.1:3000")
-      --auth-password string       password for basic auth, also F2BD_AUTH_PASSWORD
-      --auth-user string           username for basic auth, also F2BD_AUTH_USER
-      --base-path string           base path of the application, also F2BD_BASE_PATH (default "/")
-  -c, --cache-dir string           directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
-  -h, --help                       help for fail2ban-dashboard
-      --log-level string           log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL (default "info")
-  -m, --metrics                    will provide metrics endpoint, also F2BD_METRICS
-      --metrics-address string     address to make metrics available, also F2BD_METRICS_ADDRESS (default "127.0.0.1:9100")
-      --refresh-seconds int        fail2ban data refresh in seconds (value from 10 to 600), also F2BD_REFRESH_SECONDS (default 30)
-      --scheduled-geoip-download   will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD (default true)
-      --skip-version-check         skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK
-  -s, --socket string              location of the fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
-      --trust-proxy-headers        trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS
+  -a, --address string               address to serve the dashboard on, also F2BD_ADDRESS (default "127.0.0.1:3000")
+      --auth-password string         password for basic auth, also F2BD_AUTH_PASSWORD
+      --auth-user string             username for basic auth, also F2BD_AUTH_USER
+      --base-path string             base path of the application, also F2BD_BASE_PATH (default "/")
+  -c, --cache-dir string             directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
+  -h, --help                         help for fail2ban-dashboard
+      --log-level string             log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL (default "info")
+  -m, --metrics                      will provide metrics endpoint, also F2BD_METRICS
+      --metrics-address string       address to make metrics available, also F2BD_METRICS_ADDRESS (default "127.0.0.1:9100")
+      --oauth2-auth-url string       OAuth2 authentication URL, also F2BD_OAUTH2_AUTH_URL
+      --oauth2-client-id string      OAuth2 client identifier, also F2BD_OAUTH2_CLIENT_ID
+      --oauth2-redirect-url string   OAuth2 redirect URL, also F2BD_OAUTH2_REDIRECT_URL
+      --oauth2-token-url string      OAuth2 token URL, also F2BD_OAUTH2_TOKEN_URL
+      --refresh-seconds int          fail2ban data refresh in seconds (value from 10 to 600), also F2BD_REFRESH_SECONDS (default 30)
+      --scheduled-geoip-download     will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD (default true)
+      --skip-version-check           skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK
+  -s, --socket string                location of the fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
+      --trust-proxy-headers          trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
 ```
@@ -121,6 +125,19 @@ Environment variables can be used to set parameters without using command line f
 | `F2BD_SKIP_VERSION_CHECK`  | `--skip-version-check`  | Skip fail2ban version check                 | `false`                           |
 | `F2BD_SOCKET`              | `-s, --socket`          | Fail2ban socket path                        | `/var/run/fail2ban/fail2ban.sock` |
 | `F2BD_TRUST_PROXY_HEADERS` | `--trust-proxy-headers` | Trust proxy headers like X-Forwarded-For    | `false`                           |
+
+#### OAuth2
+
+When using OAuth2 authentication, `fail2ban-dashboard` requires the following environment variables or command line flags to be set:
+
+| Environment Variable       | Command Line Flag       | Description              | Default |
+|----------------------------|-------------------------|--------------------------|---------|
+| `F2BD_OAUTH2_CLIENT_ID`    | `--oauth2-client-id`    | OAuth2 client identifier | -       |
+| `F2BD_OAUTH2_AUTH_URL`     | `--oauth2-auth-url`     | OAuth2 authorization URL | -       |
+| `F2BD_OAUTH2_TOKEN_URL`    | `--oauth2-token-url`    | OAuth2 token URL         | -       |
+| `F2BD_OAUTH2_REDIRECT_URL` | `--oauth2-redirect-url` | OAuth2 redirect URL      | -       |
+
+All values are required and must be set. The `OAuth2 redirect URL` must be set to the URL of the `fail2ban-dashboard` application, which is usually `http://127.0.0.1:3000` but allows to provide URLs when used with a reverse proxy like `https://fail2ban.example.com`.
 
 ### Config file
 

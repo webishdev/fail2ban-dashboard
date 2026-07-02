@@ -171,7 +171,7 @@ func addServeFlags(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	flags.String("oauth2-client-id", "", "OAuth2 client id, also F2BD_OAUTH2_CLIENT_ID")
+	flags.String("oauth2-client-id", "", "OAuth2 client identifier, also F2BD_OAUTH2_CLIENT_ID")
 	oauth2ClientIdErr := viper.BindPFlag("oauth2-client-id", flags.Lookup("oauth2-client-id"))
 	if oauth2ClientIdErr != nil {
 		fmt.Printf("Could not bind oauth2-client-id flag: %s\n", oauth2ClientIdErr)
