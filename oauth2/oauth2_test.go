@@ -1,6 +1,7 @@
 package oauth2
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -131,20 +132,59 @@ func TestRedirectToLogin(t *testing.T) {
 	}
 }
 
-func TestRedirectToOAuth(t *testing.T) {
+func TestCreateOAuth2Middleware(t *testing.T) {
 	app := fiber.New()
 	store := session.NewStore(session.Config{})
-	oauthConfig := &oauth2.Config{
-		ClientID: "test-client-id",
-	}
+	basePath := "/"
 
-	app.Get("/oauth", func(c fiber.Ctx) error {
-		return RedirectToOAuth(c, store, oauthConfig)
+	// Add the middleware
+	app.Use(CreateOAuth2Middleware(store, basePath))
+
+	app.Get("/protected", func(c fiber.Ctx) error {
+		return c.SendString("ok")
 	})
 
-	req := httptest.NewRequest("GET", "/oauth", nil)
+	req := httptest.NewRequest("GET", "/protected", nil)
 	resp, _ := app.Test(req)
+	// Expected to redirect to login because not authenticated
 	if resp.StatusCode != 303 {
-		t.Errorf("RedirectToOAuth() expected status 303, got %v", resp.StatusCode)
+		t.Errorf("CreateOAuth2Middleware() expected status 303, got %v", resp.StatusCode)
+	}
+}
+
+func TestCreateOAuth2CallbackHandler(t *testing.T) {
+	// Mock server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"access_token":"mock_token","token_type":"Bearer","expires_in":3600}`))
+	}))
+	defer ts.Close()
+
+	app := fiber.New()
+	store := session.NewStore(session.Config{})
+
+	// Add middleware to set session state
+	app.Use(func(c fiber.Ctx) error {
+		sess, _ := store.Get(c)
+		sess.Set("oauth_state", "test-state")
+		sess.Save()
+		return c.Next()
+	})
+
+	oauthConfig := &oauth2.Config{
+		ClientID: "client-id",
+		Endpoint: oauth2.Endpoint{
+			TokenURL: ts.URL,
+		},
+	}
+	app.Get("/oauth2_callback", CreateOAuth2CallbackHandler(store, oauthConfig))
+
+	req := httptest.NewRequest("GET", "/oauth2_callback?state=test-state&code=test-code", nil)
+	// Need to handle session cookie if needed, but app.Test should handle cookies if properly configured
+	resp, _ := app.Test(req)
+
+	// It redirects to "/"
+	if resp.StatusCode != 303 {
+		t.Errorf("CreateOAuth2CallbackHandler() expected status 303, got %v", resp.StatusCode)
 	}
 }
