@@ -17,9 +17,9 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var CallBackEndpoint = "/oauth2_callback"
-var LoginEndpoint = "/login"
-var LogoutEndpoint = "/logout"
+var CallBackEndpoint = "oauth2_callback"
+var LoginEndpoint = "login"
+var LogoutEndpoint = "logout"
 
 func ValidateOAuth2Config(configuration *config.Configuration) (bool, error) {
 	oauth2ValuesUsed := configuration.OAuth2ClientID != "" || configuration.OAuth2AuthURL != "" || configuration.OAuth2TokenURL != "" || configuration.OAuth2RedirectURL != ""
@@ -31,7 +31,11 @@ func ValidateOAuth2Config(configuration *config.Configuration) (bool, error) {
 	return oauth2ValuesUsed, errors.New("missing some OAuth2 configuration values")
 }
 
-func GetOAuth2Config(configuration *config.Configuration) *oauth2.Config {
+func GetOAuth2Config(configuration *config.Configuration, basePath string) *oauth2.Config {
+	redirectURL := configuration.OAuth2RedirectURL
+	if strings.HasSuffix(redirectURL, "/") {
+		redirectURL = strings.TrimSuffix(redirectURL, "/")
+	}
 	return &oauth2.Config{
 		ClientID: configuration.OAuth2ClientID,
 		Endpoint: oauth2.Endpoint{
@@ -39,13 +43,13 @@ func GetOAuth2Config(configuration *config.Configuration) *oauth2.Config {
 			TokenURL:  configuration.OAuth2TokenURL,
 			AuthStyle: oauth2.AuthStyleAutoDetect,
 		},
-		RedirectURL: fmt.Sprintf("%s%s", configuration.OAuth2RedirectURL, CallBackEndpoint),
+		RedirectURL: fmt.Sprintf("%s%s%s", configuration.OAuth2RedirectURL, basePath, CallBackEndpoint),
 	}
 }
 
-func CreateOAuth2Middleware(sessionStore *session.Store) fiber.Handler {
+func CreateOAuth2Middleware(sessionStore *session.Store, basePath string) fiber.Handler {
 	return func(c fiber.Ctx) error {
-		return RedirectToLogin(c, sessionStore)
+		return RedirectToLogin(c, sessionStore, basePath)
 	}
 }
 
@@ -109,7 +113,7 @@ func Logout(c fiber.Ctx, sessionStore *session.Store, basePath string) error {
 	return c.Redirect().To(basePath)
 }
 
-func RedirectToLogin(c fiber.Ctx, sessionStore *session.Store) error {
+func RedirectToLogin(c fiber.Ctx, sessionStore *session.Store, basePath string) error {
 	sess, _ := sessionStore.Get(c)
 	originalURL := c.OriginalURL()
 
@@ -122,7 +126,7 @@ func RedirectToLogin(c fiber.Ctx, sessionStore *session.Store) error {
 
 	isAuthenticated := sess.Get("authenticated")
 
-	if strings.HasPrefix(originalURL, CallBackEndpoint) ||
+	if strings.HasSuffix(filename, CallBackEndpoint) ||
 		strings.HasSuffix(filename, ".css") ||
 		strings.HasSuffix(filename, ".js") ||
 		strings.HasSuffix(filename, ".png") ||
@@ -146,7 +150,7 @@ func RedirectToLogin(c fiber.Ctx, sessionStore *session.Store) error {
 		}
 	}
 
-	return c.Redirect().To(LoginEndpoint)
+	return c.Redirect().To(basePath + LoginEndpoint)
 
 }
 

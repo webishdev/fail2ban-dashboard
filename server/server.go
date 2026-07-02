@@ -223,11 +223,12 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 
 	cleanedBasePath := path.Clean(configuration.BasePath)
 	dashboard := app.Group(cleanedBasePath)
+	basePathForTemplate := cleanBasePathForTemplate(cleanedBasePath)
 
 	hasOAuth2Values, oauthValidationErr := oauth.ValidateOAuth2Config(configuration)
 
 	if hasOAuth2Values && oauthValidationErr == nil {
-		oauthConfig := oauth.GetOAuth2Config(configuration)
+		oauthConfig := oauth.GetOAuth2Config(configuration, basePathForTemplate)
 
 		loginTemplate, loginTemplateError := template.New("login").Funcs(templateFunctions).Parse(string(loginHtml))
 		if loginTemplateError != nil {
@@ -247,7 +248,6 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		}
 
 		dashboard.Get(oauth.LoginEndpoint, func(c fiber.Ctx) error {
-			basePathForTemplate := cleanBasePathForTemplate(cleanedBasePath)
 			sess, _ := sessionStore.Get(c)
 			isAuthenticated := sess.Get("authenticated") != nil
 			if isAuthenticated {
@@ -279,17 +279,14 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		})
 
 		dashboard.Get(oauth.LogoutEndpoint, func(c fiber.Ctx) error {
-			basePathForTemplate := cleanBasePathForTemplate(cleanedBasePath)
 			return oauth.Logout(c, sessionStore, basePathForTemplate)
 		})
 
-		dashboard.Use(oauth.CreateOAuth2Middleware(sessionStore))
+		dashboard.Use(oauth.CreateOAuth2Middleware(sessionStore, basePathForTemplate))
 		dashboard.Get(oauth.CallBackEndpoint, oauth.CreateOAuth2CallbackHandler(sessionStore, oauthConfig))
 	} else if hasOAuth2Values {
 		return oauthValidationErr
 	}
-
-	// TODO: Add a login page to show that OAuth2 is configured and you need to login
 
 	dashboard.Get("images/favicon.ico", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
@@ -375,7 +372,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			baseData: baseData{
 				Version:         configuration.Version,
 				Fail2BanVersion: configuration.Fail2BanVersion,
-				BasePath:        cleanBasePathForTemplate(cleanedBasePath),
+				BasePath:        basePathForTemplate,
 				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
 				HasBanned:       len(banned) > 0,
 				Banned:          banned,
@@ -433,7 +430,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			baseData: baseData{
 				Version:         configuration.Version,
 				Fail2BanVersion: configuration.Fail2BanVersion,
-				BasePath:        cleanBasePathForTemplate(cleanedBasePath),
+				BasePath:        basePathForTemplate,
 				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
 				HasBanned:       len(banned) > 0,
 				Banned:          banned,
