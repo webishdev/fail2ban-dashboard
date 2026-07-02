@@ -198,6 +198,13 @@ func addServeFlags(cmd *cobra.Command) {
 		fmt.Printf("Could not bind oauth2-redirect-url flag: %s\n", oauth2RedirectURLErr)
 		os.Exit(1)
 	}
+
+	flags.Int("oauth2-timeout-minutes", 30, "OAuth2 timeout minutes, also F2BD_OAUTH2_TIMEOUT_MINUTES")
+	oauth2TimeoutMinutesLErr := viper.BindPFlag("oauth2-timeout-minutes", flags.Lookup("oauth2-timeout-minutes"))
+	if oauth2TimeoutMinutesLErr != nil {
+		fmt.Printf("Could not bind oauth2-timeout-minutes flag: %s\n", oauth2RedirectURLErr)
+		os.Exit(1)
+	}
 }
 
 func main() {
@@ -225,10 +232,13 @@ func serve(_ *cobra.Command, _ []string) {
 	enableSchedule := viper.GetBool("scheduled-geoip-download")
 	metricsEnabled := viper.GetBool("metrics")
 	metricsAddress := viper.GetString("metrics-address")
+
+	// OAuth2
 	oauth2ClientId := viper.GetString("oauth2-client-id")
 	oauth2AuthURL := viper.GetString("oauth2-auth-url")
 	oauth2TokenURL := viper.GetString("oauth2-token-url")
 	oauth2RedirectURL := viper.GetString("oauth2-redirect-url")
+	oauth2TimeoutMinutes := viper.GetInt("oauth2-timeout-minutes")
 
 	// Configure logging
 	bootstrap.ConfigureLogging(logLevel)
@@ -259,17 +269,18 @@ func serve(_ *cobra.Command, _ []string) {
 	dashboardApp := fiber.New(fiber.Config{})
 
 	configuration := &config.Configuration{
-		Address:           address,
-		AuthUser:          user,
-		AuthPassword:      password,
-		BasePath:          basePath,
-		TrustProxyHeaders: trustProxyHeaders,
-		Fail2BanVersion:   fail2banVersion,
-		Version:           Version,
-		OAuth2ClientID:    oauth2ClientId,
-		OAuth2AuthURL:     oauth2AuthURL,
-		OAuth2TokenURL:    oauth2TokenURL,
-		OAuth2RedirectURL: oauth2RedirectURL,
+		Address:              address,
+		AuthUser:             user,
+		AuthPassword:         password,
+		BasePath:             basePath,
+		TrustProxyHeaders:    trustProxyHeaders,
+		Fail2BanVersion:      fail2banVersion,
+		Version:              Version,
+		OAuth2ClientID:       oauth2ClientId,
+		OAuth2AuthURL:        oauth2AuthURL,
+		OAuth2TokenURL:       oauth2TokenURL,
+		OAuth2RedirectURL:    oauth2RedirectURL,
+		OAuth2TimeoutMinutes: oauth2TimeoutMinutes,
 	}
 
 	if metricsEnabled {

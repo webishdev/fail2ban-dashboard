@@ -283,7 +283,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		})
 
 		dashboard.Use(oauth.CreateOAuth2Middleware(sessionStore, basePathForTemplate))
-		dashboard.Get(oauth.CallBackEndpoint, oauth.CreateOAuth2CallbackHandler(sessionStore, oauthConfig))
+		dashboard.Get(oauth.CallBackEndpoint, oauth.CreateOAuth2CallbackHandler(sessionStore, oauthConfig, configuration.OAuth2TimeoutMinutes))
 	} else if hasOAuth2Values {
 		return oauthValidationErr
 	}

@@ -53,7 +53,7 @@ func CreateOAuth2Middleware(sessionStore *session.Store, basePath string) fiber.
 	}
 }
 
-func CreateOAuth2CallbackHandler(sessionStore *session.Store, oauthConfig *oauth2.Config) func(c fiber.Ctx) error {
+func CreateOAuth2CallbackHandler(sessionStore *session.Store, oauthConfig *oauth2.Config, timeout int) func(c fiber.Ctx) error {
 	return func(c fiber.Ctx) error {
 		sess, err := sessionStore.Get(c)
 		if err != nil {
@@ -79,7 +79,7 @@ func CreateOAuth2CallbackHandler(sessionStore *session.Store, oauthConfig *oauth
 		}
 
 		sess.Set("authenticated", "authenticated_user")
-		sess.Set("expires_at", time.Now().Add(30*time.Minute).Unix())
+		sess.Set("expires_at", time.Now().Add(time.Duration(timeout)*time.Minute).Unix())
 
 		sess.Delete("oauth_state")
 
@@ -138,6 +138,10 @@ func RedirectToLogin(c fiber.Ctx, sessionStore *session.Store, basePath string) 
 		expiresAt, ok := sess.Get("expires_at").(int64)
 		if ok && time.Now().Unix() <= expiresAt {
 			return c.Next()
+		}
+		sessionDestroyErr := sess.Destroy()
+		if sessionDestroyErr != nil {
+			return sessionDestroyErr
 		}
 	}
 

@@ -177,7 +177,7 @@ func TestCreateOAuth2CallbackHandler(t *testing.T) {
 			TokenURL: ts.URL,
 		},
 	}
-	app.Get("/oauth2_callback", CreateOAuth2CallbackHandler(store, oauthConfig))
+	app.Get("/oauth2_callback", CreateOAuth2CallbackHandler(store, oauthConfig, 30))
 
 	req := httptest.NewRequest("GET", "/oauth2_callback?state=test-state&code=test-code", nil)
 	// Need to handle session cookie if needed, but app.Test should handle cookies if properly configured

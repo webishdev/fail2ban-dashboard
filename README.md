@@ -142,16 +142,18 @@ When only `--auth-password` is provided, the user will be named `admin`.
 
 #### OAuth2
 
-When using OAuth2 authentication, `fail2ban-dashboard` requires the following environment variables or command line flags to be set:
+When using OAuth2 authentication, `fail2ban-dashboard` requires the following environment variables or command line flags to be set when no default value is provided:
 
-| Environment Variable       | Command Line Flag       | Description              | Default |
-|----------------------------|-------------------------|--------------------------|---------|
-| `F2BD_OAUTH2_CLIENT_ID`    | `--oauth2-client-id`    | OAuth2 client identifier | -       |
-| `F2BD_OAUTH2_AUTH_URL`     | `--oauth2-auth-url`     | OAuth2 authorization URL | -       |
-| `F2BD_OAUTH2_TOKEN_URL`    | `--oauth2-token-url`    | OAuth2 token URL         | -       |
-| `F2BD_OAUTH2_REDIRECT_URL` | `--oauth2-redirect-url` | OAuth2 redirect URL      | -       |
+| Environment Variable          | Command Line Flag          | Description                    | Default |
+|-------------------------------|----------------------------|--------------------------------|---------|
+| `F2BD_OAUTH2_CLIENT_ID`       | `--oauth2-client-id`       | OAuth2 client identifier       | -       |
+| `F2BD_OAUTH2_AUTH_URL`        | `--oauth2-auth-url`        | OAuth2 authorization URL       | -       |
+| `F2BD_OAUTH2_TOKEN_URL`       | `--oauth2-token-url`       | OAuth2 token URL               | -       |
+| `F2BD_OAUTH2_REDIRECT_URL`    | `--oauth2-redirect-url`    | OAuth2 redirect URL            | -       |
+| `F2BD_OAUTH2_TIMEOUT_MINUTES` | `--oauth2-timeout-minutes` | OAuth2 session timeout minutes | 30      |
 
-All values are required and must be set. The `OAuth2 redirect URL` must be set to the URL of the `fail2ban-dashboard` application, which is usually `http://127.0.0.1:3000` but allows to provide URLs when used with a reverse proxy like `https://fail2ban.example.com`.
+All values that do not provide a default value are required and must be set.
+The `OAuth2 redirect URL` must be set to the URL of the `fail2ban-dashboard` application, which is usually `http://127.0.0.1:3000` but allows to provide URLs when used with a reverse proxy like `https://fail2ban.example.com`.
 
 ### Configuration file
 
