@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/webishdev/fail2ban-dashboard/config"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/store"
 )
@@ -69,15 +70,15 @@ func createTestJail(name string, entries []client.BanEntry) store.Jail {
 }
 
 // Test utilities
-func createTestApp(mockStore *MockDataStore, mockGeoIP *MockGeoIP, config *Configuration) *fiber.App {
-	if config == nil {
-		config = &Configuration{
+func createTestApp(mockStore *MockDataStore, mockGeoIP *MockGeoIP, c *config.Configuration) *fiber.App {
+	if c == nil {
+		c = &config.Configuration{
 			Address:      ":8080",
 			AuthUser:     "",
 			AuthPassword: "",
 		}
 	}
-	_ = config // Use config to avoid ineffassign warning
+	_ = c // Use config to avoid ineffassign warning
 
 	app := fiber.New(fiber.Config{})
 
@@ -435,7 +436,7 @@ func TestStaticFileHandlers(t *testing.T) {
 }
 
 func TestConfigurationStructure(t *testing.T) {
-	config := &Configuration{
+	config := &config.Configuration{
 		Address:      ":0", // Use port 0 to avoid conflicts
 		AuthUser:     "",
 		AuthPassword: "",
@@ -458,11 +459,11 @@ func TestConfigurationStructure(t *testing.T) {
 func TestConfiguration(t *testing.T) {
 	tests := []struct {
 		name   string
-		config Configuration
+		config config.Configuration
 	}{
 		{
 			name: "default configuration",
-			config: Configuration{
+			config: config.Configuration{
 				Address:      ":8080",
 				AuthUser:     "",
 				AuthPassword: "",
@@ -470,7 +471,7 @@ func TestConfiguration(t *testing.T) {
 		},
 		{
 			name: "with authentication",
-			config: Configuration{
+			config: config.Configuration{
 				Address:      ":3000",
 				AuthUser:     "admin",
 				AuthPassword: "secret",
@@ -683,12 +684,12 @@ func TestIndexRouteHandler(t *testing.T) {
 func TestAuthenticationScenarios(t *testing.T) {
 	tests := []struct {
 		name    string
-		config  Configuration
+		config  config.Configuration
 		hasAuth bool
 	}{
 		{
 			name: "no authentication",
-			config: Configuration{
+			config: config.Configuration{
 				Address:      ":8080",
 				AuthUser:     "",
 				AuthPassword: "",
@@ -697,7 +698,7 @@ func TestAuthenticationScenarios(t *testing.T) {
 		},
 		{
 			name: "user only",
-			config: Configuration{
+			config: config.Configuration{
 				Address:      ":8080",
 				AuthUser:     "admin",
 				AuthPassword: "",
@@ -706,7 +707,7 @@ func TestAuthenticationScenarios(t *testing.T) {
 		},
 		{
 			name: "password only",
-			config: Configuration{
+			config: config.Configuration{
 				Address:      ":8080",
 				AuthUser:     "",
 				AuthPassword: "secret",
@@ -715,7 +716,7 @@ func TestAuthenticationScenarios(t *testing.T) {
 		},
 		{
 			name: "full authentication",
-			config: Configuration{
+			config: config.Configuration{
 				Address:      ":8080",
 				AuthUser:     "admin",
 				AuthPassword: "secret",

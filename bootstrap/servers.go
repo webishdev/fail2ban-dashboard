@@ -5,13 +5,13 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
+	"github.com/webishdev/fail2ban-dashboard/config"
 	"github.com/webishdev/fail2ban-dashboard/metrics"
-	"github.com/webishdev/fail2ban-dashboard/server"
 )
 
 var osExit = os.Exit
 
-func StartDashboardServer(app *fiber.App, config *server.Configuration) {
+func StartDashboardServer(app *fiber.App, config *config.Configuration) {
 	log.Infof("Dashboard available at address %s", config.Address)
 	serveError := app.Listen(config.Address, fiber.ListenConfig{
 		DisableStartupMessage: true,

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/webishdev/fail2ban-dashboard/config"
 	"github.com/webishdev/fail2ban-dashboard/metrics"
-	"github.com/webishdev/fail2ban-dashboard/server"
 )
 
 // findAvailablePort returns an available port for testing
@@ -31,7 +31,7 @@ func TestStartDashboardServer_Success(t *testing.T) {
 
 	app := fiber.New(fiber.Config{})
 
-	config := &server.Configuration{
+	c := &config.Configuration{
 		Address: address,
 	}
 
@@ -40,7 +40,7 @@ func TestStartDashboardServer_Success(t *testing.T) {
 	go func() {
 		// Signal that we're about to start
 		serverStarted <- true
-		StartDashboardServer(app, config)
+		StartDashboardServer(app, c)
 	}()
 
 	// Wait for server to start
@@ -69,7 +69,7 @@ func TestStartMetricsServer_Success(t *testing.T) {
 
 	metricsApp := fiber.New(fiber.Config{})
 
-	config := &metrics.Configuration{
+	c := &metrics.Configuration{
 		Address: address,
 	}
 
@@ -78,7 +78,7 @@ func TestStartMetricsServer_Success(t *testing.T) {
 	go func() {
 		// Signal that we're about to start
 		serverStarted <- true
-		StartMetricsServer(metricsApp, config)
+		StartMetricsServer(metricsApp, c)
 	}()
 
 	// Wait for server to start
@@ -128,12 +128,12 @@ func TestStartDashboardServer_PortAlreadyInUse(t *testing.T) {
 
 	app := fiber.New(fiber.Config{})
 
-	config := &server.Configuration{
+	c := &config.Configuration{
 		Address: address,
 	}
 
 	// Try to start server on occupied port
-	StartDashboardServer(app, config)
+	StartDashboardServer(app, c)
 
 	// Verify osExit was called with code 1
 	if exitCode != 1 {
@@ -167,12 +167,12 @@ func TestStartMetricsServer_PortAlreadyInUse(t *testing.T) {
 
 	metricsApp := fiber.New(fiber.Config{})
 
-	config := &metrics.Configuration{
+	c := &metrics.Configuration{
 		Address: address,
 	}
 
 	// Try to start server on occupied port
-	StartMetricsServer(metricsApp, config)
+	StartMetricsServer(metricsApp, c)
 
 	// Verify osExit was called with code 1
 	if exitCode != 1 {
@@ -193,12 +193,12 @@ func TestStartDashboardServer_InvalidAddress(t *testing.T) {
 
 	app := fiber.New(fiber.Config{})
 
-	config := &server.Configuration{
+	c := &config.Configuration{
 		Address: "invalid:address:format:with:too:many:colons",
 	}
 
 	// Try to start server with invalid address
-	StartDashboardServer(app, config)
+	StartDashboardServer(app, c)
 
 	// Verify osExit was called with code 1
 	if exitCode != 1 {
@@ -219,12 +219,12 @@ func TestStartMetricsServer_InvalidAddress(t *testing.T) {
 
 	metricsApp := fiber.New(fiber.Config{})
 
-	config := &metrics.Configuration{
+	c := &metrics.Configuration{
 		Address: "invalid:address:format:with:too:many:colons",
 	}
 
 	// Try to start server with invalid address
-	StartMetricsServer(metricsApp, config)
+	StartMetricsServer(metricsApp, c)
 
 	// Verify osExit was called with code 1
 	if exitCode != 1 {

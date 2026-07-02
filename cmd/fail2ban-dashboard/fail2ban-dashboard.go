@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/webishdev/fail2ban-dashboard/bootstrap"
+	"github.com/webishdev/fail2ban-dashboard/config"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
 	"github.com/webishdev/fail2ban-dashboard/metrics"
 	"github.com/webishdev/fail2ban-dashboard/server"
@@ -169,6 +170,34 @@ func addServeFlags(cmd *cobra.Command) {
 		fmt.Printf("Could not bind metrics-address flag: %s\n", metricsAddressErr)
 		os.Exit(1)
 	}
+
+	flags.String("oauth2-client-id", "", "OAuth2 client id, also F2BD_OAUTH2_CLIENT_ID")
+	oauth2ClientIdErr := viper.BindPFlag("oauth2-client-id", flags.Lookup("oauth2-client-id"))
+	if oauth2ClientIdErr != nil {
+		fmt.Printf("Could not bind oauth2-client-id flag: %s\n", oauth2ClientIdErr)
+		os.Exit(1)
+	}
+
+	flags.String("oauth2-auth-url", "", "OAuth2 authentication URL, also F2BD_OAUTH2_AUTH_URL")
+	oauth2AuthURLErr := viper.BindPFlag("oauth2-auth-url", flags.Lookup("oauth2-auth-url"))
+	if oauth2AuthURLErr != nil {
+		fmt.Printf("Could not bind oauth2-auth-url flag: %s\n", oauth2AuthURLErr)
+		os.Exit(1)
+	}
+
+	flags.String("oauth2-token-url", "", "OAuth2 token URL, also F2BD_OAUTH2_TOKEN_URL")
+	oauth2TokenURLErr := viper.BindPFlag("oauth2-token-url", flags.Lookup("oauth2-token-url"))
+	if oauth2TokenURLErr != nil {
+		fmt.Printf("Could not bind oauth2-token-url flag: %s\n", oauth2TokenURLErr)
+		os.Exit(1)
+	}
+
+	flags.String("oauth2-redirect-url", "", "OAuth2 redirect URL, also F2BD_OAUTH2_REDIRECT_URL")
+	oauth2RedirectURLErr := viper.BindPFlag("oauth2-redirect-url", flags.Lookup("oauth2-redirect-url"))
+	if oauth2RedirectURLErr != nil {
+		fmt.Printf("Could not bind oauth2-redirect-url flag: %s\n", oauth2RedirectURLErr)
+		os.Exit(1)
+	}
 }
 
 func main() {
@@ -196,6 +225,10 @@ func serve(_ *cobra.Command, _ []string) {
 	enableSchedule := viper.GetBool("scheduled-geoip-download")
 	metricsEnabled := viper.GetBool("metrics")
 	metricsAddress := viper.GetString("metrics-address")
+	oauth2ClientId := viper.GetString("oauth2-client-id")
+	oauth2AuthURL := viper.GetString("oauth2-auth-url")
+	oauth2TokenURL := viper.GetString("oauth2-token-url")
+	oauth2RedirectURL := viper.GetString("oauth2-redirect-url")
 
 	// Configure logging
 	bootstrap.ConfigureLogging(logLevel)
@@ -225,7 +258,7 @@ func serve(_ *cobra.Command, _ []string) {
 	// Create dashboard application
 	dashboardApp := fiber.New(fiber.Config{})
 
-	configuration := &server.Configuration{
+	configuration := &config.Configuration{
 		Address:           address,
 		AuthUser:          user,
 		AuthPassword:      password,
@@ -233,6 +266,10 @@ func serve(_ *cobra.Command, _ []string) {
 		TrustProxyHeaders: trustProxyHeaders,
 		Fail2BanVersion:   fail2banVersion,
 		Version:           Version,
+		OAuth2ClientID:    oauth2ClientId,
+		OAuth2AuthURL:     oauth2AuthURL,
+		OAuth2TokenURL:    oauth2TokenURL,
+		OAuth2RedirectURL: oauth2RedirectURL,
 	}
 
 	if metricsEnabled {

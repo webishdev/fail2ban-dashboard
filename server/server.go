@@ -19,11 +19,11 @@ import (
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/gofiber/fiber/v3/middleware/basicauth"
 	"github.com/gofiber/fiber/v3/middleware/session"
+	"github.com/webishdev/fail2ban-dashboard/config"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
 	oauth "github.com/webishdev/fail2ban-dashboard/oauth2"
 	"github.com/webishdev/fail2ban-dashboard/store"
-	"golang.org/x/oauth2"
 )
 
 //go:embed resources/css/daisyui@5.css
@@ -68,17 +68,6 @@ var headerHtml []byte
 //go:embed resources/flags.css
 var flagsCss []byte
 
-type Configuration struct {
-	Address           string
-	AuthUser          string
-	AuthPassword      string
-	BasePath          string
-	TrustProxyHeaders bool
-	Fail2BanVersion   string
-	Version           string
-	// TODO: Add OAuth2 configuration
-}
-
 type Sorted struct {
 	Order string
 	Class string
@@ -116,7 +105,7 @@ func generateRandomPassword() string {
 	return hex.EncodeToString(b)
 }
 
-func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
+func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *config.Configuration) error {
 
 	// Initialize the in-memory session store
 	sessionStore := session.NewStore(session.Config{})
@@ -227,19 +216,15 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 	cleanedBasePath := path.Clean(configuration.BasePath)
 	dashboard := app.Group(cleanedBasePath)
 
-	oauthConfig := &oauth2.Config{
-		ClientID: "mysecretclient",
-		Endpoint: oauth2.Endpoint{
-			AuthURL:   "http://localhost:8082/authorize",
-			TokenURL:  "http://localhost:8082/token",
-			AuthStyle: oauth2.AuthStyleAutoDetect,
-		},
-		RedirectURL: fmt.Sprintf("%s/callback", "http://localhost:3000"),
-	}
+	hasOAuth2Values, oauthValidationErr := oauth.ValidateOAuth2Config(configuration)
 
-	// TODO: Only add OAuth2 middleware if OAuth2 configuration is set
-	dashboard.Use(oauth.CreateOAuth2Middleware(sessionStore, oauthConfig))
-	dashboard.Get("/callback", oauth.CreateOAuth2CallbackHandler(sessionStore, oauthConfig))
+	if hasOAuth2Values && oauthValidationErr == nil {
+		oauthConfig := oauth.GetOAuth2Config(configuration)
+		dashboard.Use(oauth.CreateOAuth2Middleware(sessionStore, oauthConfig))
+		dashboard.Get(oauth.CallBackEndpoint, oauth.CreateOAuth2CallbackHandler(sessionStore, oauthConfig))
+	} else if hasOAuth2Values {
+		return oauthValidationErr
+	}
 
 	// TODO: Add a login page to show that OAuth2 is configured and you need to login
 
