@@ -14,7 +14,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var CallBackEndpoint = "/callback"
+var CallBackEndpoint = "/oauth2_callback"
 
 func ValidateOAuth2Config(configuration *config.Configuration) (bool, error) {
 	oauth2ValuesUsed := configuration.OAuth2ClientID != "" || configuration.OAuth2AuthURL != "" || configuration.OAuth2TokenURL != "" || configuration.OAuth2RedirectURL != ""
@@ -38,30 +38,9 @@ func GetOAuth2Config(configuration *config.Configuration) *oauth2.Config {
 	}
 }
 
-func CreateOAuth2Middleware(sessionStore *session.Store, oauthConfig *oauth2.Config) fiber.Handler {
+func CreateOAuth2Middleware(sessionStore *session.Store) fiber.Handler {
 	return func(c fiber.Ctx) error {
-		sess, _ := sessionStore.Get(c)
-		originalURL := c.OriginalURL()
-
-		// 1. Check if authenticated or just the callback URL is called
-		if sess.Get("authenticated") != nil || strings.HasPrefix(originalURL, CallBackEndpoint) {
-			return c.Next()
-		}
-
-		// 2. Not authenticated: Prepare to redirect to IdP
-		state := generateRandomState()
-		codeVerifier := oauth2.GenerateVerifier()
-
-		sess.Set("oauth_state", state)
-		sess.Set("oauth_code_verifier", codeVerifier)
-		sess.Set("return_to", originalURL)
-		err := sess.Save()
-		if err != nil {
-			return err
-		}
-
-		authURL := oauthConfig.AuthCodeURL(state, oauth2.S256ChallengeOption(codeVerifier))
-		return c.Redirect().To(authURL)
+		return RedirectToLogin(c, sessionStore)
 	}
 }
 
@@ -113,6 +92,51 @@ func CreateOAuth2CallbackHandler(sessionStore *session.Store, oauthConfig *oauth
 
 		return c.Redirect().To(redirectURL)
 	}
+}
+
+func RedirectToLogin(c fiber.Ctx, sessionStore *session.Store) error {
+	sess, _ := sessionStore.Get(c)
+	originalURL := c.OriginalURL()
+
+	// 1. Check if authenticated or just the callback URL is called
+	if sess.Get("authenticated") != nil ||
+		strings.HasPrefix(originalURL, CallBackEndpoint) ||
+		strings.HasSuffix(originalURL, ".css") ||
+		strings.HasSuffix(originalURL, ".js") ||
+		strings.HasSuffix(originalURL, ".png") ||
+		strings.HasSuffix(originalURL, ".ico") {
+		return c.Next()
+	}
+
+	returnTo := sess.Get("return_to")
+	if returnTo == nil {
+		sess.Set("return_to", originalURL)
+		err := sess.Save()
+		if err != nil {
+			return err
+		}
+	}
+
+	return c.Redirect().To("/login")
+
+}
+
+func RedirectToOAuth(c fiber.Ctx, sessionStore *session.Store, oauthConfig *oauth2.Config) error {
+	sess, _ := sessionStore.Get(c)
+
+	// 2. Not authenticated: Prepare to redirect to IdP
+	state := generateRandomState()
+	codeVerifier := oauth2.GenerateVerifier()
+
+	sess.Set("oauth_state", state)
+	sess.Set("oauth_code_verifier", codeVerifier)
+	err := sess.Save()
+	if err != nil {
+		return err
+	}
+
+	authURL := oauthConfig.AuthCodeURL(state, oauth2.S256ChallengeOption(codeVerifier))
+	return c.Redirect().To(authURL)
 }
 
 func generateRandomState() string {

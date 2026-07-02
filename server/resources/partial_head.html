@@ -8,7 +8,9 @@
     <link href="{{ .BasePath }}css/main.css" rel="stylesheet" type="text/css" />
     <script src="{{ .BasePath }}js/browser@4.js"></script>
     <title>fail2ban dashboard - {{ .Version }}</title>
+    {{ if .CountryCodes }}
     <link href="{{ .BasePath }}css/{{ .CountryCodes }}" rel="stylesheet" type="text/css" />
+    {{ end }}
     <script>
         // Theme toggle functionality
         const getTheme = () => localStorage.getItem('f2b-dashboard.theme') || 'emerald';

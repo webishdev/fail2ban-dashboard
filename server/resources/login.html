@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="emerald">
+{{ template "head" . }}
+<body class="min-h-screen flex flex-col">
+{{ template "header" . }}
+<main class="p-4 flex grow-1">
+    <div class="login flex items-center justify-center grow-1">
+        <form method="post" action="{{ .BasePath }}login">
+            <input class="btn" type="submit" value="Login via OAuth2">
+        </form>
+    </div>
+</main>
+</body>
+</html>

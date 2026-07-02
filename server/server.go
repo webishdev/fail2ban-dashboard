@@ -50,6 +50,9 @@ var indexHtml []byte
 //go:embed resources/detail.html
 var detailHtml []byte
 
+//go:embed resources/login.html
+var loginHtml []byte
+
 //go:embed resources/partial_jailcard.html
 var jailCardHtml []byte
 
@@ -88,6 +91,10 @@ type indexData struct {
 	Jails     []store.Jail
 }
 
+type loginData struct {
+	baseData
+}
+
 type detailData struct {
 	baseData
 	OrderAddress Sorted
@@ -108,7 +115,9 @@ func generateRandomPassword() string {
 func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *config.Configuration) error {
 
 	// Initialize the in-memory session store
-	sessionStore := session.NewStore(session.Config{})
+	sessionStore := session.NewStore(session.Config{
+		IdleTimeout: 5 * time.Minute,
+	})
 
 	templateFunctions := template.FuncMap{
 		"safe": func(s string) template.URL {
@@ -220,7 +229,55 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 
 	if hasOAuth2Values && oauthValidationErr == nil {
 		oauthConfig := oauth.GetOAuth2Config(configuration)
-		dashboard.Use(oauth.CreateOAuth2Middleware(sessionStore, oauthConfig))
+
+		loginTemplate, loginTemplateError := template.New("login").Funcs(templateFunctions).Parse(string(loginHtml))
+		if loginTemplateError != nil {
+			return loginTemplateError
+		}
+
+		// value isn't needed in code as it is used in the index template
+		_, loginHeadTemplateError := loginTemplate.New("head").Parse(string(headHtml))
+		if loginHeadTemplateError != nil {
+			return loginHeadTemplateError
+		}
+
+		// value isn't needed in code as it is used in the index template
+		_, loginHeaderTemplateError := loginTemplate.New("header").Parse(string(headerHtml))
+		if loginHeaderTemplateError != nil {
+			return loginHeaderTemplateError
+		}
+
+		dashboard.Get("/login", func(c fiber.Ctx) error {
+			basePathForTemplate := cleanBasePathForTemplate(cleanedBasePath)
+			sess, _ := sessionStore.Get(c)
+			if sess.Get("authenticated") != nil {
+				if basePathForTemplate == "" {
+					return c.SendStatus(fiber.StatusNotFound)
+				}
+				return c.Redirect().To(basePathForTemplate)
+			}
+			data := &loginData{
+				baseData: baseData{
+					Version:         configuration.Version,
+					Fail2BanVersion: configuration.Fail2BanVersion,
+					BasePath:        basePathForTemplate,
+				},
+			}
+
+			var sb strings.Builder
+			err := loginTemplate.Execute(&sb, data)
+			if err != nil {
+				return err
+			}
+			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+			return c.SendString(sb.String())
+		})
+
+		dashboard.Post("/login", func(c fiber.Ctx) error {
+			return oauth.RedirectToOAuth(c, sessionStore, oauthConfig)
+		})
+
+		dashboard.Use(oauth.CreateOAuth2Middleware(sessionStore))
 		dashboard.Get(oauth.CallBackEndpoint, oauth.CreateOAuth2CallbackHandler(sessionStore, oauthConfig))
 	} else if hasOAuth2Values {
 		return oauthValidationErr
