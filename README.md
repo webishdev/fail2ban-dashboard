@@ -33,7 +33,10 @@ If the dashboard should be used with another version, please switch off the vers
   - [Docker](#docker)
 - [Usage](#usage) 
   - [Command line](#command-line)
-  - [Environment variables](#environment-variables)
+  - [Configuration](#configuration)
+    - [Environment variables](#environment-variables)
+    - [Basic authentication](#basic-authentication)
+    - [OAuth2](#oauth2)
   - [Config file](#config-file)
 - [Dashboard](#dashboard)
   - [Web application](#web-application)
@@ -107,15 +110,15 @@ Flags:
 Use "fail2ban-dashboard [command] --help" for more information about a command.
 ```
 
-### Environment variables
+### Configuration
+
+#### Environment variables
 
 Environment variables can be used to set parameters without using command line flags.
 
 | Environment Variable       | Command Line Flag       | Description                                 | Default                           |
 |----------------------------|-------------------------|---------------------------------------------|-----------------------------------|
 | `F2BD_ADDRESS`             | `-a, --address`         | Address to serve the dashboard on           | `127.0.0.1:3000`                  |
-| `F2BD_AUTH_PASSWORD`       | `--auth-password`       | Password for basic auth                     | -                                 |
-| `F2BD_AUTH_USER`           | `--auth-user`           | Username for basic auth                     | -                                 |
 | `F2BD_BASE_PATH`           | `--base-path`           | Base path of the application                | `/`                               |
 | `F2BD_CACHE_DIR`           | `-c, --cache-dir`       | Directory to cache GeoIP data               | Current working directory         |
 | `F2BD_LOG_LEVEL`           | `--log-level`           | Log level (trace, debug, info, warn, error) | `info`                            |
@@ -125,6 +128,17 @@ Environment variables can be used to set parameters without using command line f
 | `F2BD_SKIP_VERSION_CHECK`  | `--skip-version-check`  | Skip fail2ban version check                 | `false`                           |
 | `F2BD_SOCKET`              | `-s, --socket`          | Fail2ban socket path                        | `/var/run/fail2ban/fail2ban.sock` |
 | `F2BD_TRUST_PROXY_HEADERS` | `--trust-proxy-headers` | Trust proxy headers like X-Forwarded-For    | `false`                           |
+
+#### Basic authentication
+
+Basic authentication can be enabled with the `--auth-user` and/or `--auth-password` flags.  
+When only `--auth-user` is provided, the password will be generated and shown in the logs/console.  
+When only `--auth-password` is provided, the user will be named `admin`.
+
+| Environment Variable       | Command Line Flag       | Description                                 | Default                           |
+|----------------------------|-------------------------|---------------------------------------------|-----------------------------------|
+| `F2BD_AUTH_PASSWORD`       | `--auth-password`       | Password for basic auth                     | -                                 |
+| `F2BD_AUTH_USER`           | `--auth-user`           | Username for basic auth                     | -                                 |
 
 #### OAuth2
 
@@ -139,7 +153,7 @@ When using OAuth2 authentication, `fail2ban-dashboard` requires the following en
 
 All values are required and must be set. The `OAuth2 redirect URL` must be set to the URL of the `fail2ban-dashboard` application, which is usually `http://127.0.0.1:3000` but allows to provide URLs when used with a reverse proxy like `https://fail2ban.example.com`.
 
-### Config file
+### Configuration file
 
 It is also possible to configure `fail2ban-dashboard` using a config file.
 Supported config file formats are the ones supported by the [viper](https://github.com/spf13/viper#reading-config-files) library.
@@ -170,10 +184,6 @@ Supported configurations are similar to flags and environment variables:
 ### Web application
 
 When started, check http://127.0.0.1:3000/
-
-Basic authentication can be enabled with the `--auth-user` and/or `--auth-password` flags.  
-When only `--auth-user` is provided, the password will be generated and shown in the logs/console.  
-When only `--auth-password` is provided, the user will be named `admin`.
 
 ### Metrics
 
