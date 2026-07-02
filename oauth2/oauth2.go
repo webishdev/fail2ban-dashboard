@@ -5,7 +5,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/url"
+	"path"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
@@ -15,6 +18,8 @@ import (
 )
 
 var CallBackEndpoint = "/oauth2_callback"
+var LoginEndpoint = "/login"
+var LogoutEndpoint = "/logout"
 
 func ValidateOAuth2Config(configuration *config.Configuration) (bool, error) {
 	oauth2ValuesUsed := configuration.OAuth2ClientID != "" || configuration.OAuth2AuthURL != "" || configuration.OAuth2TokenURL != "" || configuration.OAuth2RedirectURL != ""
@@ -70,6 +75,7 @@ func CreateOAuth2CallbackHandler(sessionStore *session.Store, oauthConfig *oauth
 		}
 
 		sess.Set("authenticated", "authenticated_user")
+		sess.Set("expires_at", time.Now().Add(30*time.Minute).Unix())
 
 		sess.Delete("oauth_state")
 
@@ -94,18 +100,41 @@ func CreateOAuth2CallbackHandler(sessionStore *session.Store, oauthConfig *oauth
 	}
 }
 
+func Logout(c fiber.Ctx, sessionStore *session.Store, basePath string) error {
+	sess, _ := sessionStore.Get(c)
+	err := sess.Destroy()
+	if err != nil {
+		return err
+	}
+	return c.Redirect().To(basePath)
+}
+
 func RedirectToLogin(c fiber.Ctx, sessionStore *session.Store) error {
 	sess, _ := sessionStore.Get(c)
 	originalURL := c.OriginalURL()
 
-	// 1. Check if authenticated or just the callback URL is called
-	if sess.Get("authenticated") != nil ||
-		strings.HasPrefix(originalURL, CallBackEndpoint) ||
-		strings.HasSuffix(originalURL, ".css") ||
-		strings.HasSuffix(originalURL, ".js") ||
-		strings.HasSuffix(originalURL, ".png") ||
-		strings.HasSuffix(originalURL, ".ico") {
+	parsedURL, urlParseErr := url.Parse(originalURL)
+	if urlParseErr != nil {
+		return urlParseErr
+	}
+
+	filename := path.Base(parsedURL.Path)
+
+	isAuthenticated := sess.Get("authenticated")
+
+	if strings.HasPrefix(originalURL, CallBackEndpoint) ||
+		strings.HasSuffix(filename, ".css") ||
+		strings.HasSuffix(filename, ".js") ||
+		strings.HasSuffix(filename, ".png") ||
+		strings.HasSuffix(filename, ".ico") {
 		return c.Next()
+	}
+
+	if isAuthenticated != nil {
+		expiresAt, ok := sess.Get("expires_at").(int64)
+		if ok && time.Now().Unix() <= expiresAt {
+			return c.Next()
+		}
 	}
 
 	returnTo := sess.Get("return_to")
@@ -117,7 +146,7 @@ func RedirectToLogin(c fiber.Ctx, sessionStore *session.Store) error {
 		}
 	}
 
-	return c.Redirect().To("/login")
+	return c.Redirect().To(LoginEndpoint)
 
 }
 

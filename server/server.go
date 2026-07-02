@@ -83,6 +83,7 @@ type baseData struct {
 	CountryCodes    template.URL
 	HasBanned       bool
 	Banned          []client.BanEntry
+	Authenticated   bool
 }
 
 type indexData struct {
@@ -115,9 +116,7 @@ func generateRandomPassword() string {
 func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *config.Configuration) error {
 
 	// Initialize the in-memory session store
-	sessionStore := session.NewStore(session.Config{
-		IdleTimeout: 5 * time.Minute,
-	})
+	sessionStore := session.NewStore(session.Config{})
 
 	templateFunctions := template.FuncMap{
 		"safe": func(s string) template.URL {
@@ -247,10 +246,11 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			return loginHeaderTemplateError
 		}
 
-		dashboard.Get("/login", func(c fiber.Ctx) error {
+		dashboard.Get(oauth.LoginEndpoint, func(c fiber.Ctx) error {
 			basePathForTemplate := cleanBasePathForTemplate(cleanedBasePath)
 			sess, _ := sessionStore.Get(c)
-			if sess.Get("authenticated") != nil {
+			isAuthenticated := sess.Get("authenticated") != nil
+			if isAuthenticated {
 				if basePathForTemplate == "" {
 					return c.SendStatus(fiber.StatusNotFound)
 				}
@@ -261,6 +261,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 					Version:         configuration.Version,
 					Fail2BanVersion: configuration.Fail2BanVersion,
 					BasePath:        basePathForTemplate,
+					Authenticated:   isAuthenticated,
 				},
 			}
 
@@ -273,8 +274,13 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			return c.SendString(sb.String())
 		})
 
-		dashboard.Post("/login", func(c fiber.Ctx) error {
+		dashboard.Post(oauth.LoginEndpoint, func(c fiber.Ctx) error {
 			return oauth.RedirectToOAuth(c, sessionStore, oauthConfig)
+		})
+
+		dashboard.Get(oauth.LogoutEndpoint, func(c fiber.Ctx) error {
+			basePathForTemplate := cleanBasePathForTemplate(cleanedBasePath)
+			return oauth.Logout(c, sessionStore, basePathForTemplate)
 		})
 
 		dashboard.Use(oauth.CreateOAuth2Middleware(sessionStore))
@@ -338,6 +344,9 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 	})
 
 	dashboard.Get("/", func(c fiber.Ctx) error {
+		sess, _ := sessionStore.Get(c)
+		isAuthenticated := sess.Get("authenticated") != nil
+
 		accessLog(configuration.TrustProxyHeaders, "overview", c)
 		jails := dataStore.GetJails()
 
@@ -370,6 +379,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
 				HasBanned:       len(banned) > 0,
 				Banned:          banned,
+				Authenticated:   isAuthenticated,
 			},
 			BannedSum: sum,
 			Jails:     jails,
@@ -385,6 +395,9 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 	})
 
 	dashboard.Get("/:jail", func(c fiber.Ctx) error {
+		sess, _ := sessionStore.Get(c)
+		isAuthenticated := sess.Get("authenticated") != nil
+
 		jailName := c.Params("jail")
 		name := fmt.Sprintf("%s details", jailName)
 		accessLog(configuration.TrustProxyHeaders, name, c)
@@ -424,6 +437,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
 				HasBanned:       len(banned) > 0,
 				Banned:          banned,
+				Authenticated:   isAuthenticated,
 			},
 			OrderAddress: toggleSortOrder("address", sorting, order),
 			OrderPenalty: toggleSortOrder("penalty", sorting, order),
