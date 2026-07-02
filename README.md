@@ -168,16 +168,20 @@ address = "127.0.0.1:4000"
 
 Supported configurations are similar to flags and environment variables:
 
-| Configuration   |
-|-----------------|
-| socket          |
-| address         |
-| auth-user       |
-| auth-password   |
-| cache-dir       |
-| log-level       |
-| base-path       |
-| metrics-address |
+| Configuration       |
+|---------------------|
+| socket              |
+| address             |
+| auth-user           |
+| auth-password       |
+| cache-dir           |
+| log-level           |
+| base-path           |
+| metrics-address     |
+| oauth2-client-id    |
+| oauth2-auth-url     |
+| oauth2-token-url    |
+| oauth2-redirect-url |
 
 ## Dashboard
 
