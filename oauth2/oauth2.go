@@ -43,7 +43,7 @@ func GetOAuth2Config(configuration *config.Configuration, basePath string) *oaut
 			TokenURL:  configuration.OAuth2TokenURL,
 			AuthStyle: oauth2.AuthStyleAutoDetect,
 		},
-		RedirectURL: fmt.Sprintf("%s%s%s", configuration.OAuth2RedirectURL, basePath, CallBackEndpoint),
+		RedirectURL: fmt.Sprintf("%s%s%s", redirectURL, basePath, CallBackEndpoint),
 	}
 }
 
