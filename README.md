@@ -15,52 +15,69 @@ A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.
 In addition to the dashboard, the application can provide Prometheus metrics related to `fail2ban` when enabled.
 
 Tested with the following `fail2ban` versions
+
 - `0.11.1`
 - `0.11.2`
 - `1.0.1`
 - `1.0.2`
 - `1.1.0`
 
-If the dashboard should be used with another version, please switch off the version check with the `--skip-version-check` flag, otherwise the application won't start.
-
+If the dashboard should be used with another version, please switch off the version check with the
+`--skip-version-check` flag, otherwise the application won't start.
 
 ## Table of Contents
-- [Screenshots](#screenshots)
-  - [Light mode](#light-mode)
-  - [Dark mode](#dark-mode)
-- [Installation](#installation)
-  - [Standalone application](#standalone-application)
-  - [Docker](#docker)
-- [Usage](#usage) 
-  - [Command line](#command-line)
-  - [Configuration](#configuration)
-    - [Environment variables](#environment-variables)
-    - [Basic authentication](#basic-authentication)
-    - [OAuth2](#oauth2)
-  - [Config file](#config-file)
-- [Dashboard](#dashboard)
-  - [Web application](#web-application)
-  - [Metrics](#metrics)
-- [Building the application](#building-the-application)
-- [Inspired by](#inspired-by) 
 
+- [Screenshots](#screenshots)
+    - [Light mode](#light-mode)
+    - [Dark mode](#dark-mode)
+    - [OAuth2](#oauth2)
+- [Installation](#installation)
+    - [Standalone application](#standalone-application)
+    - [Docker](#docker)
+- [Usage](#usage)
+    - [Command line](#command-line)
+    - [Configuration](#configuration)
+        - [Environment variables](#environment-variables)
+        - [Basic authentication](#basic-authentication)
+        - [OAuth2](#oauth2-1)
+    - [Config file](#config-file)
+- [Dashboard](#dashboard)
+    - [Web application](#web-application)
+    - [Metrics](#metrics)
+- [Building the application](#building-the-application)
+- [Inspired by](#inspired-by)
 
 ## Screenshots
 
 ### Light mode
-![Screenshot of fail2ban-dashboard overview light](./images/overview_light.png "Screenshot of fail2ban-dashboard overview light")
-![Screenshot of fail2ban-dashboard detail view light](./images/detail_light.png "Screenshot of fail2ban-dashboard detail view light")
+
+| Overview                                                                                                                          | Detail                                                                                                                                |
+|-----------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| ![Screenshot of fail2ban-dashboard overview light](./images/overview_light.png "Screenshot of fail2ban-dashboard overview light") | ![Screenshot of fail2ban-dashboard detail view light](./images/detail_light.png "Screenshot of fail2ban-dashboard detail view light") |
 
 ### Dark mode
 
-![Screenshot of fail2ban-dashboard overview dark](./images/overview_dark.png "Screenshot of fail2ban-dashboard overview dark")
-![Screenshot of fail2ban-dashboard detail view dark](./images/detail_dark.png "Screenshot of fail2ban-dashboard detail view dark")
+| Overview                                                                                                                       | Detail                                                                                                                             |
+|--------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| ![Screenshot of fail2ban-dashboard overview dark](./images/overview_dark.png "Screenshot of fail2ban-dashboard overview dark") | ![Screenshot of fail2ban-dashboard detail view dark](./images/detail_dark.png "Screenshot of fail2ban-dashboard detail view dark") |
+
+### OAuth2
+
+<details>
+<summary>OAuth2</summary>
+
+| Login                                                                                                                             | Keycloak                                                                                    | Overview                                                                                                                                                  |
+|-----------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![Screenshot of fail2ban-dashboard OAuth2 login](./images/oauth2_login_light.png "Screenshot of fail2ban-dashboard OAuth2 login") | ![Screenshot of Keycloak login](./images/keycloak_login.png "Screenshot of Keycloak login") | ![Screenshot of fail2ban-dashboard overview with logout](./images/overview_with_logout_light.png "Screenshot of fail2ban-dashboard overview with logout") |
+
+</details>
 
 ## Installation
 
 ### Standalone application
 
-When using `fail2ban-dashboard` as a standalone application, grab a released version from the [releases page](https://github.com/webishdev/fail2ban-dashboard/releases).
+When using `fail2ban-dashboard` as a standalone application, grab a released version from
+the [releases page](https://github.com/webishdev/fail2ban-dashboard/releases).
 
 ### Docker
 
@@ -135,14 +152,15 @@ Basic authentication can be enabled with the `--auth-user` and/or `--auth-passwo
 When only `--auth-user` is provided, the password will be generated and shown in the logs/console.  
 When only `--auth-password` is provided, the user will be named `admin`.
 
-| Environment Variable       | Command Line Flag       | Description                                 | Default                           |
-|----------------------------|-------------------------|---------------------------------------------|-----------------------------------|
-| `F2BD_AUTH_PASSWORD`       | `--auth-password`       | Password for basic auth                     | -                                 |
-| `F2BD_AUTH_USER`           | `--auth-user`           | Username for basic auth                     | -                                 |
+| Environment Variable | Command Line Flag | Description             | Default |
+|----------------------|-------------------|-------------------------|---------|
+| `F2BD_AUTH_PASSWORD` | `--auth-password` | Password for basic auth | -       |
+| `F2BD_AUTH_USER`     | `--auth-user`     | Username for basic auth | -       |
 
 #### OAuth2
 
-When using OAuth2 authentication, `fail2ban-dashboard` requires the following environment variables or command line flags to be set when no default value is provided:
+When using OAuth2 authentication, `fail2ban-dashboard` requires the following environment variables or command line
+flags to be set when no default value is provided:
 
 | Environment Variable          | Command Line Flag          | Description                    | Default |
 |-------------------------------|----------------------------|--------------------------------|---------|
@@ -153,7 +171,8 @@ When using OAuth2 authentication, `fail2ban-dashboard` requires the following en
 | `F2BD_OAUTH2_TIMEOUT_MINUTES` | `--oauth2-timeout-minutes` | OAuth2 session timeout minutes | 30      |
 
 All values that do not provide a default value are required and must be set.
-The `OAuth2 redirect URL` must be set to the URL of the `fail2ban-dashboard` application, which is usually `http://127.0.0.1:3000` but allows to provide URLs when used with a reverse proxy like `https://fail2ban.example.com`.
+The `OAuth2 redirect URL` must be set to the URL of the `fail2ban-dashboard` application, which is usually
+`http://127.0.0.1:3000` but allows to provide URLs when used with a reverse proxy like `https://fail2ban.example.com`.
 
 Example CLI setup with a local Keycloak instance running at `http://localhost:8080` and providing a `demo` realm:
 
@@ -162,9 +181,11 @@ Example CLI setup with a local Keycloak instance running at `http://localhost:80
 ### Configuration file
 
 It is also possible to configure `fail2ban-dashboard` using a config file.
-Supported config file formats are the ones supported by the [viper](https://github.com/spf13/viper#reading-config-files) library.
+Supported config file formats are the ones supported by the [viper](https://github.com/spf13/viper#reading-config-files)
+library.
 
-The config file can be located at the current working directory, the user home directory `~/.config/fail2ban-dashboard/` or `/etc/fail2ban-dashboard/`.
+The config file can be located at the current working directory, the user home directory `~/.config/fail2ban-dashboard/`
+or `/etc/fail2ban-dashboard/`.
 
 For example, for a TOML file located at `/etc/fail2ban-dashboard/config.toml` to change the address should look like:
 
@@ -197,7 +218,8 @@ When started, check http://127.0.0.1:3000/
 
 ### Metrics
 
-When metrics are enabled with `-m` the metrics endpoint is available at http://127.0.0.1:9100/metrics and the address can be changed with `--metrics-address`.
+When metrics are enabled with `-m` the metrics endpoint is available at http://127.0.0.1:9100/metrics and the address
+can be changed with `--metrics-address`.
 
 The following example shows which metrics are provided
 
