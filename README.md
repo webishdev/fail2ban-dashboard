@@ -155,6 +155,10 @@ When using OAuth2 authentication, `fail2ban-dashboard` requires the following en
 All values that do not provide a default value are required and must be set.
 The `OAuth2 redirect URL` must be set to the URL of the `fail2ban-dashboard` application, which is usually `http://127.0.0.1:3000` but allows to provide URLs when used with a reverse proxy like `https://fail2ban.example.com`.
 
+Example CLI setup with a local Keycloak instance running at `http://localhost:8080` and providing a `demo` realm:
+
+`./fail2ban-dashboard serve --oauth2-client-id mysecretclient --oauth2-auth-url http://localhost:8080/realms/demo/protocol/openid-connect/auth --oauth2-token-url http://localhost:8080/realms/demo/protocol/openid-connect/token --oauth2-redirect-url http://localhost:3000`
+
 ### Configuration file
 
 It is also possible to configure `fail2ban-dashboard` using a config file.

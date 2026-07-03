@@ -72,9 +72,18 @@ func CreateOAuth2CallbackHandler(sessionStore *session.Store, oauthConfig *oauth
 			return c.Status(fiber.StatusBadRequest).SendString("Authorization code missing")
 		}
 
-		_, tokenErr := oauthConfig.Exchange(c.Context(), code)
+		codeVerifier, ok := sess.Get("oauth_code_verifier").(string)
+		if !ok || codeVerifier == "" {
+			return c.Status(fiber.StatusBadRequest).SendString("PKCE code verifier missing")
+		}
+
+		_, tokenErr := oauthConfig.Exchange(
+			c.Context(),
+			code,
+			oauth2.VerifierOption(codeVerifier),
+		)
 		if tokenErr != nil {
-			log.Errorf("Failed to exchange token: %v", err)
+			log.Errorf("Failed to exchange token: %v", tokenErr)
 			return c.Status(fiber.StatusInternalServerError).SendString("Failed to exchange token")
 		}
 
@@ -82,6 +91,7 @@ func CreateOAuth2CallbackHandler(sessionStore *session.Store, oauthConfig *oauth
 		sess.Set("expires_at", time.Now().Add(time.Duration(timeout)*time.Minute).Unix())
 
 		sess.Delete("oauth_state")
+		sess.Delete("oauth_code_verifier")
 
 		if err := sess.Save(); err != nil {
 			log.Errorf("Failed to save session: %v", err)
