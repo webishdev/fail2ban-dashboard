@@ -156,7 +156,7 @@ func TestCreateOAuth2CallbackHandler(t *testing.T) {
 	// Mock server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"access_token":"mock_token","token_type":"Bearer","expires_in":3600}`))
+		_, _ = w.Write([]byte(`{"access_token":"mock_token","token_type":"Bearer","expires_in":3600}`))
 	}))
 	defer ts.Close()
 
@@ -165,10 +165,15 @@ func TestCreateOAuth2CallbackHandler(t *testing.T) {
 
 	// Add middleware to set session state
 	app.Use(func(c fiber.Ctx) error {
-		sess, _ := store.Get(c)
+		sess, err := store.Get(c)
+		if err != nil {
+			return err
+		}
 		sess.Set("oauth_state", "test-state")
 		sess.Set("oauth_code_verifier", "test-verifier")
-		sess.Save()
+		if err := sess.Save(); err != nil {
+			return err
+		}
 		return c.Next()
 	})
 

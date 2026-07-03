@@ -134,73 +134,9 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		},
 	}
 
-	indexTemplate, indexTemplateError := template.New("index").Funcs(templateFunctions).Parse(string(indexHtml))
-	if indexTemplateError != nil {
-		return indexTemplateError
-	}
-
-	detailTemplate, detailTemplateError := template.New("detail").Funcs(templateFunctions).Parse(string(detailHtml))
-	if detailTemplateError != nil {
-		return detailTemplateError
-	}
-
-	flagsTemplate, flagsTemplateError := textTemplate.New("flags").Parse(string(flagsCss))
-	if flagsTemplateError != nil {
-		return flagsTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, indexJailCardTemplateError := indexTemplate.New("jailCard").Parse(string(jailCardHtml))
-	if indexJailCardTemplateError != nil {
-		return indexJailCardTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, indexBannedTemplateError := indexTemplate.New("banned").Parse(string(bannedHtml))
-	if indexBannedTemplateError != nil {
-		return indexBannedTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, indexHeadTemplateError := indexTemplate.New("head").Parse(string(headHtml))
-	if indexHeadTemplateError != nil {
-		return indexHeadTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, indexHeaderTemplateError := indexTemplate.New("header").Parse(string(headerHtml))
-	if indexHeaderTemplateError != nil {
-		return indexHeaderTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, detailHeadTemplateError := detailTemplate.New("head").Parse(string(headHtml))
-	if detailHeadTemplateError != nil {
-		return detailHeadTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, detailHeaderTemplateError := detailTemplate.New("header").Parse(string(headerHtml))
-	if detailHeaderTemplateError != nil {
-		return detailHeaderTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, detailJailCardTemplateError := detailTemplate.New("jailCard").Parse(string(jailCardHtml))
-	if detailJailCardTemplateError != nil {
-		return detailJailCardTemplateError
-	}
-
-	// value isn't needed in code as it is used in the detail template
-	_, detailJailDetailTemplateError := detailTemplate.New("jailDetail").Parse(string(jailDetailHtml))
-	if detailJailDetailTemplateError != nil {
-		return detailJailDetailTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, detailBannedTemplateError := detailTemplate.New("banned").Parse(string(bannedHtml))
-	if detailBannedTemplateError != nil {
-		return detailBannedTemplateError
+	indexTemplate, detailTemplate, flagsTemplate, err := parseTemplates(templateFunctions)
+	if err != nil {
+		return err
 	}
 
 	if configuration.AuthUser != "" || configuration.AuthPassword != "" {
@@ -593,4 +529,48 @@ func accessLog(trustProxyHeaders bool, name string, c fiber.Ctx) {
 		}
 	}
 	log.Infof("Access %s at %s%s for %s %s", name, c.BaseURL(), c.OriginalURL(), remoteIP, additionalInfo)
+}
+
+func parseTemplates(funcMap template.FuncMap) (*template.Template, *template.Template, *textTemplate.Template, error) {
+	indexTemplate, err := template.New("index").Funcs(funcMap).Parse(string(indexHtml))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	detailTemplate, err := template.New("detail").Funcs(funcMap).Parse(string(detailHtml))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	flagsTemplate, err := textTemplate.New("flags").Parse(string(flagsCss))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if _, err := indexTemplate.New("jailCard").Parse(string(jailCardHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := indexTemplate.New("banned").Parse(string(bannedHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := indexTemplate.New("head").Parse(string(headHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := indexTemplate.New("header").Parse(string(headerHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("head").Parse(string(headHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("header").Parse(string(headerHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("jailCard").Parse(string(jailCardHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("jailDetail").Parse(string(jailDetailHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("banned").Parse(string(bannedHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	return indexTemplate, detailTemplate, flagsTemplate, nil
 }
