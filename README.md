@@ -193,7 +193,7 @@ For example, for a TOML file located at `/etc/fail2ban-dashboard/config.toml` to
 address = "127.0.0.1:4000"
 ```
 
-Supported configurations names are similar to flags and environment variables:
+Supported configuration names are similar to flags and environment variables:
 
 | Configuration       |
 |---------------------|
