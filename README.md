@@ -15,49 +15,69 @@ A web-based dashboard for `fail2ban` which uses the `/var/run/fail2ban/fail2ban.
 In addition to the dashboard, the application can provide Prometheus metrics related to `fail2ban` when enabled.
 
 Tested with the following `fail2ban` versions
+
 - `0.11.1`
 - `0.11.2`
 - `1.0.1`
 - `1.0.2`
 - `1.1.0`
 
-If the dashboard should be used with another version, please switch off the version check with the `--skip-version-check` flag, otherwise the application won't start.
-
+If the dashboard should be used with another version, please switch off the version check with the
+`--skip-version-check` flag, otherwise the application won't start.
 
 ## Table of Contents
-- [Screenshots](#screenshots)
-  - [Light mode](#light-mode)
-  - [Dark mode](#dark-mode)
-- [Installation](#installation)
-  - [Standalone application](#standalone-application)
-  - [Docker](#docker)
-- [Usage](#usage) 
-  - [Command line](#command-line)
-  - [Environment variables](#environment-variables)
-  - [Config file](#config-file)
-- [Dashboard](#dashboard)
-  - [Web application](#web-application)
-  - [Metrics](#metrics)
-- [Building the application](#building-the-application)
-- [Inspired by](#inspired-by) 
 
+- [Screenshots](#screenshots)
+    - [Light mode](#light-mode)
+    - [Dark mode](#dark-mode)
+    - [OAuth2](#oauth2)
+- [Installation](#installation)
+    - [Standalone application](#standalone-application)
+    - [Docker](#docker)
+- [Usage](#usage)
+    - [Command line](#command-line)
+    - [Configuration](#configuration)
+        - [Environment variables](#environment-variables)
+        - [Basic authentication](#basic-authentication)
+        - [OAuth2](#oauth2-1)
+    - [Config file](#config-file)
+- [Dashboard](#dashboard)
+    - [Web application](#web-application)
+    - [Metrics](#metrics)
+- [Building the application](#building-the-application)
+- [Inspired by](#inspired-by)
 
 ## Screenshots
 
 ### Light mode
-![Screenshot of fail2ban-dashboard overview light](./images/overview_light.png "Screenshot of fail2ban-dashboard overview light")
-![Screenshot of fail2ban-dashboard detail view light](./images/detail_light.png "Screenshot of fail2ban-dashboard detail view light")
+
+| Overview                                                                                                                          | Detail                                                                                                                                |
+|-----------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| ![Screenshot of fail2ban-dashboard overview light](./images/overview_light.png "Screenshot of fail2ban-dashboard overview light") | ![Screenshot of fail2ban-dashboard detail view light](./images/detail_light.png "Screenshot of fail2ban-dashboard detail view light") |
 
 ### Dark mode
 
-![Screenshot of fail2ban-dashboard overview dark](./images/overview_dark.png "Screenshot of fail2ban-dashboard overview dark")
-![Screenshot of fail2ban-dashboard detail view dark](./images/detail_dark.png "Screenshot of fail2ban-dashboard detail view dark")
+| Overview                                                                                                                       | Detail                                                                                                                             |
+|--------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| ![Screenshot of fail2ban-dashboard overview dark](./images/overview_dark.png "Screenshot of fail2ban-dashboard overview dark") | ![Screenshot of fail2ban-dashboard detail view dark](./images/detail_dark.png "Screenshot of fail2ban-dashboard detail view dark") |
+
+### OAuth2
+
+<details>
+<summary>OAuth2</summary>
+
+| Login                                                                                                                             | Keycloak                                                                                    | Overview                                                                                                                                                  |
+|-----------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![Screenshot of fail2ban-dashboard OAuth2 login](./images/oauth2_login_light.png "Screenshot of fail2ban-dashboard OAuth2 login") | ![Screenshot of Keycloak login](./images/keycloak_login.png "Screenshot of Keycloak login") | ![Screenshot of fail2ban-dashboard overview with logout](./images/overview_with_logout_light.png "Screenshot of fail2ban-dashboard overview with logout") |
+
+</details>
 
 ## Installation
 
 ### Standalone application
 
-When using `fail2ban-dashboard` as a standalone application, grab a released version from the [releases page](https://github.com/webishdev/fail2ban-dashboard/releases).
+When using `fail2ban-dashboard` as a standalone application, grab a released version from
+the [releases page](https://github.com/webishdev/fail2ban-dashboard/releases).
 
 ### Docker
 
@@ -85,33 +105,37 @@ Available Commands:
   version     Print the version number and git hash
 
 Flags:
-  -a, --address string             address to serve the dashboard on, also F2BD_ADDRESS (default "127.0.0.1:3000")
-      --auth-password string       password for basic auth, also F2BD_AUTH_PASSWORD
-      --auth-user string           username for basic auth, also F2BD_AUTH_USER
-      --base-path string           base path of the application, also F2BD_BASE_PATH (default "/")
-  -c, --cache-dir string           directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
-  -h, --help                       help for fail2ban-dashboard
-      --log-level string           log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL (default "info")
-  -m, --metrics                    will provide metrics endpoint, also F2BD_METRICS
-      --metrics-address string     address to make metrics available, also F2BD_METRICS_ADDRESS (default "127.0.0.1:9100")
-      --refresh-seconds int        fail2ban data refresh in seconds (value from 10 to 600), also F2BD_REFRESH_SECONDS (default 30)
-      --scheduled-geoip-download   will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD (default true)
-      --skip-version-check         skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK
-  -s, --socket string              location of the fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
-      --trust-proxy-headers        trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS
+  -a, --address string               address to serve the dashboard on, also F2BD_ADDRESS (default "127.0.0.1:3000")
+      --auth-password string         password for basic auth, also F2BD_AUTH_PASSWORD
+      --auth-user string             username for basic auth, also F2BD_AUTH_USER
+      --base-path string             base path of the application, also F2BD_BASE_PATH (default "/")
+  -c, --cache-dir string             directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
+  -h, --help                         help for fail2ban-dashboard
+      --log-level string             log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL (default "info")
+  -m, --metrics                      will provide metrics endpoint, also F2BD_METRICS
+      --metrics-address string       address to make metrics available, also F2BD_METRICS_ADDRESS (default "127.0.0.1:9100")
+      --oauth2-auth-url string       OAuth2 authentication URL, also F2BD_OAUTH2_AUTH_URL
+      --oauth2-client-id string      OAuth2 client identifier, also F2BD_OAUTH2_CLIENT_ID
+      --oauth2-redirect-url string   OAuth2 redirect URL, also F2BD_OAUTH2_REDIRECT_URL
+      --oauth2-token-url string      OAuth2 token URL, also F2BD_OAUTH2_TOKEN_URL
+      --refresh-seconds int          fail2ban data refresh in seconds (value from 10 to 600), also F2BD_REFRESH_SECONDS (default 30)
+      --scheduled-geoip-download     will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD (default true)
+      --skip-version-check           skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK
+  -s, --socket string                location of the fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
+      --trust-proxy-headers          trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS
 
 Use "fail2ban-dashboard [command] --help" for more information about a command.
 ```
 
-### Environment variables
+### Configuration
+
+#### Environment variables
 
 Environment variables can be used to set parameters without using command line flags.
 
 | Environment Variable       | Command Line Flag       | Description                                 | Default                           |
 |----------------------------|-------------------------|---------------------------------------------|-----------------------------------|
 | `F2BD_ADDRESS`             | `-a, --address`         | Address to serve the dashboard on           | `127.0.0.1:3000`                  |
-| `F2BD_AUTH_PASSWORD`       | `--auth-password`       | Password for basic auth                     | -                                 |
-| `F2BD_AUTH_USER`           | `--auth-user`           | Username for basic auth                     | -                                 |
 | `F2BD_BASE_PATH`           | `--base-path`           | Base path of the application                | `/`                               |
 | `F2BD_CACHE_DIR`           | `-c, --cache-dir`       | Directory to cache GeoIP data               | Current working directory         |
 | `F2BD_LOG_LEVEL`           | `--log-level`           | Log level (trace, debug, info, warn, error) | `info`                            |
@@ -122,12 +146,46 @@ Environment variables can be used to set parameters without using command line f
 | `F2BD_SOCKET`              | `-s, --socket`          | Fail2ban socket path                        | `/var/run/fail2ban/fail2ban.sock` |
 | `F2BD_TRUST_PROXY_HEADERS` | `--trust-proxy-headers` | Trust proxy headers like X-Forwarded-For    | `false`                           |
 
-### Config file
+#### Basic authentication
+
+Basic authentication can be enabled with the `--auth-user` and/or `--auth-password` flags.  
+When only `--auth-user` is provided, the password will be generated and shown in the logs/console.  
+When only `--auth-password` is provided, the user will be named `admin`.
+
+| Environment Variable | Command Line Flag | Description             | Default |
+|----------------------|-------------------|-------------------------|---------|
+| `F2BD_AUTH_PASSWORD` | `--auth-password` | Password for basic auth | -       |
+| `F2BD_AUTH_USER`     | `--auth-user`     | Username for basic auth | -       |
+
+#### OAuth2
+
+When using OAuth2 authentication, `fail2ban-dashboard` requires the following environment variables or command line
+flags to be set when no default value is provided:
+
+| Environment Variable          | Command Line Flag          | Description                    | Default |
+|-------------------------------|----------------------------|--------------------------------|---------|
+| `F2BD_OAUTH2_CLIENT_ID`       | `--oauth2-client-id`       | OAuth2 client identifier       | -       |
+| `F2BD_OAUTH2_AUTH_URL`        | `--oauth2-auth-url`        | OAuth2 authorization URL       | -       |
+| `F2BD_OAUTH2_TOKEN_URL`       | `--oauth2-token-url`       | OAuth2 token URL               | -       |
+| `F2BD_OAUTH2_REDIRECT_URL`    | `--oauth2-redirect-url`    | OAuth2 redirect URL            | -       |
+| `F2BD_OAUTH2_TIMEOUT_MINUTES` | `--oauth2-timeout-minutes` | OAuth2 session timeout minutes | 30      |
+
+All values that do not provide a default value are required and must be set.
+The `OAuth2 redirect URL` must be set to the URL of the `fail2ban-dashboard` application, which is usually
+`http://127.0.0.1:3000` but allows to provide URLs when used with a reverse proxy like `https://fail2ban.example.com`.
+
+Example CLI setup with a local Keycloak instance running at `http://localhost:8080` and providing a `demo` realm:
+
+`./fail2ban-dashboard serve --oauth2-client-id mysecretclient --oauth2-auth-url http://localhost:8080/realms/demo/protocol/openid-connect/auth --oauth2-token-url http://localhost:8080/realms/demo/protocol/openid-connect/token --oauth2-redirect-url http://localhost:3000`
+
+### Configuration file
 
 It is also possible to configure `fail2ban-dashboard` using a config file.
-Supported config file formats are the ones supported by the [viper](https://github.com/spf13/viper#reading-config-files) library.
+Supported config file formats are the ones supported by the [viper](https://github.com/spf13/viper#reading-config-files)
+library.
 
-The config file can be located at the current working directory, the user home directory `~/.config/fail2ban-dashboard/` or `/etc/fail2ban-dashboard/`.
+The config file can be located at the current working directory, the user home directory `~/.config/fail2ban-dashboard/`
+or `/etc/fail2ban-dashboard/`.
 
 For example, for a TOML file located at `/etc/fail2ban-dashboard/config.toml` to change the address should look like:
 
@@ -135,18 +193,22 @@ For example, for a TOML file located at `/etc/fail2ban-dashboard/config.toml` to
 address = "127.0.0.1:4000"
 ```
 
-Supported configurations are similar to flags and environment variables:
+Supported configuration names are similar to flags and environment variables:
 
-| Configuration   |
-|-----------------|
-| socket          |
-| address         |
-| auth-user       |
-| auth-password   |
-| cache-dir       |
-| log-level       |
-| base-path       |
-| metrics-address |
+| Configuration       |
+|---------------------|
+| socket              |
+| address             |
+| auth-user           |
+| auth-password       |
+| cache-dir           |
+| log-level           |
+| base-path           |
+| metrics-address     |
+| oauth2-client-id    |
+| oauth2-auth-url     |
+| oauth2-token-url    |
+| oauth2-redirect-url |
 
 ## Dashboard
 
@@ -154,13 +216,10 @@ Supported configurations are similar to flags and environment variables:
 
 When started, check http://127.0.0.1:3000/
 
-Basic authentication can be enabled with the `--auth-user` and/or `--auth-password` flags.  
-When only `--auth-user` is provided, the password will be generated and shown in the logs/console.  
-When only `--auth-password` is provided, the user will be named `admin`.
-
 ### Metrics
 
-When metrics are enabled with `-m` the metrics endpoint is available at http://127.0.0.1:9100/metrics and the address can be changed with `--metrics-address`.
+When metrics are enabled with `-m` the metrics endpoint is available at http://127.0.0.1:9100/metrics and the address
+can be changed with `--metrics-address`.
 
 The following example shows which metrics are provided
 

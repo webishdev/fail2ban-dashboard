@@ -1,0 +1,38 @@
+{
+  "realm": "demo",
+  "enabled": true,
+
+  "clients": [
+    {
+      "clientId": "mysecretclient",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "+"
+      ]
+    }
+  ],
+
+  "users": [
+    {
+      "username": "demo",
+      "enabled": true,
+      "email": "demo@example.local",
+      "firstName": "Demo",
+      "lastName": "User",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

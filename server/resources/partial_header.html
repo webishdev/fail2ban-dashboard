@@ -6,6 +6,9 @@
     </div>
     <div class="flex-none">
         <ul class="menu menu-horizontal px-1">
+            {{ if .Authenticated }}
+            <li class="mx-2"><a href="{{ .BasePath }}logout" class="btn">Logout</a></li>
+            {{ end }}
             <li>
                 <button onclick="toggleTheme(); setThemeIcon();" class="btn btn-ghost btn-circle">
                     <span id="theme-icon">🌙</span>

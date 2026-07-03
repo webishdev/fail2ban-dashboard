@@ -18,8 +18,11 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/gofiber/fiber/v3/middleware/basicauth"
+	"github.com/gofiber/fiber/v3/middleware/session"
+	"github.com/webishdev/fail2ban-dashboard/config"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
+	oauth "github.com/webishdev/fail2ban-dashboard/oauth2"
 	"github.com/webishdev/fail2ban-dashboard/store"
 )
 
@@ -47,6 +50,9 @@ var indexHtml []byte
 //go:embed resources/detail.html
 var detailHtml []byte
 
+//go:embed resources/login.html
+var loginHtml []byte
+
 //go:embed resources/partial_jailcard.html
 var jailCardHtml []byte
 
@@ -65,16 +71,6 @@ var headerHtml []byte
 //go:embed resources/flags.css
 var flagsCss []byte
 
-type Configuration struct {
-	Address           string
-	AuthUser          string
-	AuthPassword      string
-	BasePath          string
-	TrustProxyHeaders bool
-	Fail2BanVersion   string
-	Version           string
-}
-
 type Sorted struct {
 	Order string
 	Class string
@@ -87,12 +83,17 @@ type baseData struct {
 	CountryCodes    template.URL
 	HasBanned       bool
 	Banned          []client.BanEntry
+	Authenticated   bool
 }
 
 type indexData struct {
 	baseData
 	BannedSum int
 	Jails     []store.Jail
+}
+
+type loginData struct {
+	baseData
 }
 
 type detailData struct {
@@ -112,7 +113,10 @@ func generateRandomPassword() string {
 	return hex.EncodeToString(b)
 }
 
-func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *Configuration) error {
+func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *config.Configuration) error {
+
+	// Initialize the in-memory session store
+	sessionStore := session.NewStore(session.Config{})
 
 	templateFunctions := template.FuncMap{
 		"safe": func(s string) template.URL {
@@ -130,73 +134,9 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		},
 	}
 
-	indexTemplate, indexTemplateError := template.New("index").Funcs(templateFunctions).Parse(string(indexHtml))
-	if indexTemplateError != nil {
-		return indexTemplateError
-	}
-
-	detailTemplate, detailTemplateError := template.New("detail").Funcs(templateFunctions).Parse(string(detailHtml))
-	if detailTemplateError != nil {
-		return detailTemplateError
-	}
-
-	flagsTemplate, flagsTemplateError := textTemplate.New("flags").Parse(string(flagsCss))
-	if flagsTemplateError != nil {
-		return flagsTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, indexJailCardTemplateError := indexTemplate.New("jailCard").Parse(string(jailCardHtml))
-	if indexJailCardTemplateError != nil {
-		return indexJailCardTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, indexBannedTemplateError := indexTemplate.New("banned").Parse(string(bannedHtml))
-	if indexBannedTemplateError != nil {
-		return indexBannedTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, indexHeadTemplateError := indexTemplate.New("head").Parse(string(headHtml))
-	if indexHeadTemplateError != nil {
-		return indexHeadTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, indexHeaderTemplateError := indexTemplate.New("header").Parse(string(headerHtml))
-	if indexHeaderTemplateError != nil {
-		return indexHeaderTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, detailHeadTemplateError := detailTemplate.New("head").Parse(string(headHtml))
-	if detailHeadTemplateError != nil {
-		return detailHeadTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, detailHeaderTemplateError := detailTemplate.New("header").Parse(string(headerHtml))
-	if detailHeaderTemplateError != nil {
-		return detailHeaderTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, detailJailCardTemplateError := detailTemplate.New("jailCard").Parse(string(jailCardHtml))
-	if detailJailCardTemplateError != nil {
-		return detailJailCardTemplateError
-	}
-
-	// value isn't needed in code as it is used in the detail template
-	_, detailJailDetailTemplateError := detailTemplate.New("jailDetail").Parse(string(jailDetailHtml))
-	if detailJailDetailTemplateError != nil {
-		return detailJailDetailTemplateError
-	}
-
-	// value isn't needed in code as it is used in the index template
-	_, detailBannedTemplateError := detailTemplate.New("banned").Parse(string(bannedHtml))
-	if detailBannedTemplateError != nil {
-		return detailBannedTemplateError
+	indexTemplate, detailTemplate, flagsTemplate, err := parseTemplates(templateFunctions)
+	if err != nil {
+		return err
 	}
 
 	if configuration.AuthUser != "" || configuration.AuthPassword != "" {
@@ -219,6 +159,70 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 
 	cleanedBasePath := path.Clean(configuration.BasePath)
 	dashboard := app.Group(cleanedBasePath)
+	basePathForTemplate := cleanBasePathForTemplate(cleanedBasePath)
+
+	hasOAuth2Values, oauthValidationErr := oauth.ValidateOAuth2Config(configuration)
+
+	if hasOAuth2Values && oauthValidationErr == nil {
+		oauthConfig := oauth.GetOAuth2Config(configuration, basePathForTemplate)
+
+		loginTemplate, loginTemplateError := template.New("login").Funcs(templateFunctions).Parse(string(loginHtml))
+		if loginTemplateError != nil {
+			return loginTemplateError
+		}
+
+		// value isn't needed in code as it is used in the index template
+		_, loginHeadTemplateError := loginTemplate.New("head").Parse(string(headHtml))
+		if loginHeadTemplateError != nil {
+			return loginHeadTemplateError
+		}
+
+		// value isn't needed in code as it is used in the index template
+		_, loginHeaderTemplateError := loginTemplate.New("header").Parse(string(headerHtml))
+		if loginHeaderTemplateError != nil {
+			return loginHeaderTemplateError
+		}
+
+		dashboard.Get(oauth.LoginEndpoint, func(c fiber.Ctx) error {
+			sess, _ := sessionStore.Get(c)
+			isAuthenticated := sess.Get("authenticated") != nil
+			if isAuthenticated {
+				if basePathForTemplate == "" {
+					return c.SendStatus(fiber.StatusNotFound)
+				}
+				return c.Redirect().To(basePathForTemplate)
+			}
+			data := &loginData{
+				baseData: baseData{
+					Version:         configuration.Version,
+					Fail2BanVersion: configuration.Fail2BanVersion,
+					BasePath:        basePathForTemplate,
+					Authenticated:   isAuthenticated,
+				},
+			}
+
+			var sb strings.Builder
+			err := loginTemplate.Execute(&sb, data)
+			if err != nil {
+				return err
+			}
+			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+			return c.SendString(sb.String())
+		})
+
+		dashboard.Post(oauth.LoginEndpoint, func(c fiber.Ctx) error {
+			return oauth.RedirectToOAuth(c, sessionStore, oauthConfig)
+		})
+
+		dashboard.Get(oauth.LogoutEndpoint, func(c fiber.Ctx) error {
+			return oauth.Logout(c, sessionStore, basePathForTemplate)
+		})
+
+		dashboard.Use(oauth.CreateOAuth2Middleware(sessionStore, basePathForTemplate))
+		dashboard.Get(oauth.CallBackEndpoint, oauth.CreateOAuth2CallbackHandler(sessionStore, oauthConfig, configuration.OAuth2TimeoutMinutes))
+	} else if hasOAuth2Values {
+		return oauthValidationErr
+	}
 
 	dashboard.Get("images/favicon.ico", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
@@ -273,6 +277,9 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 	})
 
 	dashboard.Get("/", func(c fiber.Ctx) error {
+		sess, _ := sessionStore.Get(c)
+		isAuthenticated := sess.Get("authenticated") != nil
+
 		accessLog(configuration.TrustProxyHeaders, "overview", c)
 		jails := dataStore.GetJails()
 
@@ -301,10 +308,11 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			baseData: baseData{
 				Version:         configuration.Version,
 				Fail2BanVersion: configuration.Fail2BanVersion,
-				BasePath:        cleanBasePathForTemplate(cleanedBasePath),
+				BasePath:        basePathForTemplate,
 				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
 				HasBanned:       len(banned) > 0,
 				Banned:          banned,
+				Authenticated:   isAuthenticated,
 			},
 			BannedSum: sum,
 			Jails:     jails,
@@ -320,6 +328,9 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 	})
 
 	dashboard.Get("/:jail", func(c fiber.Ctx) error {
+		sess, _ := sessionStore.Get(c)
+		isAuthenticated := sess.Get("authenticated") != nil
+
 		jailName := c.Params("jail")
 		name := fmt.Sprintf("%s details", jailName)
 		accessLog(configuration.TrustProxyHeaders, name, c)
@@ -355,10 +366,11 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			baseData: baseData{
 				Version:         configuration.Version,
 				Fail2BanVersion: configuration.Fail2BanVersion,
-				BasePath:        cleanBasePathForTemplate(cleanedBasePath),
+				BasePath:        basePathForTemplate,
 				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
 				HasBanned:       len(banned) > 0,
 				Banned:          banned,
+				Authenticated:   isAuthenticated,
 			},
 			OrderAddress: toggleSortOrder("address", sorting, order),
 			OrderPenalty: toggleSortOrder("penalty", sorting, order),
@@ -517,4 +529,48 @@ func accessLog(trustProxyHeaders bool, name string, c fiber.Ctx) {
 		}
 	}
 	log.Infof("Access %s at %s%s for %s %s", name, c.BaseURL(), c.OriginalURL(), remoteIP, additionalInfo)
+}
+
+func parseTemplates(funcMap template.FuncMap) (*template.Template, *template.Template, *textTemplate.Template, error) {
+	indexTemplate, err := template.New("index").Funcs(funcMap).Parse(string(indexHtml))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	detailTemplate, err := template.New("detail").Funcs(funcMap).Parse(string(detailHtml))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	flagsTemplate, err := textTemplate.New("flags").Parse(string(flagsCss))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if _, err := indexTemplate.New("jailCard").Parse(string(jailCardHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := indexTemplate.New("banned").Parse(string(bannedHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := indexTemplate.New("head").Parse(string(headHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := indexTemplate.New("header").Parse(string(headerHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("head").Parse(string(headHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("header").Parse(string(headerHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("jailCard").Parse(string(jailCardHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("jailDetail").Parse(string(jailDetailHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("banned").Parse(string(bannedHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	return indexTemplate, detailTemplate, flagsTemplate, nil
 }
