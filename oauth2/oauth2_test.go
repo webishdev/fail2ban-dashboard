@@ -167,6 +167,7 @@ func TestCreateOAuth2CallbackHandler(t *testing.T) {
 	app.Use(func(c fiber.Ctx) error {
 		sess, _ := store.Get(c)
 		sess.Set("oauth_state", "test-state")
+		sess.Set("oauth_code_verifier", "test-verifier")
 		sess.Save()
 		return c.Next()
 	})
