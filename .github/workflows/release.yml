@@ -46,7 +46,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.13.1
+          version: v2.13.2
 
       - name: Upload build result
         uses: actions/upload-artifact@v7
