@@ -1,13 +1,13 @@
 module github.com/webishdev/fail2ban-dashboard
 
-go 1.27.0
+go 1.27.1
 
 require (
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/kisielk/og-rek v1.3.0
 	github.com/nlpodyssey/gopickle v0.3.0
 	github.com/prometheus/client_golang v1.24.1
-	github.com/prometheus/client_model v0.6.2
+	github.com/prometheus/client_model v0.6.3
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	golang.org/x/oauth2 v0.36.0
@@ -46,5 +46,5 @@ require (
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 )

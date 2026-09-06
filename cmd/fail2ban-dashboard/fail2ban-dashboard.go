@@ -21,33 +21,32 @@ import (
 var Version = "development"
 var GitHash = "none"
 
-var rootCmd = &cobra.Command{
-	Use:   "fail2ban-dashboard",
-	Short: "Start the fail2ban dashboard server",
-	Long:  fmt.Sprintf("fail2ban-dashboard %s (%s) provides a web-based dashboard for monitoring fail2ban bans and jails", Version, GitHash),
-	Run:   serve,
-}
+func setupRootCommand() *cobra.Command {
+	rootCmdTemplate := &cobra.Command{
+		Use:   "fail2ban-dashboard",
+		Short: "Start the fail2ban dashboard server",
+		Long:  fmt.Sprintf("fail2ban-dashboard %s (%s) provides a web-based dashboard for monitoring fail2ban bans and jails", Version, GitHash),
+		Run:   serve,
+	}
 
-var serveCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Start the fail2ban dashboard server (default)",
-	Long:  fmt.Sprintf("Start the fail2ban dashboard server %s (%s) provides a web-based dashboard for monitoring fail2ban bans and jails", Version, GitHash),
-	Run:   serve,
-}
+	serveCmdTemplate := &cobra.Command{
+		Use:   "serve",
+		Short: "Start the fail2ban dashboard server (default)",
+		Long:  fmt.Sprintf("Start the fail2ban dashboard server %s (%s) provides a web-based dashboard for monitoring fail2ban bans and jails", Version, GitHash),
+		Run:   serve,
+	}
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print the version number and git hash",
-	Long:  "Print the version number and git hash",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("fail2ban-dashboard %s (%s)\n", Version, GitHash)
-	},
-}
+	versionCmdTemplate := &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number and git hash",
+		Long:  "Print the version number and git hash",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("fail2ban-dashboard %s (%s)\n", Version, GitHash)
+		},
+	}
 
-func setupRootCommand() {
-	// Add search paths to find the file
+	// Config setup
 	viper.SetConfigName("config")
-
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/fail2ban-dashboard/")
 	viper.AddConfigPath("$HOME/.config/fail2ban-dashboard")
@@ -63,152 +62,56 @@ func setupRootCommand() {
 	viper.SetEnvPrefix("F2BD")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
-	addGlobalFlags(rootCmd)
-	addGlobalFlags(serveCmd)
-	addServeFlags(rootCmd)
-	addServeFlags(serveCmd)
+	// Attach flags
+	addGlobalFlags(rootCmdTemplate)
+	addGlobalFlags(serveCmdTemplate)
+	addServeFlags(rootCmdTemplate)
+	addServeFlags(serveCmdTemplate)
 
-	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(serveCmd)
+	// PreRun hook to bind flags dynamically for whichever command executes
+	bindFlagsHook := func(cmd *cobra.Command, args []string) error {
+		return viper.BindPFlags(cmd.Flags())
+	}
+
+	rootCmdTemplate.PreRunE = bindFlagsHook
+	serveCmdTemplate.PreRunE = bindFlagsHook
+
+	rootCmdTemplate.AddCommand(versionCmdTemplate)
+	rootCmdTemplate.AddCommand(serveCmdTemplate)
+
+	return rootCmdTemplate
 }
 
 func addGlobalFlags(cmd *cobra.Command) {
 	flags := cmd.Flags()
 
 	flags.StringP("cache-dir", "c", "", "directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)")
-	cacheDirErr := viper.BindPFlag("cache-dir", flags.Lookup("cache-dir"))
-	if cacheDirErr != nil {
-		fmt.Printf("Could not bind cache-dir flag: %s\n", cacheDirErr)
-		os.Exit(1)
-	}
-
 	flags.StringP("socket", "s", "/var/run/fail2ban/fail2ban.sock", "location of the fail2ban socket, also F2BD_SOCKET")
-	socketError := viper.BindPFlag("socket", flags.Lookup("socket"))
-	if socketError != nil {
-		fmt.Printf("Could not bind socket flag: %s\n", socketError)
-		os.Exit(1)
-	}
-
 	flags.String("log-level", "info", "log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL")
-	logLevelErr := viper.BindPFlag("log-level", flags.Lookup("log-level"))
-	if logLevelErr != nil {
-		fmt.Printf("Could not bind log-level flag: %s\n", logLevelErr)
-		os.Exit(1)
-	}
-
 	flags.Bool("skip-version-check", false, "skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK")
-	skipVersionCheckErr := viper.BindPFlag("skip-version-check", flags.Lookup("skip-version-check"))
-	if skipVersionCheckErr != nil {
-		fmt.Printf("Could not bind skip-version-check flag: %s\n", skipVersionCheckErr)
-		os.Exit(1)
-	}
-
 	flags.Bool("scheduled-geoip-download", true, "will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD")
-	scheduledGeoIPDownloadErr := viper.BindPFlag("scheduled-geoip-download", flags.Lookup("scheduled-geoip-download"))
-	if scheduledGeoIPDownloadErr != nil {
-		fmt.Printf("Could not bind scheduled-geoip-download flag: %s\n", scheduledGeoIPDownloadErr)
-		os.Exit(1)
-	}
-
 	flags.Int("refresh-seconds", 30, "fail2ban data refresh in seconds (value from 10 to 600), also F2BD_REFRESH_SECONDS")
-	refreshSecondsErr := viper.BindPFlag("refresh-seconds", flags.Lookup("refresh-seconds"))
-	if refreshSecondsErr != nil {
-		fmt.Printf("Could not bind refresh-seconds flag: %s\n", refreshSecondsErr)
-		os.Exit(1)
-	}
-
 }
 
 func addServeFlags(cmd *cobra.Command) {
 	flags := cmd.Flags()
 
 	flags.StringP("address", "a", "127.0.0.1:3000", "address to serve the dashboard on, also F2BD_ADDRESS")
-	addressErr := viper.BindPFlag("address", flags.Lookup("address"))
-	if addressErr != nil {
-		fmt.Printf("Could not bind address flag: %s\n", addressErr)
-		os.Exit(1)
-	}
-
 	flags.String("auth-user", "", "username for basic auth, also F2BD_AUTH_USER")
-	authUserErr := viper.BindPFlag("auth-user", flags.Lookup("auth-user"))
-	if authUserErr != nil {
-		fmt.Printf("Could not bind auth-user flag: %s\n", authUserErr)
-		os.Exit(1)
-	}
-
 	flags.String("auth-password", "", "password for basic auth, also F2BD_AUTH_PASSWORD")
-	authPasswordErr := viper.BindPFlag("auth-password", flags.Lookup("auth-password"))
-	if authPasswordErr != nil {
-		fmt.Printf("Could not bind auth-password flag: %s\n", authPasswordErr)
-		os.Exit(1)
-	}
-
 	flags.Bool("trust-proxy-headers", false, "trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS")
-	trustProxyHeadersErr := viper.BindPFlag("trust-proxy-headers", flags.Lookup("trust-proxy-headers"))
-	if trustProxyHeadersErr != nil {
-		fmt.Printf("Could not bind trust-proxy-headers flag: %s\n", trustProxyHeadersErr)
-		os.Exit(1)
-	}
-
 	flags.String("base-path", "/", "base path of the application, also F2BD_BASE_PATH")
-	basePathError := viper.BindPFlag("base-path", flags.Lookup("base-path"))
-	if basePathError != nil {
-		fmt.Printf("Could not bind base-path flag: %s\n", basePathError)
-		os.Exit(1)
-	}
-
 	flags.BoolP("metrics", "m", false, "will provide metrics endpoint, also F2BD_METRICS")
-	metricsErr := viper.BindPFlag("metrics", flags.Lookup("metrics"))
-	if metricsErr != nil {
-		fmt.Printf("Could not bind metrics flag: %s\n", metricsErr)
-		os.Exit(1)
-	}
-
 	flags.String("metrics-address", "127.0.0.1:9100", "address to make metrics available, also F2BD_METRICS_ADDRESS")
-	metricsAddressErr := viper.BindPFlag("metrics-address", flags.Lookup("metrics-address"))
-	if metricsAddressErr != nil {
-		fmt.Printf("Could not bind metrics-address flag: %s\n", metricsAddressErr)
-		os.Exit(1)
-	}
-
 	flags.String("oauth2-client-id", "", "OAuth2 client identifier, also F2BD_OAUTH2_CLIENT_ID")
-	oauth2ClientIdErr := viper.BindPFlag("oauth2-client-id", flags.Lookup("oauth2-client-id"))
-	if oauth2ClientIdErr != nil {
-		fmt.Printf("Could not bind oauth2-client-id flag: %s\n", oauth2ClientIdErr)
-		os.Exit(1)
-	}
-
 	flags.String("oauth2-auth-url", "", "OAuth2 authentication URL, also F2BD_OAUTH2_AUTH_URL")
-	oauth2AuthURLErr := viper.BindPFlag("oauth2-auth-url", flags.Lookup("oauth2-auth-url"))
-	if oauth2AuthURLErr != nil {
-		fmt.Printf("Could not bind oauth2-auth-url flag: %s\n", oauth2AuthURLErr)
-		os.Exit(1)
-	}
-
 	flags.String("oauth2-token-url", "", "OAuth2 token URL, also F2BD_OAUTH2_TOKEN_URL")
-	oauth2TokenURLErr := viper.BindPFlag("oauth2-token-url", flags.Lookup("oauth2-token-url"))
-	if oauth2TokenURLErr != nil {
-		fmt.Printf("Could not bind oauth2-token-url flag: %s\n", oauth2TokenURLErr)
-		os.Exit(1)
-	}
-
 	flags.String("oauth2-redirect-url", "", "OAuth2 redirect URL, also F2BD_OAUTH2_REDIRECT_URL")
-	oauth2RedirectURLErr := viper.BindPFlag("oauth2-redirect-url", flags.Lookup("oauth2-redirect-url"))
-	if oauth2RedirectURLErr != nil {
-		fmt.Printf("Could not bind oauth2-redirect-url flag: %s\n", oauth2RedirectURLErr)
-		os.Exit(1)
-	}
-
 	flags.Int("oauth2-timeout-minutes", 30, "OAuth2 timeout minutes, also F2BD_OAUTH2_TIMEOUT_MINUTES")
-	oauth2TimeoutMinutesLErr := viper.BindPFlag("oauth2-timeout-minutes", flags.Lookup("oauth2-timeout-minutes"))
-	if oauth2TimeoutMinutesLErr != nil {
-		fmt.Printf("Could not bind oauth2-timeout-minutes flag: %s\n", oauth2RedirectURLErr)
-		os.Exit(1)
-	}
 }
 
 func main() {
-	setupRootCommand()
+	rootCmd := setupRootCommand()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Printf("Error: %s\n", err)
 		os.Exit(1)
