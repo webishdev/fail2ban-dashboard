@@ -21,6 +21,7 @@ Tested with the following `fail2ban` versions
 - `1.0.1`
 - `1.0.2`
 - `1.1.0`
+- `1.1.1`
 
 If the dashboard should be used with another version, please switch off the version check with the
 `--skip-version-check` flag, otherwise the application won't start.
