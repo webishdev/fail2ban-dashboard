@@ -12,7 +12,7 @@ if [[ "$ACTION" != "start" && "$ACTION" != "stop" && "$ACTION" != "dashboard" &&
   exit 1
 fi
 
-FAIL2BAN_VERSION="${2:-1.1.0}"
+FAIL2BAN_VERSION="${2:-1.1.1}"
 export FAIL2BAN_VERSION
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"

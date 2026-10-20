@@ -1,6 +1,6 @@
 services:
   fail2ban:
-    image: "crazymax/fail2ban:${FAIL2BAN_VERSION:-1.1.0}"
+    image: "crazymax/fail2ban:${FAIL2BAN_VERSION:-1.1.1}"
     environment:
       TZ: "Europe/Berlin"
       F2BD_ADDRESS: ":3000"

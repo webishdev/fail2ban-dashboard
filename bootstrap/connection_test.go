@@ -1,5 +1,7 @@
 package bootstrap
 
+import "slices"
+
 import "testing"
 
 func TestSupportedVersions(t *testing.T) {
@@ -8,14 +10,8 @@ func TestSupportedVersions(t *testing.T) {
 	}
 
 	// Test that supported versions contains expected version
-	found := false
-	for _, version := range supportedVersions {
-		if version == "1.1.0" {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(supportedVersions, "1.1.1")
 	if !found {
-		t.Error("Expected version 1.1.0 not found in supported versions")
+		t.Error("Expected version 1.1.1 not found in supported versions")
 	}
 }

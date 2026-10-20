@@ -43,10 +43,8 @@ jobs:
           CURRENT_VERSION=${VERSION_INPUT:-"ci"}
           make build-all VERSION=$CURRENT_VERSION
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: v2.13.2
+      - name: Lint
+        run: make lint
 
       - name: Upload build result
         uses: actions/upload-artifact@v7
