@@ -8,6 +8,7 @@ GIT_HASH := $(shell git rev-parse --short=11 HEAD)
 BIN_DIR := bin
 BINARY_NAME := fail2ban-dashboard
 MAIN_PATH := ./cmd/fail2ban-dashboard
+GOLANGCI_LINT := go tool golangci-lint
 
 # Default target
 all: test lint build-all
@@ -34,8 +35,7 @@ build:
 .PHONY: lint
 lint:
 	@echo "Linting"
-	@command -v golangci-lint >/dev/null 2>&1 && golangci-lint run || \
-        echo "golangci-lint not installed; skipping"
+	$(GOLANGCI_LINT) run
 
 # Run tests
 test:
@@ -59,7 +59,7 @@ help:
 	@echo "  build-intel - Build Linux binary for Intel CPUs (amd64)"
 	@echo "  build-arm   - Build Linux binary for ARM CPUs (arm64)"
 	@echo "  build       - Build for specified GOOS/GOARCH"
-	@echo "  lint        - Run golangci-lint (if available)"
+	@echo "  lint        - Run golangci-lint as go tool"
 	@echo "  test        - Run tests"
 	@echo "  test-ci     - Run tests with JSON output for CI/CD"
 	@echo "  clean       - Remove build artifacts"

@@ -2,12 +2,13 @@ package bootstrap
 
 import (
 	"os"
+	"slices"
 
 	"github.com/gofiber/fiber/v3/log"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 )
 
-var supportedVersions = []string{"0.11.1", "0.11.2", "1.0.1", "1.0.2", "1.1.0"}
+var supportedVersions = []string{"0.11.1", "0.11.2", "1.0.1", "1.0.2", "1.1.0", "1.1.1"}
 
 func ConnectToFail2ban(socketPath string, skipVersionCheck bool) (*client.Fail2BanClient, string) {
 	log.Infof("Will use socket at %s for fail2ban connection", socketPath)
@@ -28,13 +29,7 @@ func ConnectToFail2ban(socketPath string, skipVersionCheck bool) (*client.Fail2B
 
 	log.Infof("fail2ban version found: %s\n", detectedFail2banVersion)
 
-	versionIsOk := false
-	for _, supportedVersion := range supportedVersions {
-		if supportedVersion == detectedFail2banVersion {
-			versionIsOk = true
-			break
-		}
-	}
+	versionIsOk := slices.Contains(supportedVersions, detectedFail2banVersion)
 
 	if !skipVersionCheck && !versionIsOk {
 		log.Errorf("fail2ban version %s not supported\n", detectedFail2banVersion)

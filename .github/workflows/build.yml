@@ -12,6 +12,7 @@ on:
       - go.mod
       - go.sum
       - .golangci.yml
+      - '.github/workflows/build.yml'
   push:
     branches:
       - main
@@ -20,6 +21,7 @@ on:
       - go.mod
       - go.sum
       - .golangci.yml
+      - '.github/workflows/build.yml'
 
 permissions:
   contents: read
@@ -43,10 +45,8 @@ jobs:
       - name: Display Go version
         run: go version
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: v2.13.2
+      - name: Lint
+        run: make lint
 
       - name: Test
         run: |
