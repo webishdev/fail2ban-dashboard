@@ -1,27 +1,39 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="emerald">
 {{ template "head" . }}
-    <body>
+    <body class="min-h-screen bg-base-200 text-base-content antialiased">
         {{ template "header" . }}
-        <main class="p-4">
-            <div class="jails">
-                <div class="jails flex flex-col gap-4 mx-auto">
-                    <div class="flex items-center justify-between p-6 bg-base-100 shadow rounded-lg border border-base-300 w-full">
-                        <div class="font-bold text-lg flex-shrink-0 min-w-48">Currently banned</div>
-                        <div class="flex gap-8 items-center flex-1 justify-end">
-                            <div class="text-center">
-                                <div class="font-semibold text-secondary text-xl">{{ .BannedSum }}</div>
-                            </div>
-                        </div>
-                    </div>
-                    {{ $curBasePath := .BasePath }}
-                    {{ range .Jails }}
-                        <a href="{{ $curBasePath }}{{ .Name }}" class="flex items-center justify-between p-6 bg-base-100 hover:bg-base-200 shadow hover:shadow-md transition-all duration-200 rounded-lg border border-base-300 w-full">
-                        {{ template "jailCard" . }}
-                        </a>
-                    {{ end }}
+        <main class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+            <section class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Overview</h1>
+                    <p class="mt-1 text-sm text-base-content/60">Status of all monitored jails, refreshed every minute.</p>
                 </div>
+                <div class="grid grid-cols-2 gap-3 sm:flex sm:gap-4">
+                    <div class="rounded-box border border-base-300 bg-base-100 px-5 py-4 shadow-sm sm:min-w-40">
+                        <div class="text-xs font-medium uppercase tracking-wide text-base-content/60">Currently banned</div>
+                        <div class="mt-1 text-3xl font-bold tabular-nums {{ if gt .BannedSum 0 }}text-secondary{{ end }}">{{ .BannedSum }}</div>
+                    </div>
+                    <div class="rounded-box border border-base-300 bg-base-100 px-5 py-4 shadow-sm sm:min-w-40">
+                        <div class="text-xs font-medium uppercase tracking-wide text-base-content/60">Jails</div>
+                        <div class="mt-1 text-3xl font-bold tabular-nums">{{ len .Jails }}</div>
+                    </div>
+                </div>
+            </section>
+            {{ $curBasePath := .BasePath }}
+            {{ if .Jails }}
+            <section class="jails grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {{ range .Jails }}
+                    <a href="{{ $curBasePath }}{{ .Name }}" class="group flex flex-col gap-5 rounded-box border border-base-300 bg-base-100 p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                    {{ template "jailCard" . }}
+                    </a>
+                {{ end }}
+            </section>
+            {{ else }}
+            <div class="rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center text-base-content/60">
+                No jails found.
             </div>
+            {{ end }}
         </main>
     </body>
 </html>

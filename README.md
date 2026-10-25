@@ -54,13 +54,13 @@ If the dashboard should be used with another version, please switch off the vers
 
 | Overview                                                                                                                          | Detail                                                                                                                                |
 |-----------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| ![Screenshot of fail2ban-dashboard overview light](./images/overview_light.png "Screenshot of fail2ban-dashboard overview light") | ![Screenshot of fail2ban-dashboard detail view light](./images/detail_light.png "Screenshot of fail2ban-dashboard detail view light") |
+| ![Screenshot of fail2ban-dashboard overview light](docs/content/images/overview_light.png "Screenshot of fail2ban-dashboard overview light") | ![Screenshot of fail2ban-dashboard detail view light](docs/content/images/detail_light.png "Screenshot of fail2ban-dashboard detail view light") |
 
 ### Dark mode
 
 | Overview                                                                                                                       | Detail                                                                                                                             |
 |--------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| ![Screenshot of fail2ban-dashboard overview dark](./images/overview_dark.png "Screenshot of fail2ban-dashboard overview dark") | ![Screenshot of fail2ban-dashboard detail view dark](./images/detail_dark.png "Screenshot of fail2ban-dashboard detail view dark") |
+| ![Screenshot of fail2ban-dashboard overview dark](docs/content/images/overview_dark.png "Screenshot of fail2ban-dashboard overview dark") | ![Screenshot of fail2ban-dashboard detail view dark](docs/content/images/detail_dark.png "Screenshot of fail2ban-dashboard detail view dark") |
 
 ### OAuth2
 
@@ -69,7 +69,7 @@ If the dashboard should be used with another version, please switch off the vers
 
 | Login                                                                                                                             | Keycloak                                                                                    | Overview                                                                                                                                                  |
 |-----------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Screenshot of fail2ban-dashboard OAuth2 login](./images/oauth2_login_light.png "Screenshot of fail2ban-dashboard OAuth2 login") | ![Screenshot of Keycloak login](./images/keycloak_login.png "Screenshot of Keycloak login") | ![Screenshot of fail2ban-dashboard overview with logout](./images/overview_with_logout_light.png "Screenshot of fail2ban-dashboard overview with logout") |
+| ![Screenshot of fail2ban-dashboard OAuth2 login](docs/content/images/oauth2_login_light.png "Screenshot of fail2ban-dashboard OAuth2 login") | ![Screenshot of Keycloak login](docs/content/images/keycloak_login.png "Screenshot of Keycloak login") | ![Screenshot of fail2ban-dashboard overview with logout](docs/content/images/overview_with_logout_light.png "Screenshot of fail2ban-dashboard overview with logout") |
 
 </details>
 

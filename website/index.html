@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>fail2ban-dashboard</title>
+  <meta name="description" content="A lightweight web dashboard and Prometheus exporter for fail2ban, shipped as a single binary or Docker image.">
+  <meta property="og:title" content="fail2ban-dashboard">
+  <meta property="og:description" content="A lightweight web dashboard and Prometheus exporter for fail2ban.">
+  <meta property="og:image" content="assets/mascot.png">
+  <link rel="icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('theme');
+        if (t) document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container nav-inner">
+    <a class="brand" href="#top">
+      <img src="assets/mascot.png" alt="" width="32" height="44">
+      <span>fail2ban-dashboard</span>
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#how-it-works">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#screenshots">Screenshots</a>
+      <a href="#docs">Docs</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle color theme">
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+      <a class="icon-btn" href="https://github.com/webishdev/fail2ban-dashboard" aria-label="GitHub repository">
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="fill"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.39-5.27 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="dot"></span> Open source · Apache-2.0 · Use at own risk</p>
+        <h1>See who <span class="accent">fail2ban</span> is keeping out.</h1>
+        <p class="lead">
+          A lightweight web dashboard for <code>fail2ban</code> that asks fail2ban itself, straight
+          through its control socket, instead of parsing log files. You get your jails and banned
+          addresses at a glance, plus Prometheus metrics if you want them. One binary, no database, no fuss.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="#quick-start">Get started</a>
+          <a class="btn btn-ghost" href="https://github.com/webishdev/fail2ban-dashboard/releases">Download release</a>
+        </div>
+        <div class="badges">
+          <img src="https://github.com/webishdev/fail2ban-dashboard/actions/workflows/build.yml/badge.svg" alt="Build status" height="20">
+          <img src="https://img.shields.io/github/v/release/webishdev/fail2ban-dashboard" alt="Latest release" height="20">
+        </div>
+      </div>
+      <div class="hero-art">
+        <div class="glow" aria-hidden="true"></div>
+        <img src="assets/mascot.png" alt="fail2ban-dashboard mascot: a gopher with a magnifying glass and a clipboard of banned IPs" width="180" height="246">
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="how-it-works" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">Straight from the source, not from the logs</h2>
+      <p class="section-lead">fail2ban-dashboard connects to the same Unix socket that <code>fail2ban-client</code> uses and asks the fail2ban server directly.</p>
+
+      <div class="flow" role="img" aria-label="fail2ban server, connected via the Unix socket fail2ban.sock, to fail2ban-dashboard, which serves the browser and Prometheus">
+        <div class="flow-node">
+          <span class="flow-kicker">fail2ban server</span>
+          <strong>Jails &amp; bans</strong>
+        </div>
+        <div class="flow-link">
+          <span class="flow-line"></span>
+          <code>fail2ban.sock</code>
+          <span class="flow-sub">Unix socket · read-only</span>
+        </div>
+        <div class="flow-node flow-node-main">
+          <img src="assets/mascot.png" alt="" width="28" height="38">
+          <strong>fail2ban-dashboard</strong>
+        </div>
+        <div class="flow-link">
+          <span class="flow-line"></span>
+          <span class="flow-sub">HTTP</span>
+        </div>
+        <div class="flow-node">
+          <span class="flow-kicker">you</span>
+          <strong>Browser &amp; Prometheus</strong>
+        </div>
+      </div>
+
+      <div class="compare">
+        <div class="compare-col compare-bad">
+          <h3>Log parsing</h3>
+          <ul>
+            <li>Needs read access to log files and knowledge of where they live</li>
+            <li>Breaks when log formats, rotation or verbosity change</li>
+            <li>Reconstructs state from history and can drift from reality</li>
+            <li>Misses unbans and manual changes made with <code>fail2ban-client</code></li>
+          </ul>
+        </div>
+        <div class="compare-col compare-good">
+          <h3>Socket (fail2ban-dashboard)</h3>
+          <ul>
+            <li>Asks fail2ban for its <em>live</em> state: jails, current and total bans and failures</li>
+            <li>Independent of log paths, formats and rotation</li>
+            <li>Speaks the fail2ban protocol natively in Go, so no Python and no <code>fail2ban-client</code> binary are needed</li>
+            <li>Only needs the socket, which mounts read-only into Docker</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="section">
+    <div class="container">
+      <h2 class="section-title">What it does</h2>
+      <p class="section-lead">Everything you need to keep an eye on fail2ban, nothing you don't.</p>
+      <div class="grid features">
+        <article class="card">
+          <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></div>
+          <h3>Live jail overview</h3>
+          <p>Every jail with current and total banned and failed counts, read live from fail2ban and refreshed automatically.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+          <h3>GeoIP lookup</h3>
+          <p>See where banned addresses come from. GeoIP data is downloaded and cached locally.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
+          <h3>Prometheus metrics</h3>
+          <p>Optional <code>/metrics</code> endpoint with per-jail gauges, ready for Grafana.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+          <h3>Authentication</h3>
+          <p>Protect the dashboard with basic auth or log in through any OAuth2 / OIDC provider.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></div>
+          <h3>Single binary &amp; Docker</h3>
+          <p>Static Go binary for amd64 and arm64, or a distroless container image on GHCR.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg></div>
+          <h3>Light &amp; dark</h3>
+          <p>A clean interface that follows your system theme, behind a reverse proxy or not.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots -->
+  <section id="screenshots" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">Screenshots</h2>
+      <div class="tabs" role="tablist" aria-label="Screenshot theme">
+        <button role="tab" class="tab" aria-selected="true" data-shot="light">Light</button>
+        <button role="tab" class="tab" aria-selected="false" data-shot="dark">Dark</button>
+      </div>
+      <div class="shots">
+        <figure>
+          <img data-light="assets/screenshots/overview_light.png" data-dark="assets/screenshots/overview_dark.png" src="assets/screenshots/overview_light.png" alt="Dashboard overview listing jails with banned and failed counts" loading="lazy">
+          <figcaption>Overview of all jails</figcaption>
+        </figure>
+        <figure>
+          <img data-light="assets/screenshots/detail_light.png" data-dark="assets/screenshots/detail_dark.png" src="assets/screenshots/detail_light.png" alt="Jail detail view listing banned addresses with country information" loading="lazy">
+          <figcaption>Jail detail with banned addresses</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Docs -->
+  <section id="docs" class="section">
+    <div class="container docs-layout">
+      <aside class="toc" aria-label="Documentation">
+        <p class="toc-title">Documentation</p>
+        <a href="#quick-start">Quick start</a>
+        <a href="#compatibility">Compatibility</a>
+        <a href="#cli">Command line</a>
+        <a href="#options">Options</a>
+        <a href="#basic-auth">Basic authentication</a>
+        <a href="#oauth2">OAuth2</a>
+        <a href="#config-file">Config file</a>
+        <a href="#metrics">Metrics</a>
+        <a href="#building">Building</a>
+      </aside>
+
+      <div class="doc">
+        <h2 id="quick-start">Quick start</h2>
+
+        <h3>Docker</h3>
+        <p>The quickest way to run the dashboard. The fail2ban socket is mounted read-only into the container:</p>
+<pre><code>docker run --user=root \
+  -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro \
+  -p 3000:3000 \
+  ghcr.io/webishdev/fail2ban-dashboard:latest</code></pre>
+        <p class="note">The <code>root</code> user is necessary because the fail2ban socket is only accessible to <code>root</code> by default. Instead of <code>latest</code> you can pin a version such as <code>v0.11.2</code>.</p>
+
+        <h3>Standalone binary</h3>
+        <p>Download a release for your platform from the <a href="https://github.com/webishdev/fail2ban-dashboard/releases">releases page</a>, then run:</p>
+<pre><code>sudo ./fail2ban-dashboard</code></pre>
+        <p>Open <a href="http://127.0.0.1:3000/">http://127.0.0.1:3000/</a> in your browser.</p>
+
+        <h2 id="compatibility">Compatibility</h2>
+        <p>Tested with these fail2ban versions:</p>
+        <div class="chips">
+          <span class="chip">0.11.1</span><span class="chip">0.11.2</span><span class="chip">1.0.1</span><span class="chip">1.0.2</span><span class="chip">1.1.0</span><span class="chip">1.1.1</span>
+        </div>
+        <p>For any other version, start with <code>--skip-version-check</code>, otherwise the application refuses to start.</p>
+        <p>But there is no guarantee, that an unsupported version will work.</p>
+
+        <h2 id="cli">Command line</h2>
+<pre><code>Usage:
+  fail2ban-dashboard [flags]
+  fail2ban-dashboard [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  serve       Start the fail2ban dashboard server (default)
+  version     Print the version number and git hash</code></pre>
+
+        <h2 id="options">Options</h2>
+        <p>Every option can be set as a command line flag, an environment variable or a <a href="#config-file">config file</a> entry.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Flag</th><th>Environment variable</th><th>Description</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td><code>-a, --address</code></td><td><code>F2BD_ADDRESS</code></td><td>Address to serve the dashboard on</td><td><code>127.0.0.1:3000</code></td></tr>
+              <tr><td><code>--base-path</code></td><td><code>F2BD_BASE_PATH</code></td><td>Base path of the application</td><td><code>/</code></td></tr>
+              <tr><td><code>-c, --cache-dir</code></td><td><code>F2BD_CACHE_DIR</code></td><td>Directory to cache GeoIP data</td><td>working directory</td></tr>
+              <tr><td><code>--log-level</code></td><td><code>F2BD_LOG_LEVEL</code></td><td>trace, debug, info, warn, error</td><td><code>info</code></td></tr>
+              <tr><td><code>-m, --metrics</code></td><td><code>F2BD_METRICS</code></td><td>Enable the Prometheus metrics endpoint</td><td><code>false</code></td></tr>
+              <tr><td><code>--metrics-address</code></td><td><code>F2BD_METRICS_ADDRESS</code></td><td>Address to serve metrics on</td><td><code>127.0.0.1:9100</code></td></tr>
+              <tr><td><code>--refresh-seconds</code></td><td><code>F2BD_REFRESH_SECONDS</code></td><td>fail2ban data refresh interval (10–600)</td><td><code>30</code></td></tr>
+              <tr><td><code>--scheduled-geoip-download</code></td><td><code>F2BD_SCHEDULED_GEOIP_DOWNLOAD</code></td><td>Keep the GeoIP cache updated even when the dashboard is not accessed</td><td><code>true</code></td></tr>
+              <tr><td><code>--skip-version-check</code></td><td><code>F2BD_SKIP_VERSION_CHECK</code></td><td>Skip the fail2ban version check</td><td><code>false</code></td></tr>
+              <tr><td><code>-s, --socket</code></td><td><code>F2BD_SOCKET</code></td><td>Path of the fail2ban socket</td><td><code>/var/run/fail2ban/fail2ban.sock</code></td></tr>
+              <tr><td><code>--trust-proxy-headers</code></td><td><code>F2BD_TRUST_PROXY_HEADERS</code></td><td>Trust proxy headers like <code>X-Forwarded-For</code></td><td><code>false</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="basic-auth">Basic authentication</h2>
+        <p>Enable basic auth with <code>--auth-user</code> and/or <code>--auth-password</code>.</p>
+        <ul>
+          <li>Only <code>--auth-user</code> given: a password is generated and printed to the logs.</li>
+          <li>Only <code>--auth-password</code> given: the user is named <code>admin</code>.</li>
+        </ul>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Flag</th><th>Environment variable</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>--auth-user</code></td><td><code>F2BD_AUTH_USER</code></td><td>Username for basic auth</td></tr>
+              <tr><td><code>--auth-password</code></td><td><code>F2BD_AUTH_PASSWORD</code></td><td>Password for basic auth</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="oauth2">OAuth2</h2>
+        <p>Log in through any OAuth2 / OpenID Connect provider such as Keycloak. All options without a default are required.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Flag</th><th>Environment variable</th><th>Description</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td><code>--oauth2-client-id</code></td><td><code>F2BD_OAUTH2_CLIENT_ID</code></td><td>Client identifier</td><td>–</td></tr>
+              <tr><td><code>--oauth2-auth-url</code></td><td><code>F2BD_OAUTH2_AUTH_URL</code></td><td>Authorization URL</td><td>–</td></tr>
+              <tr><td><code>--oauth2-token-url</code></td><td><code>F2BD_OAUTH2_TOKEN_URL</code></td><td>Token URL</td><td>–</td></tr>
+              <tr><td><code>--oauth2-redirect-url</code></td><td><code>F2BD_OAUTH2_REDIRECT_URL</code></td><td>Public URL of the dashboard</td><td>–</td></tr>
+              <tr><td><code>--oauth2-timeout-minutes</code></td><td><code>F2BD_OAUTH2_TIMEOUT_MINUTES</code></td><td>Session timeout in minutes</td><td><code>30</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The redirect URL is the address users reach the dashboard on: usually <code>http://127.0.0.1:3000</code>, or e.g. <code>https://fail2ban.example.com</code> behind a reverse proxy.</p>
+        <p>Example with a local Keycloak at <code>http://localhost:8080</code> and a <code>demo</code> realm:</p>
+<pre><code>./fail2ban-dashboard serve \
+  --oauth2-client-id mysecretclient \
+  --oauth2-auth-url http://localhost:8080/realms/demo/protocol/openid-connect/auth \
+  --oauth2-token-url http://localhost:8080/realms/demo/protocol/openid-connect/token \
+  --oauth2-redirect-url http://localhost:3000</code></pre>
+        <figure class="doc-shot">
+          <img src="assets/screenshots/oauth2_login_light.png" alt="OAuth2 login screen of fail2ban-dashboard" loading="lazy">
+        </figure>
+
+        <h2 id="config-file">Config file</h2>
+        <p>Any format supported by <a href="https://github.com/spf13/viper#reading-config-files">viper</a> works (TOML, YAML, JSON, …). The file is looked up in:</p>
+        <ul>
+          <li>the current working directory</li>
+          <li><code>~/.config/fail2ban-dashboard/</code></li>
+          <li><code>/etc/fail2ban-dashboard/</code></li>
+        </ul>
+        <p>Keys match the flag names. For example <code>/etc/fail2ban-dashboard/config.toml</code>:</p>
+<pre><code>address   = "127.0.0.1:4000"
+socket    = "/var/run/fail2ban/fail2ban.sock"
+log-level = "info"
+metrics   = true</code></pre>
+
+        <h2 id="metrics">Metrics</h2>
+        <p>Start with <code>-m</code> and metrics are served at <a href="http://127.0.0.1:9100/metrics">http://127.0.0.1:9100/metrics</a>. Change the address with <code>--metrics-address</code>.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Metric</th><th>Labels</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>f2b_banned_total</code></td><td>–</td><td>Total number of banned addresses</td></tr>
+              <tr><td><code>f2b_jail_count</code></td><td>–</td><td>Number of jails</td></tr>
+              <tr><td><code>f2b_jail_banned_current</code></td><td><code>jail</code></td><td>Currently banned IPs per jail</td></tr>
+              <tr><td><code>f2b_jail_banned_total</code></td><td><code>jail</code></td><td>Total banned IPs per jail</td></tr>
+              <tr><td><code>f2b_jail_failed_current</code></td><td><code>jail</code></td><td>Currently failed IPs per jail</td></tr>
+              <tr><td><code>f2b_jail_failed_total</code></td><td><code>jail</code></td><td>Total failed IPs per jail</td></tr>
+              <tr><td><code>fail2ban_dashboard_info</code></td><td><code>version</code>, <code>fail2ban_version</code></td><td>Build information</td></tr>
+            </tbody>
+          </table>
+        </div>
+<pre><code># HELP f2b_jail_banned_current Amount of banned IPs currently in jail
+# TYPE f2b_jail_banned_current gauge
+f2b_jail_banned_current{jail="postfix"} 13
+f2b_jail_banned_current{jail="sshd"} 33</code></pre>
+
+        <h2 id="building">Building from source</h2>
+        <p>Requires the Go version from <code>go.mod</code> and <code>make</code>.</p>
+<pre><code>make build-all                      # Linux amd64 + arm64
+make build-intel VERSION=v1.0.0     # Linux amd64 with version
+make build GOOS=darwin GOARCH=arm64 # any GOOS/GOARCH
+make help                           # list all targets</code></pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <p>fail2ban-dashboard · Apache-2.0 · by <a href="https://github.com/giftkugel">giftkugel</a></p>
+    <p class="muted">Inspired by
+      <a href="https://github.com/fail2ban/fail2ban">fail2ban</a>,
+      <a href="https://gitlab.com/hctrdev/fail2ban-prometheus-exporter">fail2ban-prometheus-exporter</a> and
+      <a href="https://github.com/VerifiedJoseph/intruder-alert">intruder-alert</a>.
+    </p>
+  </div>
+</footer>
+
+<script src="assets/main.js"></script>
+</body>
+</html>

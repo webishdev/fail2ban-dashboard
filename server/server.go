@@ -193,12 +193,9 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 				return c.Redirect().To(basePathForTemplate)
 			}
 			data := &loginData{
-				baseData: baseData{
-					Version:         configuration.Version,
-					Fail2BanVersion: configuration.Fail2BanVersion,
-					BasePath:        basePathForTemplate,
-					Authenticated:   isAuthenticated,
-				},
+				Version:       configuration.Version,
+				BasePath:      basePathForTemplate,
+				Authenticated: isAuthenticated,
 			}
 
 			var sb strings.Builder
@@ -305,17 +302,15 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		}
 
 		data := &indexData{
-			baseData: baseData{
-				Version:         configuration.Version,
-				Fail2BanVersion: configuration.Fail2BanVersion,
-				BasePath:        basePathForTemplate,
-				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
-				HasBanned:       len(banned) > 0,
-				Banned:          banned,
-				Authenticated:   isAuthenticated,
-			},
-			BannedSum: sum,
-			Jails:     jails,
+			Version:         configuration.Version,
+			Fail2BanVersion: configuration.Fail2BanVersion,
+			BasePath:        basePathForTemplate,
+			CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
+			HasBanned:       len(banned) > 0,
+			Banned:          banned,
+			Authenticated:   isAuthenticated,
+			BannedSum:       sum,
+			Jails:           jails,
 		}
 
 		var sb strings.Builder
@@ -363,20 +358,18 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		sort.Slice(banned, sortSlice(sorting, order, banned))
 
 		detail := &detailData{
-			baseData: baseData{
-				Version:         configuration.Version,
-				Fail2BanVersion: configuration.Fail2BanVersion,
-				BasePath:        basePathForTemplate,
-				CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
-				HasBanned:       len(banned) > 0,
-				Banned:          banned,
-				Authenticated:   isAuthenticated,
-			},
-			OrderAddress: toggleSortOrder("address", sorting, order),
-			OrderPenalty: toggleSortOrder("penalty", sorting, order),
-			OrderStarted: toggleSortOrder("started", sorting, order),
-			OrderEnds:    toggleSortOrder("ends", sorting, order),
-			Jail:         jailByName,
+			Version:         configuration.Version,
+			Fail2BanVersion: configuration.Fail2BanVersion,
+			BasePath:        basePathForTemplate,
+			CountryCodes:    template.URL("flags.css?c=" + strings.Join(countryCodes, ",")),
+			HasBanned:       len(banned) > 0,
+			Banned:          banned,
+			Authenticated:   isAuthenticated,
+			OrderAddress:    toggleSortOrder("address", sorting, order),
+			OrderPenalty:    toggleSortOrder("penalty", sorting, order),
+			OrderStarted:    toggleSortOrder("started", sorting, order),
+			OrderEnds:       toggleSortOrder("ends", sorting, order),
+			Jail:            jailByName,
 		}
 
 		var sb strings.Builder
