@@ -3,6 +3,7 @@ package server
 import (
 	"io"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -765,5 +766,42 @@ func TestSortSliceEdgeCases(t *testing.T) {
 	// Test that the function sorts by end time ascending (default case)
 	if !sortFunc(1, 0) { // entries[1] should come before entries[0]
 		t.Error("Default sort should sort by end time ascending")
+	}
+}
+
+func TestLoginPageDoesNotExposeFail2BanVersion(t *testing.T) {
+	app := fiber.New()
+	configuration := &config.Configuration{
+		Version:           "v1.2.3",
+		Fail2BanVersion:   "9.8.7",
+		BasePath:          "/",
+		OAuth2ClientID:    "client",
+		OAuth2AuthURL:     "https://auth.example.com/authorize",
+		OAuth2TokenURL:    "https://auth.example.com/token",
+		OAuth2RedirectURL: "https://dashboard.example.com/callback",
+	}
+
+	err := RegisterDashboardEndpoints(app, store.NewDataStore(nil, 10), nil, configuration)
+	if err != nil {
+		t.Fatalf("Failed to register endpoints: %v", err)
+	}
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/login", nil))
+	if err != nil {
+		t.Fatalf("Failed to request login page: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("Expected status 200, got %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("Failed to read response body: %v", err)
+	}
+	if strings.Contains(string(body), configuration.Fail2BanVersion) {
+		t.Error("Login page must not expose the fail2ban version")
+	}
+	if !strings.Contains(string(body), configuration.Version) {
+		t.Error("Expected login page to contain the dashboard version")
 	}
 }
