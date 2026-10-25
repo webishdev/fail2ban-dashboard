@@ -1,30 +1,36 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="emerald">
 {{ template "head" . }}
-    <body>
+    <body class="min-h-screen bg-base-200 text-base-content antialiased">
         {{ template "header" . }}
-        <main class="p-4">
-            <div class="jails mx-auto">
-                <div class="jails">
-                    <h2 class="text-4xl font-bold mb-6">Jail: {{ .Jail.Name }}</h2>
-                    <div class="jail stats shadow w-full">
-                        {{ template "jailDetail" .Jail }}
-                    </div>
+        <main class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+            <section class="jails mb-8">
+                <a href="{{ .BasePath }}" class="mb-3 inline-flex items-center gap-1 text-sm text-base-content/60 transition hover:text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    All jails
+                </a>
+                <h1 class="mb-6 text-2xl font-bold tracking-tight sm:text-3xl">
+                    <span class="font-normal text-base-content/60">Jail</span> {{ .Jail.Name }}
+                </h1>
+                <div class="jail grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                    {{ template "jailDetail" .Jail }}
                 </div>
-            </div>
-            {{ if .HasBanned }}
-            <div class="divider">Banned addresses</div>
-            <div class="banned shadow-md rounded-md">
-                <div class="banned">
+            </section>
+            <section class="banned">
+                <div class="mb-3 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold">Banned addresses</h2>
+                    <span class="badge badge-soft badge-secondary tabular-nums">{{ len .Banned }}</span>
+                </div>
+                {{ if .HasBanned }}
+                <div class="overflow-hidden rounded-box border border-base-300 bg-base-100 shadow-sm">
                     <div class="overflow-x-auto">
                         <table class="table table-zebra">
-                            <thead>
+                            <thead class="bg-base-200/60 text-xs uppercase tracking-wide">
                             <tr>
-                                <th>Address<a href="?sorting=address&order={{ .OrderAddress.Order }}"><span class="{{ .OrderAddress.Class }} inline-block">&nbsp;</span></a></th>
-                                <th>Banned at<a href="?sorting=started&order={{ .OrderStarted.Order }}"><span class="{{ .OrderStarted.Class }} inline-block">&nbsp;</span></a></th>
-                                <th class="hidden md:table-cell">Current penalty<a href="?sorting=penalty&order={{ .OrderPenalty.Order }}"><span class="{{ .OrderPenalty.Class }} inline-block">&nbsp;</span></a></th>
-                                <th class="hidden md:table-cell">Ban ends at<a href="?sorting=ends&order={{ .OrderEnds.Order }}"><span class="{{ .OrderEnds.Class }} inline-block">&nbsp;</span></a>
-                                </th>
+                                <th><a class="sort-link" href="?sorting=address&order={{ .OrderAddress.Order }}">Address<span class="{{ .OrderAddress.Class }}"></span></a></th>
+                                <th><a class="sort-link" href="?sorting=started&order={{ .OrderStarted.Order }}">Banned at<span class="{{ .OrderStarted.Class }}"></span></a></th>
+                                <th class="hidden md:table-cell"><a class="sort-link" href="?sorting=penalty&order={{ .OrderPenalty.Order }}">Penalty<span class="{{ .OrderPenalty.Class }}"></span></a></th>
+                                <th class="hidden md:table-cell"><a class="sort-link" href="?sorting=ends&order={{ .OrderEnds.Order }}">Ban ends at<span class="{{ .OrderEnds.Class }}"></span></a></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -35,8 +41,13 @@
                         </table>
                     </div>
                 </div>
-            </div>
-            {{ end }}
+                {{ else }}
+                <div class="flex flex-col items-center gap-2 rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-8 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+                    <p class="text-base-content/60">No addresses are currently banned in this jail.</p>
+                </div>
+                {{ end }}
+            </section>
         </main>
     </body>
 </html>

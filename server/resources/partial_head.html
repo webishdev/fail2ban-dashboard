@@ -18,10 +18,6 @@
             localStorage.setItem('f2b-dashboard.theme', theme);
             document.documentElement.setAttribute('data-theme', theme);
         };
-        const setThemeIcon = () => {
-            const theme = getTheme()
-            document.getElementById("theme-icon").textContent = theme === 'dim' ? '☀️' : '🌙';
-        };
         const toggleTheme = () => {
             const theme = getTheme() === 'emerald' ? 'dim' : 'emerald';
             setTheme(theme);

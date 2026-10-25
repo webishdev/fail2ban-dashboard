@@ -1,16 +1,16 @@
-<div class="stat place-items-center">
-    <div class="stat-value text-secondary text-5xl">{{ .BannedCount }}</div>
-    <div class="stat-desc text-base">Currently banned</div>
+<div class="rounded-box border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
+    <div class="text-xs font-medium uppercase tracking-wide text-base-content/60">Currently banned</div>
+    <div class="mt-1 text-3xl font-bold tabular-nums sm:text-4xl {{ if gt .BannedCount 0 }}text-secondary{{ end }}">{{ .BannedCount }}</div>
 </div>
-<div class="stat place-items-center hidden md:flex">
-    <div class="stat-value text-3xl">{{ .CurrentlyFailed }}</div>
-    <div class="stat-desc text-base">Currently Failed</div>
+<div class="rounded-box border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
+    <div class="text-xs font-medium uppercase tracking-wide text-base-content/60">Currently failed</div>
+    <div class="mt-1 text-3xl font-bold tabular-nums sm:text-4xl">{{ .CurrentlyFailed }}</div>
 </div>
-<div class="stat place-items-center hidden md:flex">
-    <div class="stat-value text-3xl">{{ .TotalBanned }}</div>
-    <div class="stat-desc text-base">Total Banned</div>
+<div class="rounded-box border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
+    <div class="text-xs font-medium uppercase tracking-wide text-base-content/60">Total banned</div>
+    <div class="mt-1 text-3xl font-bold tabular-nums sm:text-4xl">{{ .TotalBanned }}</div>
 </div>
-<div class="stat place-items-center hidden md:flex">
-    <div class="stat-value text-3xl">{{ .TotalFailed }}</div>
-    <div class="stat-desc text-base">Total Failed</div>
+<div class="rounded-box border border-base-300 bg-base-100 p-4 shadow-sm sm:p-5">
+    <div class="text-xs font-medium uppercase tracking-wide text-base-content/60">Total failed</div>
+    <div class="mt-1 text-3xl font-bold tabular-nums sm:text-4xl">{{ .TotalFailed }}</div>
 </div>
