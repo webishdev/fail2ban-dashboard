@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3/log"
-	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"github.com/webishdev/fail2ban-dashboard/client"
 	"github.com/webishdev/fail2ban-dashboard/models"
 )
 
@@ -15,14 +15,14 @@ type UpdateHandler func()
 type DataStore struct {
 	mutex         sync.RWMutex
 	ticker        *time.Ticker
-	f2bc          *client.Fail2BanClient
+	f2bc          client.Client
 	addressToJail map[string][]string
 	jails         map[string]*models.JailEntry
 	jailInfos     map[string]*models.JailInfo
 	handlers      []UpdateHandler
 }
 
-func NewDataStore(f2bc *client.Fail2BanClient, refreshSeconds int) *DataStore {
+func NewDataStore(f2bc client.Client, refreshSeconds int) *DataStore {
 	if f2bc == nil {
 		return &DataStore{}
 	}

@@ -5,20 +5,21 @@ import (
 	"slices"
 
 	"github.com/gofiber/fiber/v3/log"
-	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"github.com/webishdev/fail2ban-dashboard/client"
+	fail2banclient "github.com/webishdev/fail2ban-dashboard/client/fail2ban-client"
 )
 
 var supportedVersions = []string{"0.11.1", "0.11.2", "1.0.1", "1.0.2", "1.1.0", "1.1.1"}
 
-func ConnectToFail2ban(socketPath string, skipVersionCheck bool) (*client.Fail2BanClient, string) {
+func ConnectToFail2ban(socketPath string, skipVersionCheck bool) (client.Client, string) {
 	log.Infof("Will use socket at %s for fail2ban connection", socketPath)
-	f2bc, socketError := client.NewFail2BanClient(socketPath)
+	f2bc, socketError := fail2banclient.NewFail2BanClient(socketPath)
 
 	fail2banVersion := "unknown"
 
 	if socketError != nil {
 		log.Errorf("Could not connect to fail2ban socket at %s", socketPath)
-		return f2bc, fail2banVersion
+		return nil, fail2banVersion
 	}
 
 	detectedFail2banVersion, versionError := f2bc.GetVersion()

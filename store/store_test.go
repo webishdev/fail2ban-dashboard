@@ -6,8 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/webishdev/fail2ban-dashboard/client"
 	"github.com/webishdev/fail2ban-dashboard/models"
 )
+
+var _ client.Client = (*MockFail2BanClient)(nil)
 
 // MockFail2BanClient is a mock implementation of the Fail2BanClient
 type MockFail2BanClient struct {
@@ -24,6 +27,10 @@ func NewMockFail2BanClient() *MockFail2BanClient {
 		jailInfos:     make(map[string]*models.JailInfo),
 		bannedEntries: make(map[string]*models.JailEntry),
 	}
+}
+
+func (m *MockFail2BanClient) GetVersion() (string, error) {
+	return "1.1.0", nil
 }
 
 func (m *MockFail2BanClient) GetJailNames() ([]string, error) {
