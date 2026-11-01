@@ -8,12 +8,12 @@ import (
 	"net"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gofiber/fiber/v3/log"
 	ogórek "github.com/kisielk/og-rek"
 	"github.com/nlpodyssey/gopickle/pickle"
 	"github.com/nlpodyssey/gopickle/types"
+	"github.com/webishdev/fail2ban-dashboard/models"
 )
 
 const (
@@ -30,27 +30,6 @@ const (
 	protocolNumberOfJail string = "Number of jail"
 	protocolJailList     string = "Jail list"
 )
-
-type BanEntry struct {
-	Address       string
-	BannedAt      time.Time
-	CurrenPenalty string
-	BanEndsAt     time.Time
-	JailName      string
-	CountryCode   string
-}
-
-type JailEntry struct {
-	Name          string
-	BannedEntries []*BanEntry
-}
-
-type JailInfo struct {
-	CurrentlyFailed int
-	TotalFailed     int
-	CurrentlyBanned int
-	TotalBanned     int
-}
 
 type Fail2BanClient struct {
 	mutex   sync.RWMutex
@@ -147,7 +126,7 @@ func (f2bc *Fail2BanClient) GetJailNames() ([]string, error) {
 	return []string{}, errors.New("fetching status failed")
 }
 
-func (f2bc *Fail2BanClient) GetJailInfo(jailName string) (*JailInfo, error) {
+func (f2bc *Fail2BanClient) GetJailInfo(jailName string) (*models.JailInfo, error) {
 	log.Tracef("GetJailInfo: Fetching info for jail '%s'", jailName)
 	result, err := f2bc.sendCommand([]string{statusCommand, jailName})
 	if err != nil {
@@ -221,7 +200,7 @@ func (f2bc *Fail2BanClient) GetJailInfo(jailName string) (*JailInfo, error) {
 		}
 	}
 
-	jailInfo := &JailInfo{
+	jailInfo := &models.JailInfo{
 		CurrentlyFailed: currentlyFailedResult,
 		TotalFailed:     totalFailedResult,
 		CurrentlyBanned: currentlyBannedResult,
@@ -232,9 +211,9 @@ func (f2bc *Fail2BanClient) GetJailInfo(jailName string) (*JailInfo, error) {
 	return jailInfo, nil
 }
 
-func (f2bc *Fail2BanClient) GetBanned(jailName string) (*JailEntry, error) {
+func (f2bc *Fail2BanClient) GetBanned(jailName string) (*models.JailEntry, error) {
 	log.Tracef("GetBanned: Fetching banned IPs for jail '%s'", jailName)
-	var bannedEntries []*BanEntry
+	var bannedEntries []*models.BanEntry
 	result, err := f2bc.sendCommand([]string{getCommand, jailName, "banip", "--with-time"})
 	if err != nil {
 		log.Errorf("GetBanned: Failed to get banned IPs for jail '%s': %v", jailName, err)
@@ -259,10 +238,10 @@ func (f2bc *Fail2BanClient) GetBanned(jailName string) (*JailEntry, error) {
 	}
 
 	log.Debugf("GetBanned: Successfully retrieved %d banned IPs for jail '%s'", len(bannedEntries), jailName)
-	return &JailEntry{Name: jailName, BannedEntries: bannedEntries}, nil
+	return &models.JailEntry{Name: jailName, BannedEntries: bannedEntries}, nil
 }
 
-func (f2bc *Fail2BanClient) parseEntry(jailName string, listEntry string) (*BanEntry, error) {
+func (f2bc *Fail2BanClient) parseEntry(jailName string, listEntry string) (*models.BanEntry, error) {
 	log.Tracef("GetBanned: Parsing ban entry: %s", listEntry)
 
 	parsed, err := parse(listEntry)
@@ -271,12 +250,12 @@ func (f2bc *Fail2BanClient) parseEntry(jailName string, listEntry string) (*BanE
 		return nil, err
 	}
 
-	banEntry := &BanEntry{
-		Address:       parsed.ipAddress,
-		BannedAt:      parsed.bannedAt,
-		CurrenPenalty: parsed.currentPenalty,
-		BanEndsAt:     parsed.banEndsAt,
-		JailName:      jailName,
+	banEntry := &models.BanEntry{
+		Address:        parsed.ipAddress,
+		BannedAt:       parsed.bannedAt,
+		CurrentPenalty: parsed.currentPenalty,
+		BanEndsAt:      parsed.banEndsAt,
+		JailName:       jailName,
 	}
 
 	return banEntry, nil

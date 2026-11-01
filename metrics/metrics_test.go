@@ -5,6 +5,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	dto "github.com/prometheus/client_model/go"
+	"github.com/webishdev/fail2ban-dashboard/models"
 	"github.com/webishdev/fail2ban-dashboard/store"
 )
 
@@ -123,17 +124,17 @@ func TestSetupRegistry(t *testing.T) {
 
 // mockDataStore is a simple mock for DataStore that allows us to test updateMetrics
 type mockDataStore struct {
-	jails   []store.Jail
+	jails   []models.Jail
 	handler store.UpdateHandler
 }
 
-func newMockDataStore(jails []store.Jail) *mockDataStore {
+func newMockDataStore(jails []models.Jail) *mockDataStore {
 	return &mockDataStore{
 		jails: jails,
 	}
 }
 
-func (m *mockDataStore) GetJails() []store.Jail {
+func (m *mockDataStore) GetJails() []models.Jail {
 	return m.jails
 }
 
@@ -161,7 +162,7 @@ func TestUpdateMetrics(t *testing.T) {
 
 	t.Run("updates metrics with jail data", func(t *testing.T) {
 		m := setupRegistry()
-		mock := newMockDataStore([]store.Jail{
+		mock := newMockDataStore([]models.Jail{
 			{
 				Name:            "sshd",
 				CurrentlyBanned: 5,
@@ -255,7 +256,7 @@ func TestUpdateMetrics(t *testing.T) {
 
 	t.Run("handles empty jails list", func(t *testing.T) {
 		m := setupRegistry()
-		mock := newMockDataStore([]store.Jail{})
+		mock := newMockDataStore([]models.Jail{})
 
 		updateMetrics(m, mock)
 		mock.TriggerUpdate()
@@ -268,7 +269,7 @@ func TestUpdateMetrics(t *testing.T) {
 
 	t.Run("updates metrics on subsequent calls", func(t *testing.T) {
 		m := setupRegistry()
-		mock := newMockDataStore([]store.Jail{
+		mock := newMockDataStore([]models.Jail{
 			{
 				Name:            "sshd",
 				CurrentlyBanned: 5,
@@ -291,7 +292,7 @@ func TestUpdateMetrics(t *testing.T) {
 		}
 
 		// Update mock data
-		mock.jails = []store.Jail{
+		mock.jails = []models.Jail{
 			{
 				Name:            "sshd",
 				CurrentlyBanned: 15,

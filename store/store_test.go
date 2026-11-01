@@ -6,23 +6,23 @@ import (
 	"testing"
 	"time"
 
-	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"github.com/webishdev/fail2ban-dashboard/models"
 )
 
 // MockFail2BanClient is a mock implementation of the Fail2BanClient
 type MockFail2BanClient struct {
 	jailNames      []string
 	jailNamesError error
-	jailInfos      map[string]*client.JailInfo
+	jailInfos      map[string]*models.JailInfo
 	jailInfoError  error
-	bannedEntries  map[string]*client.JailEntry
+	bannedEntries  map[string]*models.JailEntry
 	bannedError    error
 }
 
 func NewMockFail2BanClient() *MockFail2BanClient {
 	return &MockFail2BanClient{
-		jailInfos:     make(map[string]*client.JailInfo),
-		bannedEntries: make(map[string]*client.JailEntry),
+		jailInfos:     make(map[string]*models.JailInfo),
+		bannedEntries: make(map[string]*models.JailEntry),
 	}
 }
 
@@ -30,7 +30,7 @@ func (m *MockFail2BanClient) GetJailNames() ([]string, error) {
 	return m.jailNames, m.jailNamesError
 }
 
-func (m *MockFail2BanClient) GetJailInfo(jailName string) (*client.JailInfo, error) {
+func (m *MockFail2BanClient) GetJailInfo(jailName string) (*models.JailInfo, error) {
 	if m.jailInfoError != nil {
 		return nil, m.jailInfoError
 	}
@@ -41,7 +41,7 @@ func (m *MockFail2BanClient) GetJailInfo(jailName string) (*client.JailInfo, err
 	return info, nil
 }
 
-func (m *MockFail2BanClient) GetBanned(jailName string) (*client.JailEntry, error) {
+func (m *MockFail2BanClient) GetBanned(jailName string) (*models.JailEntry, error) {
 	if m.bannedError != nil {
 		return nil, m.bannedError
 	}
@@ -61,7 +61,7 @@ func (m *MockFail2BanClient) SetJailNamesError(err error) {
 	m.jailNamesError = err
 }
 
-func (m *MockFail2BanClient) SetJailInfo(jailName string, info *client.JailInfo) {
+func (m *MockFail2BanClient) SetJailInfo(jailName string, info *models.JailInfo) {
 	m.jailInfos[jailName] = info
 }
 
@@ -69,7 +69,7 @@ func (m *MockFail2BanClient) SetJailInfoError(err error) {
 	m.jailInfoError = err
 }
 
-func (m *MockFail2BanClient) SetBannedEntry(jailName string, entry *client.JailEntry) {
+func (m *MockFail2BanClient) SetBannedEntry(jailName string, entry *models.JailEntry) {
 	m.bannedEntries[jailName] = entry
 }
 
@@ -95,7 +95,7 @@ func TestNewDataStore(t *testing.T) {
 		ds := &DataStore{
 			ticker:        time.NewTicker(30 * time.Second),
 			addressToJail: make(map[string][]string),
-			jails:         make(map[string]*client.JailEntry),
+			jails:         make(map[string]*models.JailEntry),
 		}
 		defer ds.ticker.Stop()
 
@@ -125,7 +125,7 @@ func TestDataStore_Start(t *testing.T) {
 		ds := &DataStore{
 			ticker:        time.NewTicker(30 * time.Second),
 			addressToJail: make(map[string][]string),
-			jails:         make(map[string]*client.JailEntry),
+			jails:         make(map[string]*models.JailEntry),
 		}
 		defer ds.ticker.Stop()
 
@@ -140,8 +140,8 @@ func TestDataStore_Start(t *testing.T) {
 func TestDataStore_GetJails(t *testing.T) {
 	t.Run("empty store", func(t *testing.T) {
 		ds := &DataStore{
-			jails:     make(map[string]*client.JailEntry),
-			jailInfos: make(map[string]*client.JailInfo),
+			jails:     make(map[string]*models.JailEntry),
+			jailInfos: make(map[string]*models.JailInfo),
 		}
 
 		jails := ds.GetJails()
@@ -152,30 +152,30 @@ func TestDataStore_GetJails(t *testing.T) {
 
 	t.Run("with jails data", func(t *testing.T) {
 		ds := &DataStore{
-			jails:     make(map[string]*client.JailEntry),
-			jailInfos: make(map[string]*client.JailInfo),
+			jails:     make(map[string]*models.JailEntry),
+			jailInfos: make(map[string]*models.JailInfo),
 		}
 
 		// Add test data
-		banEntry1 := &client.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
-		banEntry2 := &client.BanEntry{Address: "192.168.1.2", BannedAt: time.Now()}
+		banEntry1 := &models.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
+		banEntry2 := &models.BanEntry{Address: "192.168.1.2", BannedAt: time.Now()}
 
-		ds.jails["sshd"] = &client.JailEntry{
+		ds.jails["sshd"] = &models.JailEntry{
 			Name:          "sshd",
-			BannedEntries: []*client.BanEntry{banEntry1, banEntry2},
+			BannedEntries: []*models.BanEntry{banEntry1, banEntry2},
 		}
-		ds.jailInfos["sshd"] = &client.JailInfo{
+		ds.jailInfos["sshd"] = &models.JailInfo{
 			CurrentlyFailed: 5,
 			TotalFailed:     10,
 			CurrentlyBanned: 2,
 			TotalBanned:     3,
 		}
 
-		ds.jails["apache"] = &client.JailEntry{
+		ds.jails["apache"] = &models.JailEntry{
 			Name:          "apache",
-			BannedEntries: []*client.BanEntry{},
+			BannedEntries: []*models.BanEntry{},
 		}
-		ds.jailInfos["apache"] = &client.JailInfo{
+		ds.jailInfos["apache"] = &models.JailInfo{
 			CurrentlyFailed: 1,
 			TotalFailed:     2,
 			CurrentlyBanned: 0,
@@ -197,8 +197,8 @@ func TestDataStore_GetJails(t *testing.T) {
 func TestDataStore_GetJailByName(t *testing.T) {
 	t.Run("jail not found", func(t *testing.T) {
 		ds := &DataStore{
-			jails:     make(map[string]*client.JailEntry),
-			jailInfos: make(map[string]*client.JailInfo),
+			jails:     make(map[string]*models.JailEntry),
+			jailInfos: make(map[string]*models.JailInfo),
 		}
 
 		jail, found := ds.GetJailByName("nonexistent")
@@ -212,16 +212,16 @@ func TestDataStore_GetJailByName(t *testing.T) {
 
 	t.Run("jail found", func(t *testing.T) {
 		ds := &DataStore{
-			jails:     make(map[string]*client.JailEntry),
-			jailInfos: make(map[string]*client.JailInfo),
+			jails:     make(map[string]*models.JailEntry),
+			jailInfos: make(map[string]*models.JailInfo),
 		}
 
-		banEntry := &client.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
-		ds.jails["sshd"] = &client.JailEntry{
+		banEntry := &models.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
+		ds.jails["sshd"] = &models.JailEntry{
 			Name:          "sshd",
-			BannedEntries: []*client.BanEntry{banEntry},
+			BannedEntries: []*models.BanEntry{banEntry},
 		}
-		ds.jailInfos["sshd"] = &client.JailInfo{
+		ds.jailInfos["sshd"] = &models.JailInfo{
 			CurrentlyFailed: 5,
 			TotalFailed:     10,
 			CurrentlyBanned: 1,
@@ -245,12 +245,12 @@ func TestDataStore_GetJailByName(t *testing.T) {
 
 	t.Run("jail with nil entry", func(t *testing.T) {
 		ds := &DataStore{
-			jails:     make(map[string]*client.JailEntry),
-			jailInfos: make(map[string]*client.JailInfo),
+			jails:     make(map[string]*models.JailEntry),
+			jailInfos: make(map[string]*models.JailInfo),
 		}
 
 		ds.jails["sshd"] = nil
-		ds.jailInfos["sshd"] = &client.JailInfo{CurrentlyFailed: 5}
+		ds.jailInfos["sshd"] = &models.JailInfo{CurrentlyFailed: 5}
 
 		_, found := ds.GetJailByName("sshd")
 		if found {
@@ -260,11 +260,11 @@ func TestDataStore_GetJailByName(t *testing.T) {
 
 	t.Run("jail with nil info", func(t *testing.T) {
 		ds := &DataStore{
-			jails:     make(map[string]*client.JailEntry),
-			jailInfos: make(map[string]*client.JailInfo),
+			jails:     make(map[string]*models.JailEntry),
+			jailInfos: make(map[string]*models.JailInfo),
 		}
 
-		ds.jails["sshd"] = &client.JailEntry{Name: "sshd"}
+		ds.jails["sshd"] = &models.JailEntry{Name: "sshd"}
 		ds.jailInfos["sshd"] = nil
 
 		_, found := ds.GetJailByName("sshd")
@@ -289,10 +289,10 @@ func TestCreateJail(t *testing.T) {
 	})
 
 	t.Run("with valid entry and nil info", func(t *testing.T) {
-		banEntry := &client.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
-		entry := &client.JailEntry{
+		banEntry := &models.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
+		entry := &models.JailEntry{
 			Name:          "sshd",
-			BannedEntries: []*client.BanEntry{banEntry},
+			BannedEntries: []*models.BanEntry{banEntry},
 		}
 
 		jail := createJail(entry, nil)
@@ -308,7 +308,7 @@ func TestCreateJail(t *testing.T) {
 	})
 
 	t.Run("with nil entry and valid info", func(t *testing.T) {
-		info := &client.JailInfo{
+		info := &models.JailInfo{
 			CurrentlyFailed: 5,
 			TotalFailed:     10,
 			CurrentlyBanned: 2,
@@ -328,13 +328,13 @@ func TestCreateJail(t *testing.T) {
 	})
 
 	t.Run("with valid entry and valid info", func(t *testing.T) {
-		banEntry1 := &client.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
-		banEntry2 := &client.BanEntry{Address: "192.168.1.2", BannedAt: time.Now()}
-		entry := &client.JailEntry{
+		banEntry1 := &models.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
+		banEntry2 := &models.BanEntry{Address: "192.168.1.2", BannedAt: time.Now()}
+		entry := &models.JailEntry{
 			Name:          "sshd",
-			BannedEntries: []*client.BanEntry{banEntry1, banEntry2},
+			BannedEntries: []*models.BanEntry{banEntry1, banEntry2},
 		}
-		info := &client.JailInfo{
+		info := &models.JailInfo{
 			CurrentlyFailed: 5,
 			TotalFailed:     10,
 			CurrentlyBanned: 2,
@@ -360,7 +360,7 @@ func TestCreateJail(t *testing.T) {
 	})
 
 	t.Run("with entry having nil banned entries", func(t *testing.T) {
-		entry := &client.JailEntry{
+		entry := &models.JailEntry{
 			Name:          "sshd",
 			BannedEntries: nil,
 		}
@@ -378,10 +378,10 @@ func TestCreateJail(t *testing.T) {
 	})
 
 	t.Run("with entry having mixed nil and valid banned entries", func(t *testing.T) {
-		banEntry1 := &client.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
-		entry := &client.JailEntry{
+		banEntry1 := &models.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
+		entry := &models.JailEntry{
 			Name:          "sshd",
-			BannedEntries: []*client.BanEntry{banEntry1, nil, banEntry1},
+			BannedEntries: []*models.BanEntry{banEntry1, nil, banEntry1},
 		}
 
 		jail := createJail(entry, nil)
@@ -409,20 +409,20 @@ func TestDataStore_Initialize(t *testing.T) {
 
 	t.Run("initialize behavior verification", func(t *testing.T) {
 		ds := &DataStore{
-			jails:     make(map[string]*client.JailEntry),
-			jailInfos: make(map[string]*client.JailInfo),
+			jails:     make(map[string]*models.JailEntry),
+			jailInfos: make(map[string]*models.JailInfo),
 		}
 
 		// Add some initial data
-		ds.jails["old-jail"] = &client.JailEntry{Name: "old-jail"}
-		ds.jailInfos["old-jail"] = &client.JailInfo{CurrentlyFailed: 1}
+		ds.jails["old-jail"] = &models.JailEntry{Name: "old-jail"}
+		ds.jailInfos["old-jail"] = &models.JailInfo{CurrentlyFailed: 1}
 
 		// After initialization (simulated by clearing and adding new data)
-		ds.jails = make(map[string]*client.JailEntry)
-		ds.jailInfos = make(map[string]*client.JailInfo)
+		ds.jails = make(map[string]*models.JailEntry)
+		ds.jailInfos = make(map[string]*models.JailInfo)
 
-		ds.jails["new-jail"] = &client.JailEntry{Name: "new-jail"}
-		ds.jailInfos["new-jail"] = &client.JailInfo{CurrentlyFailed: 5}
+		ds.jails["new-jail"] = &models.JailEntry{Name: "new-jail"}
+		ds.jailInfos["new-jail"] = &models.JailInfo{CurrentlyFailed: 5}
 
 		// Verify the old data is gone and new data is present
 		_, found := ds.GetJailByName("old-jail")
@@ -443,15 +443,15 @@ func TestDataStore_Initialize(t *testing.T) {
 // Benchmark tests
 func BenchmarkDataStore_GetJails(b *testing.B) {
 	ds := &DataStore{
-		jails:     make(map[string]*client.JailEntry),
-		jailInfos: make(map[string]*client.JailInfo),
+		jails:     make(map[string]*models.JailEntry),
+		jailInfos: make(map[string]*models.JailInfo),
 	}
 
 	// Add some test data
 	for i := 0; i < 100; i++ {
 		jailName := fmt.Sprintf("jail-%d", i)
-		ds.jails[jailName] = &client.JailEntry{Name: jailName}
-		ds.jailInfos[jailName] = &client.JailInfo{CurrentlyFailed: i}
+		ds.jails[jailName] = &models.JailEntry{Name: jailName}
+		ds.jailInfos[jailName] = &models.JailInfo{CurrentlyFailed: i}
 	}
 
 	b.ResetTimer()
@@ -462,12 +462,12 @@ func BenchmarkDataStore_GetJails(b *testing.B) {
 }
 
 func BenchmarkCreateJail(b *testing.B) {
-	banEntry := &client.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
-	entry := &client.JailEntry{
+	banEntry := &models.BanEntry{Address: "192.168.1.1", BannedAt: time.Now()}
+	entry := &models.JailEntry{
 		Name:          "sshd",
-		BannedEntries: []*client.BanEntry{banEntry},
+		BannedEntries: []*models.BanEntry{banEntry},
 	}
-	info := &client.JailInfo{
+	info := &models.JailInfo{
 		CurrentlyFailed: 5,
 		TotalFailed:     10,
 		CurrentlyBanned: 1,
