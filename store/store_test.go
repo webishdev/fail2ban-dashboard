@@ -20,6 +20,7 @@ type MockFail2BanClient struct {
 	jailInfoError  error
 	bannedEntries  map[string]*models.JailEntry
 	bannedError    error
+	actionError    error
 }
 
 func NewMockFail2BanClient() *MockFail2BanClient {
@@ -57,6 +58,14 @@ func (m *MockFail2BanClient) GetBanned(jailName string) (*models.JailEntry, erro
 		return nil, errors.New("jail not found")
 	}
 	return entry, nil
+}
+
+func (m *MockFail2BanClient) BanIP(jailName string, address string) error {
+	return m.actionError
+}
+
+func (m *MockFail2BanClient) UnbanIP(jailName string, address string) error {
+	return m.actionError
 }
 
 // Helper methods for setting up mock data

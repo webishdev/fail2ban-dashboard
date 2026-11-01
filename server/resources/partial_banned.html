@@ -11,4 +11,9 @@
     <td class="whitespace-nowrap tabular-nums">{{ .BannedAt | time }}</td>
     <td class="hidden md:table-cell"><span class="badge badge-sm badge-ghost tabular-nums">{{ .CurrentPenalty | formatPenalty }}</span></td>
     <td class="hidden whitespace-nowrap tabular-nums md:table-cell">{{ .BanEndsAt | time }}</td>
+    {{ if .CanUnban }}
+    <td class="text-right">
+        <button type="button" class="btn btn-xs btn-ghost text-error" data-address="{{ .Address }}" onclick="openUnbanModal(this.dataset.address)">Unban</button>
+    </td>
+    {{ end }}
 </tr>

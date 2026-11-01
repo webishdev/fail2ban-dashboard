@@ -10,6 +10,8 @@ services:
       F2BD_REFRESH_SECONDS: 15
       F2BD_METRICS_ADDRESS: ":9100"
       F2BD_METRICS: "true"
+      F2BD_ALLOW_BAN_ALL: "true"
+      F2BD_ALLOW_UNBAN_ALL: "true"
     ports:
       - "3000:3000"
       - "9100:9100"

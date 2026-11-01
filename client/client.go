@@ -7,4 +7,6 @@ type Client interface {
 	GetJailNames() ([]string, error)
 	GetJailInfo(jailName string) (*models.JailInfo, error)
 	GetBanned(jailName string) (*models.JailEntry, error)
+	BanIP(jailName string, address string) error
+	UnbanIP(jailName string, address string) error
 }

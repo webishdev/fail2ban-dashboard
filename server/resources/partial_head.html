@@ -1,7 +1,19 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {{ if .ManualRefresh }}
+    <script>
+        // Reload every minute, but not while a dialog is open
+        setInterval(() => {
+            if (document.querySelector('dialog[open]')) {
+                return;
+            }
+            window.location.reload();
+        }, 60000);
+    </script>
+    {{ else }}
     <meta http-equiv="refresh" content="60">
+    {{ end }}
     <link rel="icon" href="{{ .BasePath }}images/favicon.ico" sizes="48x48" >
     <link href="{{ .BasePath }}css/daisyui@5.css" rel="stylesheet" type="text/css" />
     <link href="{{ .BasePath }}css/themes.css" rel="stylesheet" type="text/css" />
