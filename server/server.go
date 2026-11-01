@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"html/template"
 	"net"
+	"net/netip"
+	"net/url"
 	"path"
 	"sort"
 	"strconv"
@@ -16,8 +18,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/extractors"
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/gofiber/fiber/v3/middleware/basicauth"
+	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/webishdev/fail2ban-dashboard/config"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
@@ -71,6 +75,21 @@ var headerHtml []byte
 //go:embed resources/flags.css
 var flagsCss []byte
 
+const csrfFormField = "_csrf"
+
+const (
+	statusBanned   = "banned"
+	statusUnbanned = "unbanned"
+	statusInvalid  = "invalid"
+	statusFailed   = "failed"
+)
+
+// flash message keys to show the result of a ban action once after the redirect
+const (
+	flashStatus  = "status"
+	flashAddress = "address"
+)
+
 type Sorted struct {
 	Order string
 	Class string
@@ -84,6 +103,7 @@ type baseData struct {
 	HasBanned       bool
 	Banned          []models.BanEntry
 	Authenticated   bool
+	ManualRefresh   bool
 }
 
 type indexData struct {
@@ -98,11 +118,22 @@ type loginData struct {
 
 type detailData struct {
 	baseData
-	OrderAddress Sorted
-	OrderPenalty Sorted
-	OrderStarted Sorted
-	OrderEnds    Sorted
-	Jail         models.Jail
+	OrderAddress  Sorted
+	OrderPenalty  Sorted
+	OrderStarted  Sorted
+	OrderEnds     Sorted
+	Jail          models.Jail
+	BannedRows    []bannedRow
+	CanBan        bool
+	CanUnban      bool
+	CSRFToken     string
+	Status        string
+	StatusAddress string
+}
+
+type bannedRow struct {
+	models.BanEntry
+	CanUnban bool
 }
 
 func generateRandomPassword() string {
@@ -221,6 +252,8 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		return oauthValidationErr
 	}
 
+	registerCSRFMiddleware(dashboard, configuration, basePathForTemplate)
+
 	dashboard.Get("images/favicon.ico", func(c fiber.Ctx) error {
 		c.Set(fiber.HeaderContentType, "image/vnd.microsoft.icon")
 		return c.Send(faviconICOFile)
@@ -322,6 +355,8 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 		return c.SendString(sb.String())
 	})
 
+	registerBanEndpoints(dashboard, dataStore, configuration, basePathForTemplate)
+
 	dashboard.Get("/:jail", func(c fiber.Ctx) error {
 		sess, _ := sessionStore.Get(c)
 		isAuthenticated := sess.Get("authenticated") != nil
@@ -357,6 +392,18 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 
 		sort.Slice(banned, sortSlice(sorting, order, banned))
 
+		canBan := configuration.CanBan(jailName)
+		canUnban := configuration.CanUnban(jailName)
+		csrfToken := csrf.TokenFromContext(c)
+
+		bannedRows := make([]bannedRow, len(banned))
+		for index, ban := range banned {
+			bannedRows[index] = bannedRow{
+				BanEntry: ban,
+				CanUnban: canUnban,
+			}
+		}
+
 		detail := &detailData{
 			Version:         configuration.Version,
 			Fail2BanVersion: configuration.Fail2BanVersion,
@@ -370,6 +417,13 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			OrderStarted:    toggleSortOrder("started", sorting, order),
 			OrderEnds:       toggleSortOrder("ends", sorting, order),
 			Jail:            jailByName,
+			BannedRows:      bannedRows,
+			CanBan:          canBan,
+			CanUnban:        canUnban,
+			CSRFToken:       csrfToken,
+			Status:          c.Redirect().Message(flashStatus).Value,
+			StatusAddress:   c.Redirect().Message(flashAddress).Value,
+			ManualRefresh:   canBan,
 		}
 
 		var sb strings.Builder
@@ -384,6 +438,97 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 	dataStore.Start()
 
 	return nil
+}
+
+// registerCSRFMiddleware protects the ban and unban forms, only needed when any ban action is enabled.
+func registerCSRFMiddleware(dashboard fiber.Router, configuration *config.Configuration, basePath string) {
+	if !configuration.HasBanActions() {
+		return
+	}
+	dashboard.Use(csrf.New(csrf.Config{
+		Extractor:      extractors.FromForm(csrfFormField),
+		CookieHTTPOnly: true,
+		CookiePath:     basePath,
+	}))
+}
+
+func registerBanEndpoints(dashboard fiber.Router, dataStore *store.DataStore, configuration *config.Configuration, basePath string) {
+	if !configuration.HasBanActions() {
+		return
+	}
+	dashboard.Post("/:jail/ban", func(c fiber.Ctx) error {
+		return handleBanAction(c, dataStore, configuration, basePath, false)
+	})
+
+	dashboard.Post("/:jail/unban", func(c fiber.Ctx) error {
+		return handleBanAction(c, dataStore, configuration, basePath, true)
+	})
+}
+
+// handleBanAction bans or unbans the address from the submitted form in the jail
+// and redirects back to the jail detail page with the result as flash message,
+// so it is shown only once and not kept in the URL.
+func handleBanAction(c fiber.Ctx, dataStore *store.DataStore, configuration *config.Configuration, basePath string, unban bool) error {
+	jailName := c.Params("jail")
+	action := "ban"
+	if unban {
+		action = "unban"
+	}
+	accessLog(configuration.TrustProxyHeaders, fmt.Sprintf("%s %s", jailName, action), c)
+
+	if _, exists := dataStore.GetJailByName(jailName); !exists {
+		return c.Status(fiber.StatusNotFound).SendString("Jail not found")
+	}
+
+	allowed := configuration.CanBan(jailName)
+	if unban {
+		allowed = configuration.CanUnban(jailName)
+	}
+	if !allowed {
+		log.Warnf("Rejected %s in jail '%s', action not allowed", action, jailName)
+		return c.Status(fiber.StatusForbidden).SendString("Action not allowed")
+	}
+
+	status := statusBanned
+	if unban {
+		status = statusUnbanned
+	}
+
+	address, valid := parseAddress(c.FormValue("address"))
+	switch {
+	case !valid:
+		log.Warnf("Rejected %s in jail '%s', invalid address '%s'", action, jailName, c.FormValue("address"))
+		status = statusInvalid
+	case unban:
+		if err := dataStore.UnbanIP(jailName, address); err != nil {
+			log.Errorf("Could not unban '%s' in jail '%s': %s", address, jailName, err)
+			status = statusFailed
+		} else {
+			log.Infof("Unbanned '%s' in jail '%s'", address, jailName)
+		}
+	default:
+		if err := dataStore.BanIP(jailName, address); err != nil {
+			log.Errorf("Could not ban '%s' in jail '%s': %s", address, jailName, err)
+			status = statusFailed
+		} else {
+			log.Infof("Banned '%s' in jail '%s'", address, jailName)
+		}
+	}
+
+	return c.Redirect().
+		With(flashStatus, status).
+		With(flashAddress, address).
+		Status(fiber.StatusSeeOther).
+		To(basePath + url.PathEscape(jailName))
+}
+
+// parseAddress validates an IPv4 or IPv6 address and returns its canonical form.
+func parseAddress(value string) (string, bool) {
+	addr, err := netip.ParseAddr(strings.TrimSpace(value))
+	if err != nil || addr.Zone() != "" {
+		return "", false
+	}
+	return addr.Unmap().String(), true
 }
 
 func sortSlice(sorting string, order string, banned []models.BanEntry) func(i, j int) bool {

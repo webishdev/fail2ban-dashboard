@@ -59,7 +59,8 @@
         <p class="lead">
           A lightweight web dashboard for <code>fail2ban</code> that asks fail2ban itself, straight
           through its control socket, instead of parsing log files. You get your jails and banned
-          addresses at a glance, plus Prometheus metrics if you want them. One binary, no database, no fuss.
+          addresses at a glance, can ban and unban addresses for the jails you allow, and offers Prometheus
+          metrics if you want them. One binary, no database, no fuss.
         </p>
         <div class="cta">
           <a class="btn btn-primary" href="#quick-start">Get started</a>
@@ -91,7 +92,7 @@
         <div class="flow-link">
           <span class="flow-line"></span>
           <code>fail2ban.sock</code>
-          <span class="flow-sub">Unix socket · read-only</span>
+          <span class="flow-sub">Unix socket · read-only by default</span>
         </div>
         <div class="flow-node flow-node-main">
           <img src="assets/mascot.png" alt="" width="28" height="38">
@@ -121,6 +122,7 @@
           <h3>Socket (fail2ban-dashboard)</h3>
           <ul>
             <li>Asks fail2ban for its <em>live</em> state: jails, current and total bans and failures</li>
+            <li>Can send <code>banip</code> / <code>unbanip</code> commands, but only for jails you explicitly allow</li>
             <li>Independent of log paths, formats and rotation</li>
             <li>Speaks the fail2ban protocol natively in Go, so no Python and no <code>fail2ban-client</code> binary are needed</li>
             <li>Only needs the socket, which mounts read-only into Docker</li>
@@ -159,12 +161,12 @@
         <article class="card">
           <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></div>
           <h3>Single binary &amp; Docker</h3>
-          <p>Static Go binary for amd64 and arm64, or a distroless container image on GHCR.</p>
+          <p>Static Go binary for amd64 and arm64, or a distroless container image on GHCR. Light and dark theme included.</p>
         </article>
         <article class="card">
-          <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg></div>
-          <h3>Light &amp; dark</h3>
-          <p>A clean interface that follows your system theme, behind a reverse proxy or not.</p>
+          <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></div>
+          <h3>Ban &amp; unban</h3>
+          <p>Opt in per jail to ban an IPv4 or IPv6 address from the dashboard or lift a ban with one click. Off by default.</p>
         </article>
       </div>
     </div>
@@ -202,6 +204,7 @@
         <a href="#options">Options</a>
         <a href="#basic-auth">Basic authentication</a>
         <a href="#oauth2">OAuth2</a>
+        <a href="#ban-unban">Ban &amp; unban</a>
         <a href="#config-file">Config file</a>
         <a href="#metrics">Metrics</a>
         <a href="#building">Building</a>
@@ -304,6 +307,32 @@ Available Commands:
           <img src="assets/screenshots/oauth2_login_light.png" alt="OAuth2 login screen of fail2ban-dashboard" loading="lazy">
         </figure>
 
+        <h2 id="ban-unban">Ban &amp; unban</h2>
+        <p>The dashboard is read-only by default. Banning and unbanning addresses can be enabled for all jails or for single jails. The jail flags can be used multiple times, jails that do not exist are ignored.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Flag</th><th>Environment variable</th><th>Description</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td><code>--allow-ban-all</code></td><td><code>F2BD_ALLOW_BAN_ALL</code></td><td>Allow banning addresses in all jails</td><td><code>false</code></td></tr>
+              <tr><td><code>--allow-unban-all</code></td><td><code>F2BD_ALLOW_UNBAN_ALL</code></td><td>Allow unbanning addresses in all jails</td><td><code>false</code></td></tr>
+              <tr><td><code>--allow-ban &lt;jail&gt;</code></td><td><code>F2BD_ALLOW_BAN</code></td><td>Allow banning addresses in the given jail</td><td>–</td></tr>
+              <tr><td><code>--allow-unban &lt;jail&gt;</code></td><td><code>F2BD_ALLOW_UNBAN</code></td><td>Allow unbanning addresses in the given jail</td><td>–</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li>Banning allowed: the jail page shows a <em>Ban address</em> button, which opens a dialog to enter an IPv4 or IPv6 address.</li>
+          <li>Unbanning allowed: every banned address in the table of the jail gets an <em>Unban</em> button.</li>
+        </ul>
+        <p>Example to allow banning in the <code>sshd</code> and <code>postfix</code> jails and unbanning in all jails:</p>
+<pre><code>./fail2ban-dashboard serve \
+  --allow-ban sshd \
+  --allow-ban postfix \
+  --allow-unban-all</code></pre>
+        <p>As environment variables, multiple jails are separated by comma or space:</p>
+<pre><code>F2BD_ALLOW_BAN="sshd,postfix" F2BD_ALLOW_UNBAN_ALL=true ./fail2ban-dashboard</code></pre>
+        <p class="note">Protect the dashboard with <a href="#basic-auth">basic authentication</a> or <a href="#oauth2">OAuth2</a> when enabling these actions. The forms are CSRF protected, so a reverse proxy must pass the original <code>Host</code> header through. Mounting the socket read-only does not prevent these commands, only the flags above do.</p>
+
         <h2 id="config-file">Config file</h2>
         <p>Any format supported by <a href="https://github.com/spf13/viper#reading-config-files">viper</a> works (TOML, YAML, JSON, …). The file is looked up in:</p>
         <ul>
@@ -315,7 +344,8 @@ Available Commands:
 <pre><code>address   = "127.0.0.1:4000"
 socket    = "/var/run/fail2ban/fail2ban.sock"
 log-level = "info"
-metrics   = true</code></pre>
+metrics   = true
+allow-ban = ["sshd"]</code></pre>
 
         <h2 id="metrics">Metrics</h2>
         <p>Start with <code>-m</code> and metrics are served at <a href="http://127.0.0.1:9100/metrics">http://127.0.0.1:9100/metrics</a>. Change the address with <code>--metrics-address</code>.</p>

@@ -24,6 +24,9 @@ const (
 	versionCommand       = "version"
 	getCommand           = "get"
 	bannedCommand        = "banned"
+	setCommand           = "set"
+	banIPCommand         = "banip"
+	unbanIPCommand       = "unbanip"
 	socketReadBufferSize = 1024
 )
 
@@ -35,7 +38,7 @@ const (
 var _ client.Client = (*Fail2BanClient)(nil)
 
 type Fail2BanClient struct {
-	mutex   sync.RWMutex
+	mutex   sync.Mutex
 	socket  net.Conn
 	encoder *ogórek.Encoder
 }
@@ -244,6 +247,47 @@ func (f2bc *Fail2BanClient) GetBanned(jailName string) (*models.JailEntry, error
 	return &models.JailEntry{Name: jailName, BannedEntries: bannedEntries}, nil
 }
 
+func (f2bc *Fail2BanClient) BanIP(jailName string, address string) error {
+	log.Tracef("BanIP: Banning '%s' in jail '%s'", address, jailName)
+	if err := f2bc.sendSetCommand(jailName, banIPCommand, address); err != nil {
+		log.Errorf("BanIP: Failed to ban '%s' in jail '%s': %v", address, jailName, err)
+		return err
+	}
+	log.Debugf("BanIP: Successfully banned '%s' in jail '%s'", address, jailName)
+	return nil
+}
+
+func (f2bc *Fail2BanClient) UnbanIP(jailName string, address string) error {
+	log.Tracef("UnbanIP: Unbanning '%s' in jail '%s'", address, jailName)
+	if err := f2bc.sendSetCommand(jailName, unbanIPCommand, address); err != nil {
+		log.Errorf("UnbanIP: Failed to unban '%s' in jail '%s': %v", address, jailName, err)
+		return err
+	}
+	log.Debugf("UnbanIP: Successfully unbanned '%s' in jail '%s'", address, jailName)
+	return nil
+}
+
+// sendSetCommand sends a "set <jail> <action> <address>" command and checks the
+// return code of the response, which is 0 on success.
+func (f2bc *Fail2BanClient) sendSetCommand(jailName string, action string, address string) error {
+	result, err := f2bc.sendCommand([]string{setCommand, jailName, action, address})
+	if err != nil {
+		return err
+	}
+
+	log.Tracef("Received result type for %s: %T", action, result)
+	if resultTuple, tupleOk := result.(*types.Tuple); tupleOk {
+		if returnCode, returnCodeOk := resultTuple.Get(0).(int); returnCodeOk {
+			if returnCode == 0 {
+				return nil
+			}
+			return fmt.Errorf("%s failed with return code %d", action, returnCode)
+		}
+	}
+
+	return fmt.Errorf("%s failed: unexpected response", action)
+}
+
 func (f2bc *Fail2BanClient) parseEntry(jailName string, listEntry string) (*models.BanEntry, error) {
 	log.Tracef("GetBanned: Parsing ban entry: %s", listEntry)
 
@@ -265,6 +309,10 @@ func (f2bc *Fail2BanClient) parseEntry(jailName string, listEntry string) (*mode
 }
 
 func (f2bc *Fail2BanClient) sendCommand(command []string) (interface{}, error) {
+	// hold the lock for write and read, so concurrent commands do not receive each other's responses
+	f2bc.mutex.Lock()
+	defer f2bc.mutex.Unlock()
+
 	log.Tracef("Sending command to fail2ban: %v", command)
 	err := f2bc.write(command)
 	if err != nil {
@@ -283,9 +331,6 @@ func (f2bc *Fail2BanClient) sendCommand(command []string) (interface{}, error) {
 }
 
 func (f2bc *Fail2BanClient) write(command []string) error {
-	f2bc.mutex.Lock()
-	defer f2bc.mutex.Unlock()
-
 	log.Tracef("Writing command to socket: %v", command)
 	err := f2bc.encoder.Encode(command)
 	if err != nil {
@@ -305,9 +350,6 @@ func (f2bc *Fail2BanClient) write(command []string) error {
 }
 
 func (f2bc *Fail2BanClient) read() (interface{}, error) {
-	f2bc.mutex.RLock()
-	defer f2bc.mutex.RUnlock()
-
 	log.Trace("Starting to read response from socket")
 	reader := bufio.NewReader(f2bc.socket)
 

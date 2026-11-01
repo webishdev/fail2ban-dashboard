@@ -108,6 +108,23 @@ func addServeFlags(cmd *cobra.Command) {
 	flags.String("oauth2-token-url", "", "OAuth2 token URL, also F2BD_OAUTH2_TOKEN_URL")
 	flags.String("oauth2-redirect-url", "", "OAuth2 redirect URL, also F2BD_OAUTH2_REDIRECT_URL")
 	flags.Int("oauth2-timeout-minutes", 30, "OAuth2 timeout minutes, also F2BD_OAUTH2_TIMEOUT_MINUTES")
+	flags.Bool("allow-ban-all", false, "allow banning addresses in all jails, also F2BD_ALLOW_BAN_ALL")
+	flags.Bool("allow-unban-all", false, "allow unbanning addresses in all jails, also F2BD_ALLOW_UNBAN_ALL")
+	flags.StringSlice("allow-ban", nil, "allow banning addresses in the given jail (can be used multiple times), also F2BD_ALLOW_BAN")
+	flags.StringSlice("allow-unban", nil, "allow unbanning addresses in the given jail (can be used multiple times), also F2BD_ALLOW_UNBAN")
+}
+
+// splitJailNames splits comma separated values, e.g. from environment variables, into single jail names.
+func splitJailNames(values []string) []string {
+	jailNames := make([]string, 0, len(values))
+	for _, value := range values {
+		for jailName := range strings.SplitSeq(value, ",") {
+			if jailName = strings.TrimSpace(jailName); jailName != "" {
+				jailNames = append(jailNames, jailName)
+			}
+		}
+	}
+	return jailNames
 }
 
 func main() {
@@ -143,6 +160,12 @@ func serve(_ *cobra.Command, _ []string) {
 	oauth2RedirectURL := viper.GetString("oauth2-redirect-url")
 	oauth2TimeoutMinutes := viper.GetInt("oauth2-timeout-minutes")
 
+	// Ban actions
+	allowBanAll := viper.GetBool("allow-ban-all")
+	allowUnbanAll := viper.GetBool("allow-unban-all")
+	allowBanJails := splitJailNames(viper.GetStringSlice("allow-ban"))
+	allowUnbanJails := splitJailNames(viper.GetStringSlice("allow-unban"))
+
 	// Configure logging
 	bootstrap.ConfigureLogging(logLevel)
 
@@ -155,6 +178,7 @@ func serve(_ *cobra.Command, _ []string) {
 	}
 	log.Infof("Base path set to %s", basePath)
 	log.Infof("Data refresh from fail2ban set to %d seconds", refreshSeconds)
+	bootstrap.LogBanActions(allowBanAll, allowUnbanAll, allowBanJails, allowUnbanJails)
 
 	// Connect to fail2ban and verify version
 	f2bc, fail2banVersion := bootstrap.ConnectToFail2ban(socketPath, skipVersionCheck)
@@ -184,6 +208,10 @@ func serve(_ *cobra.Command, _ []string) {
 		OAuth2TokenURL:       oauth2TokenURL,
 		OAuth2RedirectURL:    oauth2RedirectURL,
 		OAuth2TimeoutMinutes: oauth2TimeoutMinutes,
+		AllowBanAll:          allowBanAll,
+		AllowUnbanAll:        allowUnbanAll,
+		AllowBanJails:        allowBanJails,
+		AllowUnbanJails:      allowUnbanJails,
 	}
 
 	if metricsEnabled {

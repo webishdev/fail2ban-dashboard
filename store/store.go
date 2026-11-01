@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"sort"
 	"sync"
 	"time"
@@ -11,6 +12,8 @@ import (
 )
 
 type UpdateHandler func()
+
+var errNoClient = errors.New("no fail2ban client available")
 
 type DataStore struct {
 	mutex         sync.RWMutex
@@ -39,14 +42,47 @@ func NewDataStore(f2bc client.Client, refreshSeconds int) *DataStore {
 func (dataStore *DataStore) start() {
 	defer dataStore.ticker.Stop()
 	for {
-		log.Debug("Fetching fail2ban data")
-		names, err := dataStore.f2bc.GetJailNames()
-		if err != nil {
+		if err := dataStore.Refresh(); err != nil {
 			break
 		}
-		dataStore.initialize(names)
 		<-dataStore.ticker.C
 	}
+}
+
+// Refresh fetches the current jail data from fail2ban.
+func (dataStore *DataStore) Refresh() error {
+	if dataStore.f2bc == nil {
+		return errNoClient
+	}
+	log.Debug("Fetching fail2ban data")
+	names, err := dataStore.f2bc.GetJailNames()
+	if err != nil {
+		return err
+	}
+	dataStore.initialize(names)
+	return nil
+}
+
+// BanIP bans the address in the given jail and refreshes the data afterward.
+func (dataStore *DataStore) BanIP(jailName string, address string) error {
+	if dataStore.f2bc == nil {
+		return errNoClient
+	}
+	if err := dataStore.f2bc.BanIP(jailName, address); err != nil {
+		return err
+	}
+	return dataStore.Refresh()
+}
+
+// UnbanIP unbans the address in the given jail and refreshes the data afterward.
+func (dataStore *DataStore) UnbanIP(jailName string, address string) error {
+	if dataStore.f2bc == nil {
+		return errNoClient
+	}
+	if err := dataStore.f2bc.UnbanIP(jailName, address); err != nil {
+		return err
+	}
+	return dataStore.Refresh()
 }
 
 func (dataStore *DataStore) initialize(names []string) {

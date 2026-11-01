@@ -977,3 +977,73 @@ func TestJailInfo(t *testing.T) {
 		t.Errorf("JailInfo TotalBanned = %v, want %v", info.TotalBanned, 50)
 	}
 }
+
+func TestFail2BanClient_BanIPAndUnbanIP(t *testing.T) {
+	tests := []struct {
+		name        string
+		unban       bool
+		response    interface{}
+		readErr     error
+		wantErr     bool
+		wantCommand string
+	}{
+		{
+			name:        "successful ban",
+			response:    ogórek.Tuple{0, 1},
+			wantCommand: "banip",
+		},
+		{
+			name:        "successful unban",
+			unban:       true,
+			response:    ogórek.Tuple{0, 1},
+			wantCommand: "unbanip",
+		},
+		{
+			name:     "ban with error return code",
+			response: ogórek.Tuple{1, "error"},
+			wantErr:  true,
+		},
+		{
+			name:     "unban with unexpected response",
+			unban:    true,
+			response: "unexpected",
+			wantErr:  true,
+		},
+		{
+			name:    "ban with read error",
+			readErr: errors.New("read failed"),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var mockData []byte
+			if tt.response != nil {
+				mockData = createPickleData(tt.response)
+			}
+
+			client := createMockClient(mockData, tt.readErr, nil)
+
+			var err error
+			if tt.unban {
+				err = client.UnbanIP("sshd", "2001:db8::1")
+			} else {
+				err = client.BanIP("sshd", "2001:db8::1")
+			}
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantCommand != "" {
+				written := string(client.socket.(*mockConn).writeData)
+				for _, part := range []string{"set", "sshd", tt.wantCommand, "2001:db8::1", commandTerminator} {
+					if !strings.Contains(written, part) {
+						t.Errorf("expected written command to contain %q, got %q", part, written)
+					}
+				}
+			}
+		})
+	}
+}

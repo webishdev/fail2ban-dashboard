@@ -41,6 +41,7 @@ If the dashboard should be used with another version, please switch off the vers
         - [Environment variables](#environment-variables)
         - [Basic authentication](#basic-authentication)
         - [OAuth2](#oauth2-1)
+        - [Ban and unban addresses](#ban-and-unban-addresses)
     - [Config file](#config-file)
 - [Dashboard](#dashboard)
     - [Web application](#web-application)
@@ -107,6 +108,10 @@ Available Commands:
 
 Flags:
   -a, --address string               address to serve the dashboard on, also F2BD_ADDRESS (default "127.0.0.1:3000")
+      --allow-ban strings            allow banning addresses in the given jail (can be used multiple times), also F2BD_ALLOW_BAN
+      --allow-ban-all                allow banning addresses in all jails, also F2BD_ALLOW_BAN_ALL
+      --allow-unban strings          allow unbanning addresses in the given jail (can be used multiple times), also F2BD_ALLOW_UNBAN
+      --allow-unban-all              allow unbanning addresses in all jails, also F2BD_ALLOW_UNBAN_ALL
       --auth-password string         password for basic auth, also F2BD_AUTH_PASSWORD
       --auth-user string             username for basic auth, also F2BD_AUTH_USER
       --base-path string             base path of the application, also F2BD_BASE_PATH (default "/")
@@ -118,6 +123,7 @@ Flags:
       --oauth2-auth-url string       OAuth2 authentication URL, also F2BD_OAUTH2_AUTH_URL
       --oauth2-client-id string      OAuth2 client identifier, also F2BD_OAUTH2_CLIENT_ID
       --oauth2-redirect-url string   OAuth2 redirect URL, also F2BD_OAUTH2_REDIRECT_URL
+      --oauth2-timeout-minutes int   OAuth2 timeout minutes, also F2BD_OAUTH2_TIMEOUT_MINUTES (default 30)
       --oauth2-token-url string      OAuth2 token URL, also F2BD_OAUTH2_TOKEN_URL
       --refresh-seconds int          fail2ban data refresh in seconds (value from 10 to 600), also F2BD_REFRESH_SECONDS (default 30)
       --scheduled-geoip-download     will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD (default true)
@@ -179,6 +185,29 @@ Example CLI setup with a local Keycloak instance running at `http://localhost:80
 
 `./fail2ban-dashboard serve --oauth2-client-id mysecretclient --oauth2-auth-url http://localhost:8080/realms/demo/protocol/openid-connect/auth --oauth2-token-url http://localhost:8080/realms/demo/protocol/openid-connect/token --oauth2-redirect-url http://localhost:3000`
 
+#### Ban and unban addresses
+
+By default, the dashboard is read-only. Banning and unbanning addresses can be enabled for all jails or for single jails.
+The jail specific flags can be used multiple times. Jails that do not exist are ignored.
+
+| Environment Variable   | Command Line Flag       | Description                                    | Default |
+|------------------------|-------------------------|------------------------------------------------|---------|
+| `F2BD_ALLOW_BAN_ALL`   | `--allow-ban-all`       | Allow banning addresses in all jails           | `false` |
+| `F2BD_ALLOW_UNBAN_ALL` | `--allow-unban-all`     | Allow unbanning addresses in all jails         | `false` |
+| `F2BD_ALLOW_BAN`       | `--allow-ban <jail>`    | Allow banning addresses in the given jail(s)   | -       |
+| `F2BD_ALLOW_UNBAN`     | `--allow-unban <jail>`  | Allow unbanning addresses in the given jail(s) | -       |
+
+When banning is allowed for a jail, its detail page shows a `Ban address` button, which opens a dialog to enter an IPv4
+or IPv6 address. When unbanning is allowed, every banned address in the table of the jail gets an `Unban` button.
+
+Multiple jails can be provided as environment variable separated by comma or space, e.g. `F2BD_ALLOW_BAN="sshd,postfix"`.
+
+Example to allow banning in the `sshd` and `postfix` jails and unbanning in all jails:
+
+`./fail2ban-dashboard serve --allow-ban sshd --allow-ban postfix --allow-unban-all`
+
+Make sure to protect the dashboard with basic authentication or OAuth2 when enabling these actions.
+
 ### Configuration file
 
 It is also possible to configure `fail2ban-dashboard` using a config file.
@@ -210,6 +239,10 @@ Supported configuration names are similar to flags and environment variables:
 | oauth2-auth-url     |
 | oauth2-token-url    |
 | oauth2-redirect-url |
+| allow-ban-all       |
+| allow-unban-all     |
+| allow-ban           |
+| allow-unban         |
 
 ## Dashboard
 

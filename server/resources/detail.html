@@ -9,9 +9,23 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     All jails
                 </a>
-                <h1 class="mb-6 text-2xl font-bold tracking-tight sm:text-3xl">
-                    <span class="font-normal text-base-content/60">Jail</span> {{ .Jail.Name }}
-                </h1>
+                <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                    <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">
+                        <span class="font-normal text-base-content/60">Jail</span> {{ .Jail.Name }}
+                    </h1>
+                    {{ if .CanBan }}
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="ban_modal.showModal()">Ban address</button>
+                    {{ end }}
+                </div>
+                {{ if eq .Status "banned" }}
+                <div role="alert" class="alert alert-success alert-soft mb-6" data-status="banned"><span><span class="font-mono font-semibold">{{ .StatusAddress }}</span> banned.</span></div>
+                {{ else if eq .Status "unbanned" }}
+                <div role="alert" class="alert alert-success alert-soft mb-6" data-status="unbanned"><span><span class="font-mono font-semibold">{{ .StatusAddress }}</span> unbanned.</span></div>
+                {{ else if eq .Status "invalid" }}
+                <div role="alert" class="alert alert-warning alert-soft mb-6" data-status="invalid">Invalid address, please enter a valid IPv4 or IPv6 address.</div>
+                {{ else if eq .Status "failed" }}
+                <div role="alert" class="alert alert-error alert-soft mb-6" data-status="failed"><span>The command for <span class="font-mono font-semibold">{{ .StatusAddress }}</span> could not be executed by fail2ban, see the logs for details.</span></div>
+                {{ end }}
                 <div class="jail grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                     {{ template "jailDetail" .Jail }}
                 </div>
@@ -31,10 +45,13 @@
                                 <th><a class="sort-link" href="?sorting=started&order={{ .OrderStarted.Order }}">Banned at<span class="{{ .OrderStarted.Class }}"></span></a></th>
                                 <th class="hidden md:table-cell"><a class="sort-link" href="?sorting=penalty&order={{ .OrderPenalty.Order }}">Penalty<span class="{{ .OrderPenalty.Class }}"></span></a></th>
                                 <th class="hidden md:table-cell"><a class="sort-link" href="?sorting=ends&order={{ .OrderEnds.Order }}">Ban ends at<span class="{{ .OrderEnds.Class }}"></span></a></th>
+                                {{ if .CanUnban }}
+                                <th><span class="sr-only">Actions</span></th>
+                                {{ end }}
                             </tr>
                             </thead>
                             <tbody>
-                            {{ range .Banned }}
+                            {{ range .BannedRows }}
                             {{ template "banned" . }}
                             {{ end }}
                             </tbody>
@@ -49,5 +66,48 @@
                 {{ end }}
             </section>
         </main>
+        {{ if .CanBan }}
+        <dialog id="ban_modal" class="modal">
+            <div class="modal-box">
+                <h3 class="text-lg font-bold">Ban address in {{ .Jail.Name }}</h3>
+                <form method="post" action="{{ .BasePath }}{{ .Jail.Name }}/ban" class="mt-4 flex flex-col gap-4">
+                    <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+                    <label class="floating-label">
+                        <span>IPv4 or IPv6 address</span>
+                        <input type="text" name="address" class="input w-full font-mono" placeholder="192.0.2.1 or 2001:db8::1" required autocomplete="off">
+                    </label>
+                    <div class="modal-action mt-0">
+                        <button type="button" class="btn btn-ghost" onclick="ban_modal.close()">Cancel</button>
+                        <button type="submit" class="btn btn-secondary">Ban</button>
+                    </div>
+                </form>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+        {{ end }}
+        {{ if .CanUnban }}
+        <dialog id="unban_modal" class="modal">
+            <div class="modal-box">
+                <h3 class="text-lg font-bold">Unban address in {{ .Jail.Name }}</h3>
+                <p class="mt-4">Do you really want to unban <span id="unban_modal_address" class="font-mono font-semibold"></span>?</p>
+                <form method="post" action="{{ .BasePath }}{{ .Jail.Name }}/unban">
+                    <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+                    <input type="hidden" name="address" id="unban_modal_input">
+                    <div class="modal-action">
+                        <button type="button" class="btn btn-ghost" onclick="unban_modal.close()">Cancel</button>
+                        <button type="submit" class="btn btn-error">Unban</button>
+                    </div>
+                </form>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+        <script>
+            const openUnbanModal = (address) => {
+                document.getElementById('unban_modal_address').textContent = address;
+                document.getElementById('unban_modal_input').value = address;
+                unban_modal.showModal();
+            };
+        </script>
+        {{ end }}
     </body>
 </html>
