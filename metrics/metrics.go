@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/webishdev/fail2ban-dashboard/models"
 	"github.com/webishdev/fail2ban-dashboard/store"
 )
 
@@ -96,7 +97,7 @@ func setupRegistry() *metrics {
 // dataStoreInterface defines the minimal interface needed for updateMetrics
 type dataStoreInterface interface {
 	RegisterUpdateHandler(handler store.UpdateHandler)
-	GetJails() []store.Jail
+	GetJails() []models.Jail
 }
 
 func updateMetrics(currentMetrics *metrics, dataStore dataStoreInterface) {

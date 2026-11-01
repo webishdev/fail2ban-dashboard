@@ -7,17 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v3/log"
 	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"github.com/webishdev/fail2ban-dashboard/models"
 )
-
-type Jail struct {
-	Name            string
-	BannedCount     int
-	BannedEntries   []client.BanEntry
-	CurrentlyFailed int
-	TotalFailed     int
-	CurrentlyBanned int
-	TotalBanned     int
-}
 
 type UpdateHandler func()
 
@@ -26,8 +17,8 @@ type DataStore struct {
 	ticker        *time.Ticker
 	f2bc          *client.Fail2BanClient
 	addressToJail map[string][]string
-	jails         map[string]*client.JailEntry
-	jailInfos     map[string]*client.JailInfo
+	jails         map[string]*models.JailEntry
+	jailInfos     map[string]*models.JailInfo
 	handlers      []UpdateHandler
 }
 
@@ -39,7 +30,7 @@ func NewDataStore(f2bc *client.Fail2BanClient, refreshSeconds int) *DataStore {
 		ticker:        time.NewTicker(time.Duration(refreshSeconds) * time.Second),
 		f2bc:          f2bc,
 		addressToJail: make(map[string][]string),
-		jails:         make(map[string]*client.JailEntry),
+		jails:         make(map[string]*models.JailEntry),
 	}
 
 	return dataStore
@@ -61,8 +52,8 @@ func (dataStore *DataStore) start() {
 func (dataStore *DataStore) initialize(names []string) {
 	dataStore.mutex.Lock()
 	defer dataStore.mutex.Unlock()
-	dataStore.jails = make(map[string]*client.JailEntry)
-	dataStore.jailInfos = make(map[string]*client.JailInfo)
+	dataStore.jails = make(map[string]*models.JailEntry)
+	dataStore.jailInfos = make(map[string]*models.JailInfo)
 	for _, jailName := range names {
 		jailEntry, getBannedErr := dataStore.f2bc.GetBanned(jailName)
 		if getBannedErr != nil {
@@ -101,7 +92,7 @@ func (dataStore *DataStore) Start() {
 
 }
 
-func (dataStore *DataStore) GetJails() []Jail {
+func (dataStore *DataStore) GetJails() []models.Jail {
 	dataStore.mutex.RLock()
 	defer dataStore.mutex.RUnlock()
 	keys := make([]string, 0, len(dataStore.jails))
@@ -111,7 +102,7 @@ func (dataStore *DataStore) GetJails() []Jail {
 
 	sort.Strings(keys)
 
-	jails := make([]Jail, len(dataStore.jails))
+	jails := make([]models.Jail, len(dataStore.jails))
 	index := 0
 	for _, key := range keys {
 		jail, exists := dataStore.GetJailByName(key)
@@ -123,7 +114,7 @@ func (dataStore *DataStore) GetJails() []Jail {
 	return jails
 }
 
-func (dataStore *DataStore) GetJailByName(jailName string) (Jail, bool) {
+func (dataStore *DataStore) GetJailByName(jailName string) (models.Jail, bool) {
 	dataStore.mutex.RLock()
 	defer dataStore.mutex.RUnlock()
 	if dataStore.jails[jailName] != nil && dataStore.jailInfos[jailName] != nil {
@@ -132,15 +123,15 @@ func (dataStore *DataStore) GetJailByName(jailName string) (Jail, bool) {
 		jail := createJail(jailEntry, jailInfo)
 		return jail, true
 	}
-	return Jail{}, false
+	return models.Jail{}, false
 }
 
-func createJail(entry *client.JailEntry, info *client.JailInfo) Jail {
-	result := Jail{}
+func createJail(entry *models.JailEntry, info *models.JailInfo) models.Jail {
+	result := models.Jail{}
 	if entry != nil {
 		result.Name = entry.Name
 		if entry.BannedEntries != nil {
-			banEntries := make([]client.BanEntry, len(entry.BannedEntries))
+			banEntries := make([]models.BanEntry, len(entry.BannedEntries))
 			for i, p := range entry.BannedEntries {
 				if p != nil {
 					banEntries[i] = *p // dereference the pointer

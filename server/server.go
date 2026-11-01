@@ -20,8 +20,8 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/basicauth"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/webishdev/fail2ban-dashboard/config"
-	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
 	"github.com/webishdev/fail2ban-dashboard/geoip"
+	"github.com/webishdev/fail2ban-dashboard/models"
 	oauth "github.com/webishdev/fail2ban-dashboard/oauth2"
 	"github.com/webishdev/fail2ban-dashboard/store"
 )
@@ -82,14 +82,14 @@ type baseData struct {
 	BasePath        string
 	CountryCodes    template.URL
 	HasBanned       bool
-	Banned          []client.BanEntry
+	Banned          []models.BanEntry
 	Authenticated   bool
 }
 
 type indexData struct {
 	baseData
 	BannedSum int
-	Jails     []store.Jail
+	Jails     []models.Jail
 }
 
 type loginData struct {
@@ -102,7 +102,7 @@ type detailData struct {
 	OrderPenalty Sorted
 	OrderStarted Sorted
 	OrderEnds    Sorted
-	Jail         store.Jail
+	Jail         models.Jail
 }
 
 func generateRandomPassword() string {
@@ -282,7 +282,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 
 		sum := 0
 
-		banned := make([]client.BanEntry, 0)
+		banned := make([]models.BanEntry, 0)
 		for _, jail := range jails {
 			sum += len(jail.BannedEntries)
 			banned = append(banned, jail.BannedEntries...)
@@ -336,7 +336,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			return c.Status(404).SendString("Jail not found")
 		}
 
-		banned := make([]client.BanEntry, 0)
+		banned := make([]models.BanEntry, 0)
 		banned = append(banned, jailByName.BannedEntries...)
 
 		countryCodes := make([]string, 0)
@@ -386,7 +386,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 	return nil
 }
 
-func sortSlice(sorting string, order string, banned []client.BanEntry) func(i, j int) bool {
+func sortSlice(sorting string, order string, banned []models.BanEntry) func(i, j int) bool {
 	switch {
 	case sorting == "address" && order == "desc":
 		return func(i, j int) bool {
@@ -410,14 +410,14 @@ func sortSlice(sorting string, order string, banned []client.BanEntry) func(i, j
 		}
 	case sorting == "penalty" && order == "desc":
 		return func(i, j int) bool {
-			first := penaltyToUint64(banned[i].CurrenPenalty)
-			second := penaltyToUint64(banned[j].CurrenPenalty)
+			first := penaltyToUint64(banned[i].CurrentPenalty)
+			second := penaltyToUint64(banned[j].CurrentPenalty)
 			return first > second
 		}
 	case sorting == "penalty" && order == "asc":
 		return func(i, j int) bool {
-			first := penaltyToUint64(banned[i].CurrenPenalty)
-			second := penaltyToUint64(banned[j].CurrenPenalty)
+			first := penaltyToUint64(banned[i].CurrentPenalty)
+			second := penaltyToUint64(banned[j].CurrentPenalty)
 			return first < second
 		}
 	case sorting == "started" && order == "desc":

@@ -9,7 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/webishdev/fail2ban-dashboard/config"
-	client "github.com/webishdev/fail2ban-dashboard/fail2ban-client"
+	"github.com/webishdev/fail2ban-dashboard/models"
 	"github.com/webishdev/fail2ban-dashboard/store"
 )
 
@@ -17,15 +17,15 @@ import (
 
 // MockDataStore mocks the store.DataStore
 type MockDataStore struct {
-	GetJailsFunc func() []store.Jail
+	GetJailsFunc func() []models.Jail
 	StartFunc    func()
 }
 
-func (m *MockDataStore) GetJails() []store.Jail {
+func (m *MockDataStore) GetJails() []models.Jail {
 	if m.GetJailsFunc != nil {
 		return m.GetJailsFunc()
 	}
-	return []store.Jail{}
+	return []models.Jail{}
 }
 
 func (m *MockDataStore) Start() {
@@ -47,19 +47,19 @@ func (m *MockGeoIP) Lookup(value string) (string, bool) {
 }
 
 // Test data helpers
-func createTestBanEntry(address, jail, penalty string, bannedAt, banEndsAt time.Time) client.BanEntry {
-	return client.BanEntry{
-		Address:       address,
-		JailName:      jail,
-		CurrenPenalty: penalty,
-		BannedAt:      bannedAt,
-		BanEndsAt:     banEndsAt,
-		CountryCode:   "",
+func createTestBanEntry(address, jail, penalty string, bannedAt, banEndsAt time.Time) models.BanEntry {
+	return models.BanEntry{
+		Address:        address,
+		JailName:       jail,
+		CurrentPenalty: penalty,
+		BannedAt:       bannedAt,
+		BanEndsAt:      banEndsAt,
+		CountryCode:    "",
 	}
 }
 
-func createTestJail(name string, entries []client.BanEntry) store.Jail {
-	return store.Jail{
+func createTestJail(name string, entries []models.BanEntry) models.Jail {
+	return models.Jail{
 		Name:            name,
 		BannedCount:     len(entries),
 		BannedEntries:   entries,
@@ -111,7 +111,7 @@ func createTestApp(mockStore *MockDataStore, mockGeoIP *MockGeoIP, c *config.Con
 
 func TestSortSlice(t *testing.T) {
 	now := time.Now()
-	entries := []client.BanEntry{
+	entries := []models.BanEntry{
 		createTestBanEntry("192.168.1.1", "jail1", "100", now.Add(-1*time.Hour), now.Add(1*time.Hour)),
 		createTestBanEntry("192.168.1.2", "jail2", "200", now.Add(-2*time.Hour), now.Add(2*time.Hour)),
 		createTestBanEntry("10.0.0.1", "jail3", "50", now.Add(-30*time.Minute), now.Add(30*time.Minute)),
@@ -163,7 +163,7 @@ func TestSortSlice(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			entriesCopy := make([]client.BanEntry, len(entries))
+			entriesCopy := make([]models.BanEntry, len(entries))
 			copy(entriesCopy, entries)
 
 			sortFunc := sortSlice(tt.sorting, tt.order, entriesCopy)
@@ -185,7 +185,7 @@ func TestSortSlice(t *testing.T) {
 				case "jail":
 					actual = entriesCopy[i].JailName
 				case "penalty":
-					actual = entriesCopy[i].CurrenPenalty
+					actual = entriesCopy[i].CurrentPenalty
 				}
 
 				if actual != expected {
@@ -493,18 +493,18 @@ func TestConfiguration(t *testing.T) {
 
 func TestMockDataStoreIntegration(t *testing.T) {
 	now := time.Now()
-	testEntries := []client.BanEntry{
+	testEntries := []models.BanEntry{
 		createTestBanEntry("192.168.1.100", "ssh", "600", now.Add(-1*time.Hour), now.Add(1*time.Hour)),
 		createTestBanEntry("10.0.0.50", "http", "300", now.Add(-30*time.Minute), now.Add(30*time.Minute)),
 	}
 
-	testJails := []store.Jail{
-		createTestJail("ssh", []client.BanEntry{testEntries[0]}),
-		createTestJail("http", []client.BanEntry{testEntries[1]}),
+	testJails := []models.Jail{
+		createTestJail("ssh", []models.BanEntry{testEntries[0]}),
+		createTestJail("http", []models.BanEntry{testEntries[1]}),
 	}
 
 	mockStore := &MockDataStore{
-		GetJailsFunc: func() []store.Jail {
+		GetJailsFunc: func() []models.Jail {
 			return testJails
 		},
 		StartFunc: func() {
@@ -573,18 +573,18 @@ func TestMockGeoIPIntegration(t *testing.T) {
 // Test main index route handler with mocks
 func TestIndexRouteHandler(t *testing.T) {
 	now := time.Now()
-	testEntries := []client.BanEntry{
+	testEntries := []models.BanEntry{
 		createTestBanEntry("8.8.8.8", "ssh", "600", now.Add(-1*time.Hour), now.Add(1*time.Hour)),
 		createTestBanEntry("192.168.1.1", "http", "300", now.Add(-30*time.Minute), now.Add(30*time.Minute)),
 	}
 
-	testJails := []store.Jail{
-		createTestJail("ssh", []client.BanEntry{testEntries[0]}),
-		createTestJail("http", []client.BanEntry{testEntries[1]}),
+	testJails := []models.Jail{
+		createTestJail("ssh", []models.BanEntry{testEntries[0]}),
+		createTestJail("http", []models.BanEntry{testEntries[1]}),
 	}
 
 	mockStore := &MockDataStore{
-		GetJailsFunc: func() []store.Jail {
+		GetJailsFunc: func() []models.Jail {
 			return testJails
 		},
 		StartFunc: func() {},
@@ -609,7 +609,7 @@ func TestIndexRouteHandler(t *testing.T) {
 	app.Get("/", func(c fiber.Ctx) error {
 		jails := mockStore.GetJails()
 
-		banned := make([]client.BanEntry, 0)
+		banned := make([]models.BanEntry, 0)
 		for _, jail := range jails {
 			banned = append(banned, jail.BannedEntries...)
 		}
@@ -740,14 +740,14 @@ func TestAuthenticationScenarios(t *testing.T) {
 
 func TestSortSliceEdgeCases(t *testing.T) {
 	// Test with empty slice
-	emptyEntries := []client.BanEntry{}
+	emptyEntries := []models.BanEntry{}
 	sortFunc := sortSlice("address", "asc", emptyEntries)
 	if sortFunc == nil {
 		t.Error("Sort function should not be nil even for empty slice")
 	}
 
 	// Test with single entry
-	singleEntry := []client.BanEntry{
+	singleEntry := []models.BanEntry{
 		createTestBanEntry("192.168.1.1", "test", "100", time.Now(), time.Now().Add(time.Hour)),
 	}
 	sortFunc = sortSlice("address", "asc", singleEntry)
@@ -757,7 +757,7 @@ func TestSortSliceEdgeCases(t *testing.T) {
 
 	// Test default case (ends, asc)
 	now := time.Now()
-	entries := []client.BanEntry{
+	entries := []models.BanEntry{
 		createTestBanEntry("192.168.1.1", "jail1", "100", now, now.Add(2*time.Hour)),
 		createTestBanEntry("192.168.1.2", "jail2", "200", now, now.Add(1*time.Hour)),
 	}

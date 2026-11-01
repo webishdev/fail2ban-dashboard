@@ -9,7 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kisielk/og-rek"
+	ogórek "github.com/kisielk/og-rek"
+	"github.com/webishdev/fail2ban-dashboard/models"
 )
 
 // Mock connection for testing
@@ -164,7 +165,7 @@ func (m *mockFail2BanClient) GetJailNames() ([]string, error) {
 	return []string{}, errors.New("fetching status failed")
 }
 
-func (m *mockFail2BanClient) GetJailInfo(jailName string) (*JailInfo, error) {
+func (m *mockFail2BanClient) GetJailInfo(jailName string) (*models.JailInfo, error) {
 	result, err := m.sendCommand([]string{statusCommand, jailName})
 	if err != nil {
 		return nil, err
@@ -234,7 +235,7 @@ func (m *mockFail2BanClient) GetJailInfo(jailName string) (*JailInfo, error) {
 		}
 	}
 
-	return &JailInfo{
+	return &models.JailInfo{
 		CurrentlyFailed: currentlyFailedResult,
 		TotalFailed:     totalFailedResult,
 		CurrentlyBanned: currentlyBannedResult,
@@ -242,8 +243,8 @@ func (m *mockFail2BanClient) GetJailInfo(jailName string) (*JailInfo, error) {
 	}, nil
 }
 
-func (m *mockFail2BanClient) GetBanned(jailName string) (*JailEntry, error) {
-	var bannedEntries []*BanEntry
+func (m *mockFail2BanClient) GetBanned(jailName string) (*models.JailEntry, error) {
+	var bannedEntries []*models.BanEntry
 	result, err := m.sendCommand([]string{getCommand, jailName, "banip", "--with-time"})
 	if err != nil {
 		return nil, err
@@ -266,7 +267,7 @@ func (m *mockFail2BanClient) GetBanned(jailName string) (*JailEntry, error) {
 		}
 	}
 
-	return &JailEntry{Name: jailName, BannedEntries: bannedEntries}, nil
+	return &models.JailEntry{Name: jailName, BannedEntries: bannedEntries}, nil
 }
 
 func (m *mockFail2BanClient) sendCommand(command []string) (interface{}, error) {
@@ -429,7 +430,7 @@ func TestFail2BanClient_GetJailInfo(t *testing.T) {
 		jailName string
 		response interface{}
 		mockErr  error
-		want     *JailInfo
+		want     *models.JailInfo
 		wantErr  bool
 	}{
 		{
@@ -466,7 +467,7 @@ func TestFail2BanClient_GetJailInfo(t *testing.T) {
 					},
 				},
 			},
-			want: &JailInfo{
+			want: &models.JailInfo{
 				CurrentlyFailed: 5,
 				TotalFailed:     100,
 				CurrentlyBanned: 2,
@@ -486,7 +487,7 @@ func TestFail2BanClient_GetJailInfo(t *testing.T) {
 			name:     "empty response",
 			jailName: "test-jail",
 			response: &mockTuple{items: []interface{}{nil, &mockList{items: []interface{}{}}}},
-			want: &JailInfo{
+			want: &models.JailInfo{
 				CurrentlyFailed: 0,
 				TotalFailed:     0,
 				CurrentlyBanned: 0,
@@ -523,7 +524,7 @@ func TestFail2BanClient_GetBanned(t *testing.T) {
 		jailName string
 		response interface{}
 		mockErr  error
-		want     *JailEntry
+		want     *models.JailEntry
 		wantErr  bool
 	}{
 		{
@@ -545,57 +546,57 @@ func TestFail2BanClient_GetBanned(t *testing.T) {
 					},
 				},
 			},
-			want: &JailEntry{
+			want: &models.JailEntry{
 				Name: "test-jail",
-				BannedEntries: []*BanEntry{
+				BannedEntries: []*models.BanEntry{
 					{
-						Address:       "192.168.1.100",
-						BannedAt:      time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
-						CurrenPenalty: "600",
-						BanEndsAt:     time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
-						JailName:      "test-jail",
+						Address:        "192.168.1.100",
+						BannedAt:       time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
+						CurrentPenalty: "600",
+						BanEndsAt:      time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
+						JailName:       "test-jail",
 					},
 					{
-						Address:       "2602:fb54:1a00::10f",
-						BannedAt:      time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
-						CurrenPenalty: "600",
-						BanEndsAt:     time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
-						JailName:      "test-jail",
+						Address:        "2602:fb54:1a00::10f",
+						BannedAt:       time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
+						CurrentPenalty: "600",
+						BanEndsAt:      time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
+						JailName:       "test-jail",
 					},
 					{
-						Address:       "fd12:3456:789a::25",
-						BannedAt:      time.Date(2024, 8, 29, 10, 30, 0, 0, time.UTC),
-						CurrenPenalty: "600",
-						BanEndsAt:     time.Date(2024, 8, 29, 10, 40, 0, 0, time.UTC),
-						JailName:      "test-jail",
+						Address:        "fd12:3456:789a::25",
+						BannedAt:       time.Date(2024, 8, 29, 10, 30, 0, 0, time.UTC),
+						CurrentPenalty: "600",
+						BanEndsAt:      time.Date(2024, 8, 29, 10, 40, 0, 0, time.UTC),
+						JailName:       "test-jail",
 					},
 					{
-						Address:       "10.0.0.50",
-						BannedAt:      time.Date(2023, 8, 29, 11, 0, 0, 0, time.UTC),
-						CurrenPenalty: "1800",
-						BanEndsAt:     time.Date(2023, 8, 29, 11, 30, 0, 0, time.UTC),
-						JailName:      "test-jail",
+						Address:        "10.0.0.50",
+						BannedAt:       time.Date(2023, 8, 29, 11, 0, 0, 0, time.UTC),
+						CurrentPenalty: "1800",
+						BanEndsAt:      time.Date(2023, 8, 29, 11, 30, 0, 0, time.UTC),
+						JailName:       "test-jail",
 					},
 					{
-						Address:       "78.88.88.99",
-						BannedAt:      time.Date(2026, 4, 18, 20, 0, 26, 0, time.UTC),
-						CurrenPenalty: "-1",
-						BanEndsAt:     time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC),
-						JailName:      "test-jail",
+						Address:        "78.88.88.99",
+						BannedAt:       time.Date(2026, 4, 18, 20, 0, 26, 0, time.UTC),
+						CurrentPenalty: "-1",
+						BanEndsAt:      time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC),
+						JailName:       "test-jail",
 					},
 					{
-						Address:       "13.12.5.54",
-						BannedAt:      time.Date(2023, 8, 29, 11, 0, 0, 0, time.UTC),
-						CurrenPenalty: "1800",
-						BanEndsAt:     time.Date(2023, 8, 29, 11, 30, 0, 0, time.UTC),
-						JailName:      "test-jail",
+						Address:        "13.12.5.54",
+						BannedAt:       time.Date(2023, 8, 29, 11, 0, 0, 0, time.UTC),
+						CurrentPenalty: "1800",
+						BanEndsAt:      time.Date(2023, 8, 29, 11, 30, 0, 0, time.UTC),
+						JailName:       "test-jail",
 					},
 					{
-						Address:       "2001:db8::dead:beef",
-						BannedAt:      time.Date(2023, 8, 29, 11, 0, 0, 0, time.UTC),
-						CurrenPenalty: "1800",
-						BanEndsAt:     time.Date(2023, 8, 29, 11, 30, 0, 0, time.UTC),
-						JailName:      "test-jail",
+						Address:        "2001:db8::dead:beef",
+						BannedAt:       time.Date(2023, 8, 29, 11, 0, 0, 0, time.UTC),
+						CurrentPenalty: "1800",
+						BanEndsAt:      time.Date(2023, 8, 29, 11, 30, 0, 0, time.UTC),
+						JailName:       "test-jail",
 					},
 				},
 			},
@@ -634,9 +635,9 @@ func TestFail2BanClient_GetBanned(t *testing.T) {
 					&mockList{items: []interface{}{}},
 				},
 			},
-			want: &JailEntry{
+			want: &models.JailEntry{
 				Name:          "test-jail",
-				BannedEntries: []*BanEntry{},
+				BannedEntries: []*models.BanEntry{},
 			},
 			wantErr: false,
 		},
@@ -674,7 +675,7 @@ func TestFail2BanClient_GetBanned(t *testing.T) {
 				wantEntry := tt.want.BannedEntries[i]
 				if entry.Address != wantEntry.Address ||
 					!entry.BannedAt.Equal(wantEntry.BannedAt) ||
-					entry.CurrenPenalty != wantEntry.CurrenPenalty ||
+					entry.CurrentPenalty != wantEntry.CurrentPenalty ||
 					!entry.BanEndsAt.Equal(wantEntry.BanEndsAt) ||
 					entry.JailName != wantEntry.JailName {
 					t.Errorf("GetBanned() entry %d = %+v, want %+v", i, entry, wantEntry)
@@ -814,19 +815,19 @@ func TestFail2BanClient_parseEntry(t *testing.T) {
 		name      string
 		jailName  string
 		listEntry string
-		want      *BanEntry
+		want      *models.BanEntry
 		wantErr   bool
 	}{
 		{
 			name:      "valid IPv4 entry",
 			jailName:  "test-jail",
 			listEntry: "192.168.1.100 \t2023-08-29 10:30:00 + 600 = 2023-08-29 10:40:00",
-			want: &BanEntry{
-				Address:       "192.168.1.100",
-				BannedAt:      time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
-				CurrenPenalty: "600",
-				BanEndsAt:     time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
-				JailName:      "test-jail",
+			want: &models.BanEntry{
+				Address:        "192.168.1.100",
+				BannedAt:       time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
+				CurrentPenalty: "600",
+				BanEndsAt:      time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
+				JailName:       "test-jail",
 			},
 			wantErr: false,
 		},
@@ -834,12 +835,12 @@ func TestFail2BanClient_parseEntry(t *testing.T) {
 			name:      "valid IPv6 entry",
 			jailName:  "test-jail",
 			listEntry: "2001:db8::dead:beef \t2023-08-29 10:30:00 + 600 = 2023-08-29 10:40:00",
-			want: &BanEntry{
-				Address:       "2001:db8::dead:beef",
-				BannedAt:      time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
-				CurrenPenalty: "600",
-				BanEndsAt:     time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
-				JailName:      "test-jail",
+			want: &models.BanEntry{
+				Address:        "2001:db8::dead:beef",
+				BannedAt:       time.Date(2023, 8, 29, 10, 30, 0, 0, time.UTC),
+				CurrentPenalty: "600",
+				BanEndsAt:      time.Date(2023, 8, 29, 10, 40, 0, 0, time.UTC),
+				JailName:       "test-jail",
 			},
 			wantErr: false,
 		},
@@ -847,12 +848,12 @@ func TestFail2BanClient_parseEntry(t *testing.T) {
 			name:      "valid entry with negative penalty and far future date",
 			jailName:  "sshd",
 			listEntry: "78.88.88.99 \t2026-04-18 20:00:26 + -1 = 9999-12-31 23:59:59",
-			want: &BanEntry{
-				Address:       "78.88.88.99",
-				BannedAt:      time.Date(2026, 4, 18, 20, 0, 26, 0, time.UTC),
-				CurrenPenalty: "-1",
-				BanEndsAt:     time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC),
-				JailName:      "sshd",
+			want: &models.BanEntry{
+				Address:        "78.88.88.99",
+				BannedAt:       time.Date(2026, 4, 18, 20, 0, 26, 0, time.UTC),
+				CurrentPenalty: "-1",
+				BanEndsAt:      time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC),
+				JailName:       "sshd",
 			},
 			wantErr: false,
 		},
@@ -902,7 +903,7 @@ func TestFail2BanClient_parseEntry(t *testing.T) {
 
 			if got.Address != tt.want.Address ||
 				!got.BannedAt.Equal(tt.want.BannedAt) ||
-				got.CurrenPenalty != tt.want.CurrenPenalty ||
+				got.CurrentPenalty != tt.want.CurrentPenalty ||
 				!got.BanEndsAt.Equal(tt.want.BanEndsAt) ||
 				got.JailName != tt.want.JailName {
 				t.Errorf("parseEntry() = %+v, want %+v", got, tt.want)
@@ -915,13 +916,13 @@ func TestBanEntry(t *testing.T) {
 	now := time.Now()
 	later := now.Add(time.Hour)
 
-	entry := &BanEntry{
-		Address:       "192.168.1.1",
-		BannedAt:      now,
-		CurrenPenalty: "3600",
-		BanEndsAt:     later,
-		JailName:      "sshd",
-		CountryCode:   "US",
+	entry := &models.BanEntry{
+		Address:        "192.168.1.1",
+		BannedAt:       now,
+		CurrentPenalty: "3600",
+		BanEndsAt:      later,
+		JailName:       "sshd",
+		CountryCode:    "US",
 	}
 
 	if entry.Address != "192.168.1.1" {
@@ -938,9 +939,9 @@ func TestBanEntry(t *testing.T) {
 }
 
 func TestJailEntry(t *testing.T) {
-	entry := &JailEntry{
+	entry := &models.JailEntry{
 		Name:          "test-jail",
-		BannedEntries: []*BanEntry{},
+		BannedEntries: []*models.BanEntry{},
 	}
 
 	if entry.Name != "test-jail" {
@@ -953,7 +954,7 @@ func TestJailEntry(t *testing.T) {
 }
 
 func TestJailInfo(t *testing.T) {
-	info := &JailInfo{
+	info := &models.JailInfo{
 		CurrentlyFailed: 5,
 		TotalFailed:     100,
 		CurrentlyBanned: 2,
