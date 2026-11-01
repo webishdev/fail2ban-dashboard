@@ -13,6 +13,7 @@ import (
 	ogórek "github.com/kisielk/og-rek"
 	"github.com/nlpodyssey/gopickle/pickle"
 	"github.com/nlpodyssey/gopickle/types"
+	"github.com/webishdev/fail2ban-dashboard/client"
 	"github.com/webishdev/fail2ban-dashboard/models"
 )
 
@@ -30,6 +31,8 @@ const (
 	protocolNumberOfJail string = "Number of jail"
 	protocolJailList     string = "Jail list"
 )
+
+var _ client.Client = (*Fail2BanClient)(nil)
 
 type Fail2BanClient struct {
 	mutex   sync.RWMutex
