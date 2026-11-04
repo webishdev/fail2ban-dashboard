@@ -199,6 +199,10 @@ The jail specific flags can be used multiple times. Jails that do not exist are 
 
 When banning is allowed for a jail, its detail page shows a `Ban address` button, which opens a dialog to enter an IPv4
 or IPv6 address. When unbanning is allowed, every banned address in the table of the jail gets an `Unban` button.
+When banning is allowed for all jails, the overview page additionally shows a `Ban address` button, which bans the
+address in all jails at once.
+
+The detail page of a jail is available at `/jail/<name>`, e.g. `/jail/sshd`.
 
 Multiple jails can be provided as environment variable separated by comma or space, e.g. `F2BD_ALLOW_BAN="sshd,postfix"`.
 
