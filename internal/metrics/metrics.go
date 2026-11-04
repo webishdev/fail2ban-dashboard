@@ -6,8 +6,8 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/webishdev/fail2ban-dashboard/models"
-	"github.com/webishdev/fail2ban-dashboard/store"
+	"github.com/webishdev/fail2ban-dashboard/internal/models"
+	"github.com/webishdev/fail2ban-dashboard/internal/store"
 )
 
 type Configuration struct {

@@ -5,8 +5,8 @@ import (
 	"slices"
 
 	"github.com/gofiber/fiber/v3/log"
-	"github.com/webishdev/fail2ban-dashboard/client"
-	fail2banclient "github.com/webishdev/fail2ban-dashboard/client/fail2ban-client"
+	"github.com/webishdev/fail2ban-dashboard/internal/client"
+	fail2banclient "github.com/webishdev/fail2ban-dashboard/internal/client/fail2ban-client"
 )
 
 var supportedVersions = []string{"0.11.1", "0.11.2", "1.0.1", "1.0.2", "1.1.0", "1.1.1"}

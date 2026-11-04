@@ -5,8 +5,8 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/log"
-	"github.com/webishdev/fail2ban-dashboard/config"
-	"github.com/webishdev/fail2ban-dashboard/metrics"
+	"github.com/webishdev/fail2ban-dashboard/internal/config"
+	"github.com/webishdev/fail2ban-dashboard/internal/metrics"
 )
 
 var osExit = os.Exit

@@ -23,11 +23,11 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/basicauth"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
-	"github.com/webishdev/fail2ban-dashboard/config"
-	"github.com/webishdev/fail2ban-dashboard/geoip"
-	"github.com/webishdev/fail2ban-dashboard/models"
-	oauth "github.com/webishdev/fail2ban-dashboard/oauth2"
-	"github.com/webishdev/fail2ban-dashboard/store"
+	"github.com/webishdev/fail2ban-dashboard/internal/config"
+	"github.com/webishdev/fail2ban-dashboard/internal/geoip"
+	"github.com/webishdev/fail2ban-dashboard/internal/models"
+	oauth "github.com/webishdev/fail2ban-dashboard/internal/oauth2"
+	"github.com/webishdev/fail2ban-dashboard/internal/store"
 )
 
 //go:embed resources/css/daisyui@5.css

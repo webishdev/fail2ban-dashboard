@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/webishdev/fail2ban-dashboard/client"
-	"github.com/webishdev/fail2ban-dashboard/config"
-	"github.com/webishdev/fail2ban-dashboard/models"
-	"github.com/webishdev/fail2ban-dashboard/store"
+	"github.com/webishdev/fail2ban-dashboard/internal/client"
+	"github.com/webishdev/fail2ban-dashboard/internal/config"
+	"github.com/webishdev/fail2ban-dashboard/internal/models"
+	"github.com/webishdev/fail2ban-dashboard/internal/store"
 )
 
 var _ client.Client = (*mockClient)(nil)

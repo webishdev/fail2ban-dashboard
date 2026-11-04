@@ -5,8 +5,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	dto "github.com/prometheus/client_model/go"
-	"github.com/webishdev/fail2ban-dashboard/models"
-	"github.com/webishdev/fail2ban-dashboard/store"
+	"github.com/webishdev/fail2ban-dashboard/internal/models"
+	"github.com/webishdev/fail2ban-dashboard/internal/store"
 )
 
 func TestSetupRegistry(t *testing.T) {
