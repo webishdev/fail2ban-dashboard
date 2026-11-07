@@ -70,7 +70,7 @@
         <dialog id="ban_modal" class="modal">
             <div class="modal-box">
                 <h3 class="text-lg font-bold">Ban address in {{ .Jail.Name }}</h3>
-                <form method="post" action="{{ .BasePath }}{{ .Jail.Name }}/ban" class="mt-4 flex flex-col gap-4">
+                <form method="post" action="{{ .BasePath }}jail/{{ .Jail.Name }}/ban" class="mt-4 flex flex-col gap-4">
                     <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
                     <label class="floating-label">
                         <span>IPv4 or IPv6 address</span>
@@ -90,7 +90,7 @@
             <div class="modal-box">
                 <h3 class="text-lg font-bold">Unban address in {{ .Jail.Name }}</h3>
                 <p class="mt-4">Do you really want to unban <span id="unban_modal_address" class="font-mono font-semibold"></span>?</p>
-                <form method="post" action="{{ .BasePath }}{{ .Jail.Name }}/unban">
+                <form method="post" action="{{ .BasePath }}jail/{{ .Jail.Name }}/unban">
                     <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
                     <input type="hidden" name="address" id="unban_modal_input">
                     <div class="modal-action">

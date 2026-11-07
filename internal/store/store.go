@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3/log"
-	"github.com/webishdev/fail2ban-dashboard/client"
-	"github.com/webishdev/fail2ban-dashboard/models"
+	"github.com/webishdev/fail2ban-dashboard/internal/client"
+	"github.com/webishdev/fail2ban-dashboard/internal/models"
 )
 
 type UpdateHandler func()

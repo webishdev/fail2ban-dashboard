@@ -1,6 +1,6 @@
 package client
 
-import "github.com/webishdev/fail2ban-dashboard/models"
+import "github.com/webishdev/fail2ban-dashboard/internal/models"
 
 type Client interface {
 	GetVersion() (string, error)

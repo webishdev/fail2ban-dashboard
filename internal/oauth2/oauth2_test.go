@@ -7,7 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/session"
-	"github.com/webishdev/fail2ban-dashboard/config"
+	"github.com/webishdev/fail2ban-dashboard/internal/config"
 	"golang.org/x/oauth2"
 )
 

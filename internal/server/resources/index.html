@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="emerald">
+{{ template "head" . }}
+    <body class="min-h-screen bg-base-200 text-base-content antialiased">
+        {{ template "header" . }}
+        <main class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+            <section class="mb-8 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Overview</h1>
+                    <p class="mt-1 text-sm text-base-content/60">Status of all monitored jails, refreshed every minute.</p>
+                    {{ if .CanBan }}
+                    <button type="button" class="btn btn-secondary btn-sm mt-4" onclick="ban_modal.showModal()">Ban address</button>
+                    {{ end }}
+                </div>
+                <div class="grid grid-cols-2 gap-3 sm:flex sm:gap-4">
+                    <div class="rounded-box border border-base-300 bg-base-100 px-5 py-4 shadow-sm sm:min-w-40">
+                        <div class="text-xs font-medium uppercase tracking-wide text-base-content/60">Currently banned</div>
+                        <div class="mt-1 text-3xl font-bold tabular-nums {{ if gt .BannedSum 0 }}text-secondary{{ end }}">{{ .BannedSum }}</div>
+                    </div>
+                    <div class="rounded-box border border-base-300 bg-base-100 px-5 py-4 shadow-sm sm:min-w-40">
+                        <div class="text-xs font-medium uppercase tracking-wide text-base-content/60">Jails</div>
+                        <div class="mt-1 text-3xl font-bold tabular-nums">{{ len .Jails }}</div>
+                    </div>
+                </div>
+            </section>
+            {{ if eq .Status "banned" }}
+            <div role="alert" class="alert alert-success alert-soft mb-6" data-status="banned"><span><span class="font-mono font-semibold">{{ .StatusAddress }}</span> banned in all jails.</span></div>
+            {{ else if eq .Status "invalid" }}
+            <div role="alert" class="alert alert-warning alert-soft mb-6" data-status="invalid">Invalid address, please enter a valid IPv4 or IPv6 address.</div>
+            {{ else if eq .Status "failed" }}
+            <div role="alert" class="alert alert-error alert-soft mb-6" data-status="failed"><span><span class="font-mono font-semibold">{{ .StatusAddress }}</span> could not be banned by fail2ban in the jails {{ .StatusJails }}, see the logs for details.</span></div>
+            {{ end }}
+            {{ $curBasePath := .BasePath }}
+            {{ if .Jails }}
+            <section class="jails grid gap-4">
+                {{ range .Jails }}
+                    <a href="{{ $curBasePath }}jail/{{ .Name }}" class="group flex flex-col gap-5 rounded-box border border-base-300 bg-base-100 p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                    {{ template "jailCard" . }}
+                    </a>
+                {{ end }}
+            </section>
+            {{ else }}
+            <div class="rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center text-base-content/60">
+                No jails found.
+            </div>
+            {{ end }}
+        </main>
+        {{ if .CanBan }}
+        <dialog id="ban_modal" class="modal">
+            <div class="modal-box">
+                <h3 class="text-lg font-bold">Ban address in all jails</h3>
+                <form method="post" action="{{ .BasePath }}ban" class="mt-4 flex flex-col gap-4">
+                    <input type="hidden" name="_csrf" value="{{ .CSRFToken }}">
+                    <label class="floating-label">
+                        <span>IPv4 or IPv6 address</span>
+                        <input type="text" name="address" class="input w-full font-mono" placeholder="192.0.2.1 or 2001:db8::1" required autocomplete="off">
+                    </label>
+                    <div class="modal-action mt-0">
+                        <button type="button" class="btn btn-ghost" onclick="ban_modal.close()">Cancel</button>
+                        <button type="submit" class="btn btn-secondary">Ban</button>
+                    </div>
+                </form>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+        {{ end }}
+    </body>
+</html>

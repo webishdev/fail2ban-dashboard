@@ -10,7 +10,7 @@ import (
 	"time"
 
 	ogórek "github.com/kisielk/og-rek"
-	"github.com/webishdev/fail2ban-dashboard/models"
+	"github.com/webishdev/fail2ban-dashboard/internal/models"
 )
 
 // Mock connection for testing

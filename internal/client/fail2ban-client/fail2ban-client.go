@@ -13,8 +13,8 @@ import (
 	ogórek "github.com/kisielk/og-rek"
 	"github.com/nlpodyssey/gopickle/pickle"
 	"github.com/nlpodyssey/gopickle/types"
-	"github.com/webishdev/fail2ban-dashboard/client"
-	"github.com/webishdev/fail2ban-dashboard/models"
+	"github.com/webishdev/fail2ban-dashboard/internal/client"
+	"github.com/webishdev/fail2ban-dashboard/internal/models"
 )
 
 const (

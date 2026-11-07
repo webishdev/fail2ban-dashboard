@@ -10,12 +10,12 @@ import (
 	"github.com/gofiber/fiber/v3/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/webishdev/fail2ban-dashboard/bootstrap"
-	"github.com/webishdev/fail2ban-dashboard/config"
-	"github.com/webishdev/fail2ban-dashboard/geoip"
-	"github.com/webishdev/fail2ban-dashboard/metrics"
-	"github.com/webishdev/fail2ban-dashboard/server"
-	"github.com/webishdev/fail2ban-dashboard/store"
+	"github.com/webishdev/fail2ban-dashboard/internal/bootstrap"
+	"github.com/webishdev/fail2ban-dashboard/internal/config"
+	"github.com/webishdev/fail2ban-dashboard/internal/geoip"
+	"github.com/webishdev/fail2ban-dashboard/internal/metrics"
+	"github.com/webishdev/fail2ban-dashboard/internal/server"
+	"github.com/webishdev/fail2ban-dashboard/internal/store"
 )
 
 var Version = "development"

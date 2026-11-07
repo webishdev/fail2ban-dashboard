@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/webishdev/fail2ban-dashboard/client"
-	"github.com/webishdev/fail2ban-dashboard/config"
-	"github.com/webishdev/fail2ban-dashboard/models"
-	"github.com/webishdev/fail2ban-dashboard/store"
+	"github.com/webishdev/fail2ban-dashboard/internal/client"
+	"github.com/webishdev/fail2ban-dashboard/internal/config"
+	"github.com/webishdev/fail2ban-dashboard/internal/models"
+	"github.com/webishdev/fail2ban-dashboard/internal/store"
 )
 
 var _ client.Client = (*mockClient)(nil)
@@ -103,25 +103,31 @@ func postForm(t *testing.T, app *fiber.App, target string, form url.Values, cook
 // postWithToken loads the jail page to obtain a CSRF token and submits the form with it
 func postWithToken(t *testing.T, app *fiber.App, jail string, action string, address string) *http.Response {
 	t.Helper()
-	body, cookies := getPage(t, app, "/"+jail)
+	return postFromPage(t, app, "/jail/"+jail, "/jail/"+jail+"/"+action, address)
+}
+
+// postFromPage loads the page to obtain a CSRF token and submits the address to the target with it
+func postFromPage(t *testing.T, app *fiber.App, page string, target string, address string) *http.Response {
+	t.Helper()
+	body, cookies := getPage(t, app, page)
 	match := csrfTokenPattern.FindStringSubmatch(body)
 	if match == nil {
-		t.Fatalf("No CSRF token found on /%s", jail)
+		t.Fatalf("No CSRF token found on %s", page)
 	}
 	form := url.Values{"_csrf": {match[1]}, "address": {address}}
-	return postForm(t, app, "/"+jail+"/"+action, form, cookies)
+	return postForm(t, app, target, form, cookies)
 }
 
 func TestDetailPageShowsBanButtonOnlyWhenAllowed(t *testing.T) {
 	f2bc := &mockClient{jailNames: []string{"sshd", "postfix"}}
 	app := createBanTestApp(t, f2bc, &config.Configuration{AllowBanJails: []string{"sshd", "doesnotexist"}})
 
-	sshd, _ := getPage(t, app, "/sshd")
-	if !strings.Contains(sshd, "ban_modal") || !strings.Contains(sshd, `action="/sshd/ban"`) {
+	sshd, _ := getPage(t, app, "/jail/sshd")
+	if !strings.Contains(sshd, "ban_modal") || !strings.Contains(sshd, `action="/jail/sshd/ban"`) {
 		t.Error("Expected ban dialog on sshd page")
 	}
 
-	postfix, _ := getPage(t, app, "/postfix")
+	postfix, _ := getPage(t, app, "/jail/postfix")
 	if strings.Contains(postfix, "ban_modal") {
 		t.Error("Did not expect ban dialog on postfix page")
 	}
@@ -131,15 +137,15 @@ func TestDetailPageShowsUnbanDialogOnlyWhenAllowed(t *testing.T) {
 	f2bc := &mockClient{jailNames: []string{"sshd", "postfix"}}
 	app := createBanTestApp(t, f2bc, &config.Configuration{AllowUnbanJails: []string{"sshd"}})
 
-	sshd, _ := getPage(t, app, "/sshd")
-	if !strings.Contains(sshd, "unban_modal") || !strings.Contains(sshd, `action="/sshd/unban"`) {
+	sshd, _ := getPage(t, app, "/jail/sshd")
+	if !strings.Contains(sshd, "unban_modal") || !strings.Contains(sshd, `action="/jail/sshd/unban"`) {
 		t.Error("Expected unban dialog on sshd page")
 	}
 	if strings.Contains(sshd, "confirm(") {
 		t.Error("Did not expect a JavaScript confirm dialog")
 	}
 
-	postfix, _ := getPage(t, app, "/postfix")
+	postfix, _ := getPage(t, app, "/jail/postfix")
 	if strings.Contains(postfix, "unban_modal") {
 		t.Error("Did not expect unban dialog on postfix page")
 	}
@@ -149,12 +155,12 @@ func TestBanEndpointsNotRegisteredWithoutFlags(t *testing.T) {
 	f2bc := &mockClient{jailNames: []string{"sshd"}}
 	app := createBanTestApp(t, f2bc, &config.Configuration{})
 
-	page, _ := getPage(t, app, "/sshd")
+	page, _ := getPage(t, app, "/jail/sshd")
 	if strings.Contains(page, "ban_modal") || strings.Contains(page, "_csrf") {
 		t.Error("Did not expect ban controls without flags")
 	}
 
-	resp := postForm(t, app, "/sshd/ban", url.Values{"address": {"192.0.2.1"}}, nil)
+	resp := postForm(t, app, "/jail/sshd/ban", url.Values{"address": {"192.0.2.1"}}, nil)
 	if resp.StatusCode == fiber.StatusSeeOther || len(f2bc.banned) > 0 {
 		t.Errorf("Expected ban to be rejected, got status %d", resp.StatusCode)
 	}
@@ -179,7 +185,7 @@ func TestBanAndUnbanActions(t *testing.T) {
 			jail:         "sshd",
 			address:      "192.0.2.1",
 			wantStatus:   fiber.StatusSeeOther,
-			wantLocation: "/sshd",
+			wantLocation: "/jail/sshd",
 			wantFlash:    "banned",
 			wantBanned:   []string{"sshd/192.0.2.1"},
 		},
@@ -189,7 +195,7 @@ func TestBanAndUnbanActions(t *testing.T) {
 			jail:         "sshd",
 			address:      " 2001:DB8:0::1 ",
 			wantStatus:   fiber.StatusSeeOther,
-			wantLocation: "/sshd",
+			wantLocation: "/jail/sshd",
 			wantFlash:    "banned",
 			wantBanned:   []string{"sshd/2001:db8::1"},
 		},
@@ -199,7 +205,7 @@ func TestBanAndUnbanActions(t *testing.T) {
 			jail:         "sshd",
 			address:      "192.0.2.1",
 			wantStatus:   fiber.StatusSeeOther,
-			wantLocation: "/sshd",
+			wantLocation: "/jail/sshd",
 			wantFlash:    "unbanned",
 			wantUnbanned: []string{"sshd/192.0.2.1"},
 		},
@@ -209,7 +215,7 @@ func TestBanAndUnbanActions(t *testing.T) {
 			jail:         "sshd",
 			address:      "not-an-ip",
 			wantStatus:   fiber.StatusSeeOther,
-			wantLocation: "/sshd",
+			wantLocation: "/jail/sshd",
 			wantFlash:    "invalid",
 		},
 		{
@@ -218,7 +224,7 @@ func TestBanAndUnbanActions(t *testing.T) {
 			jail:         "sshd",
 			address:      "fe80::1%eth0",
 			wantStatus:   fiber.StatusSeeOther,
-			wantLocation: "/sshd",
+			wantLocation: "/jail/sshd",
 			wantFlash:    "invalid",
 		},
 		{
@@ -228,7 +234,7 @@ func TestBanAndUnbanActions(t *testing.T) {
 			address:      "192.0.2.1",
 			actionError:  errors.New("failed"),
 			wantStatus:   fiber.StatusSeeOther,
-			wantLocation: "/sshd",
+			wantLocation: "/jail/sshd",
 			wantFlash:    "failed",
 		},
 		{
@@ -310,7 +316,7 @@ func TestBanResultShownOnlyOnce(t *testing.T) {
 	}
 
 	// first request after the redirect shows the result and expires the flash cookie
-	req := httptest.NewRequest(fiber.MethodGet, "/sshd", nil)
+	req := httptest.NewRequest(fiber.MethodGet, "/jail/sshd", nil)
 	req.AddCookie(flashCookie)
 	first, err := app.Test(req)
 	if err != nil {
@@ -331,7 +337,7 @@ func TestBanResultShownOnlyOnce(t *testing.T) {
 	}
 
 	// a reload or the old query parameter does not show the result again
-	for _, target := range []string{"/sshd", "/sshd?status=banned"} {
+	for _, target := range []string{"/jail/sshd", "/jail/sshd?status=banned"} {
 		page, _ := getPage(t, app, target)
 		if strings.Contains(page, "data-status=") {
 			t.Errorf("Did not expect a result on %s", target)
@@ -343,10 +349,10 @@ func TestBanActionUnknownJail(t *testing.T) {
 	f2bc := &mockClient{jailNames: []string{"sshd"}}
 	app := createBanTestApp(t, f2bc, &config.Configuration{AllowBanAll: true})
 
-	body, cookies := getPage(t, app, "/sshd")
+	body, cookies := getPage(t, app, "/jail/sshd")
 	token := csrfTokenPattern.FindStringSubmatch(body)[1]
 
-	resp := postForm(t, app, "/unknown/ban", url.Values{"_csrf": {token}, "address": {"192.0.2.1"}}, cookies)
+	resp := postForm(t, app, "/jail/unknown/ban", url.Values{"_csrf": {token}, "address": {"192.0.2.1"}}, cookies)
 	if resp.StatusCode != fiber.StatusNotFound {
 		t.Errorf("Expected status 404, got %d", resp.StatusCode)
 	}
@@ -356,7 +362,7 @@ func TestBanActionRequiresCSRFToken(t *testing.T) {
 	f2bc := &mockClient{jailNames: []string{"sshd"}}
 	app := createBanTestApp(t, f2bc, &config.Configuration{AllowBanAll: true})
 
-	resp := postForm(t, app, "/sshd/ban", url.Values{"address": {"192.0.2.1"}}, nil)
+	resp := postForm(t, app, "/jail/sshd/ban", url.Values{"address": {"192.0.2.1"}}, nil)
 	if resp.StatusCode != fiber.StatusForbidden {
 		t.Errorf("Expected status 403, got %d", resp.StatusCode)
 	}
@@ -387,5 +393,117 @@ func TestBannedRowRendersUnbanButtonOnlyWhenAllowed(t *testing.T) {
 		if hasButton != canUnban {
 			t.Errorf("CanUnban=%v: expected unban button %v, got %v", canUnban, canUnban, hasButton)
 		}
+	}
+}
+
+func TestOverviewLinksToJailPages(t *testing.T) {
+	f2bc := &mockClient{jailNames: []string{"sshd"}}
+	app := createBanTestApp(t, f2bc, &config.Configuration{})
+
+	page, _ := getPage(t, app, "/")
+	if !strings.Contains(page, `href="/jail/sshd"`) {
+		t.Error("Expected link to /jail/sshd on overview")
+	}
+}
+
+func TestOverviewShowsBanAllButtonOnlyWhenAllowed(t *testing.T) {
+	tests := []struct {
+		name          string
+		configuration *config.Configuration
+		wantButton    bool
+	}{
+		{name: "ban all", configuration: &config.Configuration{AllowBanAll: true}, wantButton: true},
+		{name: "ban single jails", configuration: &config.Configuration{AllowBanJails: []string{"sshd", "postfix"}}},
+		{name: "no flags", configuration: &config.Configuration{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f2bc := &mockClient{jailNames: []string{"sshd", "postfix"}}
+			app := createBanTestApp(t, f2bc, tt.configuration)
+
+			page, _ := getPage(t, app, "/")
+			hasButton := strings.Contains(page, "ban_modal") && strings.Contains(page, `action="/ban"`)
+			if hasButton != tt.wantButton {
+				t.Errorf("Expected ban dialog on overview %v, got %v", tt.wantButton, hasButton)
+			}
+		})
+	}
+}
+
+func TestBanAllAction(t *testing.T) {
+	tests := []struct {
+		name        string
+		address     string
+		actionError error
+		wantFlash   string
+		wantBanned  []string
+	}{
+		{
+			name:       "ban in all jails",
+			address:    "192.0.2.1",
+			wantFlash:  "banned",
+			wantBanned: []string{"postfix/192.0.2.1", "sshd/192.0.2.1"},
+		},
+		{
+			name:      "invalid address",
+			address:   "not-an-ip",
+			wantFlash: "invalid",
+		},
+		{
+			name:        "fail2ban error",
+			address:     "192.0.2.1",
+			actionError: errors.New("failed"),
+			wantFlash:   "failed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f2bc := &mockClient{jailNames: []string{"sshd", "postfix"}, actionError: tt.actionError}
+			app := createBanTestApp(t, f2bc, &config.Configuration{AllowBanAll: true})
+
+			resp := postFromPage(t, app, "/", "/ban", tt.address)
+
+			if resp.StatusCode != fiber.StatusSeeOther {
+				t.Fatalf("Expected status %d, got %d", fiber.StatusSeeOther, resp.StatusCode)
+			}
+			if location := resp.Header.Get(fiber.HeaderLocation); location != "/" {
+				t.Errorf("Expected location %q, got %q", "/", location)
+			}
+			page := followRedirect(t, app, resp)
+			if !strings.Contains(page, `data-status="`+tt.wantFlash+`"`) {
+				t.Errorf("Expected %q result on the overview page", tt.wantFlash)
+			}
+			if tt.wantFlash == "failed" && !strings.Contains(page, "postfix, sshd") {
+				t.Error("Expected failed jails on the overview page")
+			}
+			if strings.Join(f2bc.banned, ",") != strings.Join(tt.wantBanned, ",") {
+				t.Errorf("Expected banned %v, got %v", tt.wantBanned, f2bc.banned)
+			}
+		})
+	}
+}
+
+func TestBanAllActionNotRegisteredWithoutBanAll(t *testing.T) {
+	f2bc := &mockClient{jailNames: []string{"sshd"}}
+	app := createBanTestApp(t, f2bc, &config.Configuration{AllowBanJails: []string{"sshd"}})
+
+	resp := postFromPage(t, app, "/jail/sshd", "/ban", "192.0.2.1")
+	if resp.StatusCode == fiber.StatusSeeOther || len(f2bc.banned) > 0 {
+		t.Errorf("Expected ban in all jails to be rejected, got status %d", resp.StatusCode)
+	}
+}
+
+func TestBanAllActionRequiresCSRFToken(t *testing.T) {
+	f2bc := &mockClient{jailNames: []string{"sshd"}}
+	app := createBanTestApp(t, f2bc, &config.Configuration{AllowBanAll: true})
+
+	resp := postForm(t, app, "/ban", url.Values{"address": {"192.0.2.1"}}, nil)
+	if resp.StatusCode != fiber.StatusForbidden {
+		t.Errorf("Expected status 403, got %d", resp.StatusCode)
+	}
+	if len(f2bc.banned) > 0 {
+		t.Error("Expected no ban without CSRF token")
 	}
 }

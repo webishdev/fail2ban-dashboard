@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/webishdev/fail2ban-dashboard/client"
-	"github.com/webishdev/fail2ban-dashboard/models"
+	"github.com/webishdev/fail2ban-dashboard/internal/client"
+	"github.com/webishdev/fail2ban-dashboard/internal/models"
 )
 
 var _ client.Client = (*MockFail2BanClient)(nil)

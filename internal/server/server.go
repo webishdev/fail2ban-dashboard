@@ -23,11 +23,11 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/basicauth"
 	"github.com/gofiber/fiber/v3/middleware/csrf"
 	"github.com/gofiber/fiber/v3/middleware/session"
-	"github.com/webishdev/fail2ban-dashboard/config"
-	"github.com/webishdev/fail2ban-dashboard/geoip"
-	"github.com/webishdev/fail2ban-dashboard/models"
-	oauth "github.com/webishdev/fail2ban-dashboard/oauth2"
-	"github.com/webishdev/fail2ban-dashboard/store"
+	"github.com/webishdev/fail2ban-dashboard/internal/config"
+	"github.com/webishdev/fail2ban-dashboard/internal/geoip"
+	"github.com/webishdev/fail2ban-dashboard/internal/models"
+	oauth "github.com/webishdev/fail2ban-dashboard/internal/oauth2"
+	"github.com/webishdev/fail2ban-dashboard/internal/store"
 )
 
 //go:embed resources/css/daisyui@5.css
@@ -88,6 +88,7 @@ const (
 const (
 	flashStatus  = "status"
 	flashAddress = "address"
+	flashJails   = "jails"
 )
 
 type Sorted struct {
@@ -108,8 +109,13 @@ type baseData struct {
 
 type indexData struct {
 	baseData
-	BannedSum int
-	Jails     []models.Jail
+	BannedSum     int
+	Jails         []models.Jail
+	CanBan        bool
+	CSRFToken     string
+	Status        string
+	StatusAddress string
+	StatusJails   string
 }
 
 type loginData struct {
@@ -344,6 +350,12 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			Authenticated:   isAuthenticated,
 			BannedSum:       sum,
 			Jails:           jails,
+			CanBan:          configuration.AllowBanAll,
+			CSRFToken:       csrf.TokenFromContext(c),
+			Status:          c.Redirect().Message(flashStatus).Value,
+			StatusAddress:   c.Redirect().Message(flashAddress).Value,
+			StatusJails:     c.Redirect().Message(flashJails).Value,
+			ManualRefresh:   configuration.AllowBanAll,
 		}
 
 		var sb strings.Builder
@@ -357,7 +369,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 
 	registerBanEndpoints(dashboard, dataStore, configuration, basePathForTemplate)
 
-	dashboard.Get("/:jail", func(c fiber.Ctx) error {
+	dashboard.Get("/jail/:jail", func(c fiber.Ctx) error {
 		sess, _ := sessionStore.Get(c)
 		isAuthenticated := sess.Get("authenticated") != nil
 
@@ -456,13 +468,53 @@ func registerBanEndpoints(dashboard fiber.Router, dataStore *store.DataStore, co
 	if !configuration.HasBanActions() {
 		return
 	}
-	dashboard.Post("/:jail/ban", func(c fiber.Ctx) error {
+	if configuration.AllowBanAll {
+		dashboard.Post("/ban", func(c fiber.Ctx) error {
+			return handleBanAllAction(c, dataStore, configuration, basePath)
+		})
+	}
+
+	dashboard.Post("/jail/:jail/ban", func(c fiber.Ctx) error {
 		return handleBanAction(c, dataStore, configuration, basePath, false)
 	})
 
-	dashboard.Post("/:jail/unban", func(c fiber.Ctx) error {
+	dashboard.Post("/jail/:jail/unban", func(c fiber.Ctx) error {
 		return handleBanAction(c, dataStore, configuration, basePath, true)
 	})
+}
+
+// handleBanAllAction bans the address from the submitted form in all jails
+// and redirects back to the overview page with the result as flash message.
+func handleBanAllAction(c fiber.Ctx, dataStore *store.DataStore, configuration *config.Configuration, basePath string) error {
+	accessLog(configuration.TrustProxyHeaders, "ban all", c)
+
+	status := statusBanned
+	failedJails := make([]string, 0)
+
+	address, valid := parseAddress(c.FormValue("address"))
+	if valid {
+		for _, jail := range dataStore.GetJails() {
+			if err := dataStore.BanIP(jail.Name, address); err != nil {
+				log.Errorf("Could not ban '%s' in jail '%s': %s", address, jail.Name, err)
+				failedJails = append(failedJails, jail.Name)
+			} else {
+				log.Infof("Banned '%s' in jail '%s'", address, jail.Name)
+			}
+		}
+		if len(failedJails) > 0 {
+			status = statusFailed
+		}
+	} else {
+		log.Warnf("Rejected ban in all jails, invalid address '%s'", c.FormValue("address"))
+		status = statusInvalid
+	}
+
+	return c.Redirect().
+		With(flashStatus, status).
+		With(flashAddress, address).
+		With(flashJails, strings.Join(failedJails, ", ")).
+		Status(fiber.StatusSeeOther).
+		To(basePath)
 }
 
 // handleBanAction bans or unbans the address from the submitted form in the jail
@@ -519,7 +571,7 @@ func handleBanAction(c fiber.Ctx, dataStore *store.DataStore, configuration *con
 		With(flashStatus, status).
 		With(flashAddress, address).
 		Status(fiber.StatusSeeOther).
-		To(basePath + url.PathEscape(jailName))
+		To(basePath + "jail/" + url.PathEscape(jailName))
 }
 
 // parseAddress validates an IPv4 or IPv6 address and returns its canonical form.

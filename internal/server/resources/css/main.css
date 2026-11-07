@@ -56,3 +56,18 @@
 [data-theme=dim] .theme-icon-sun {
     display: block;
 }
+.jails {
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 48rem) {
+    .jails {
+        grid-template-columns: repeat(auto-fit, minmax(calc((100% - 1rem) / 2), 1fr));
+    }
+}
+
+@media (min-width: 64rem) {
+    .jails {
+        grid-template-columns: repeat(auto-fit, minmax(calc((100% - 2rem) / 3), 1fr));
+    }
+}
