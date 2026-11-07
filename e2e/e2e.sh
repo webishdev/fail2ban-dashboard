@@ -65,7 +65,7 @@ if [[ "$ACTION" == "start" ]]; then
   "${COMPOSE_CMD[@]}" up -d
 
   prepare_after_start
-  "${COMPOSE_CMD[@]}" exec fail2ban /app/fail2ban-dashboard
+  "${COMPOSE_CMD[@]}" exec fail2ban /app/fail2ban-dashboard serve
 
 elif [[ "$ACTION" == "debug" ]]; then
   set_compose_cmd debug
@@ -93,7 +93,7 @@ elif [[ "$ACTION" == "stop" ]]; then
 
 elif [[ "$ACTION" == "dashboard" ]]; then
   if has_running_containers; then
-    "${COMPOSE_CMD[@]}" exec fail2ban /app/fail2ban-dashboard
+    "${COMPOSE_CMD[@]}" exec fail2ban /app/fail2ban-dashboard serve
   else
     echo "No running containers, start before continuing"
     usage

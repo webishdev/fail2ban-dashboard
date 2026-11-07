@@ -24,14 +24,13 @@ var GitHash = "none"
 func setupRootCommand() *cobra.Command {
 	rootCmdTemplate := &cobra.Command{
 		Use:   "fail2ban-dashboard",
-		Short: "Start the fail2ban dashboard server",
+		Short: "Web-based dashboard for fail2ban",
 		Long:  fmt.Sprintf("fail2ban-dashboard %s (%s) provides a web-based dashboard for monitoring fail2ban bans and jails", Version, GitHash),
-		Run:   serve,
 	}
 
 	serveCmdTemplate := &cobra.Command{
 		Use:   "serve",
-		Short: "Start the fail2ban dashboard server (default)",
+		Short: "Start the fail2ban dashboard server",
 		Long:  fmt.Sprintf("Start the fail2ban dashboard server %s (%s) provides a web-based dashboard for monitoring fail2ban bans and jails", Version, GitHash),
 		Run:   serve,
 	}
@@ -63,18 +62,13 @@ func setupRootCommand() *cobra.Command {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
 	// Attach flags
-	addGlobalFlags(rootCmdTemplate)
 	addGlobalFlags(serveCmdTemplate)
-	addServeFlags(rootCmdTemplate)
 	addServeFlags(serveCmdTemplate)
 
-	// PreRun hook to bind flags dynamically for whichever command executes
-	bindFlagsHook := func(cmd *cobra.Command, args []string) error {
+	// PreRun hook to bind flags of the serve command
+	serveCmdTemplate.PreRunE = func(cmd *cobra.Command, args []string) error {
 		return viper.BindPFlags(cmd.Flags())
 	}
-
-	rootCmdTemplate.PreRunE = bindFlagsHook
-	serveCmdTemplate.PreRunE = bindFlagsHook
 
 	rootCmdTemplate.AddCommand(versionCmdTemplate)
 	rootCmdTemplate.AddCommand(serveCmdTemplate)

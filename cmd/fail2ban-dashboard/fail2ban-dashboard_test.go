@@ -18,11 +18,14 @@ func TestCommandFlagParsingAndViperBinding(t *testing.T) {
 		expectErr     bool
 	}{
 		{
-			name:          "Root command accepts --address and global flags",
-			args:          []string{"--address", "192.168.1.100:8080", "--cache-dir", "/tmp/cache"},
-			expectedAddr:  "192.168.1.100:8080",
-			expectedCache: "/tmp/cache",
-			expectErr:     false,
+			name:      "Root command without args prints help",
+			args:      []string{},
+			expectErr: false,
+		},
+		{
+			name:      "Root command rejects --address flag",
+			args:      []string{"--address", "192.168.1.100:8080"},
+			expectErr: true,
 		},
 		{
 			name:          "Serve command accepts --address and global flags",
@@ -51,8 +54,7 @@ func TestCommandFlagParsingAndViperBinding(t *testing.T) {
 			// Instantiate a fresh command tree for isolation
 			rootCmd := setupRootCommand()
 
-			// Stub the execution function on root and serve to prevent triggering the actual web server
-			rootCmd.Run = func(cmd *cobra.Command, args []string) {}
+			// Stub the execution function on serve to prevent triggering the actual web server
 			if serveCmd, _, err := rootCmd.Find([]string{"serve"}); err == nil {
 				serveCmd.Run = func(cmd *cobra.Command, args []string) {}
 			}
@@ -109,14 +111,14 @@ func TestCommandStructureAndFlagPresence(t *testing.T) {
 	}
 
 	// Helper assertions
-	assertFlagExists(t, rootCmd, "address", "rootCmd")
-	assertFlagExists(t, rootCmd, "cache-dir", "rootCmd")
+	assertFlagDoesNotExist(t, rootCmd, "address", "rootCmd")
+	assertFlagDoesNotExist(t, rootCmd, "cache-dir", "rootCmd")
 
 	assertFlagExists(t, serveCmd, "address", "serveCmd")
 	assertFlagExists(t, serveCmd, "cache-dir", "serveCmd")
 
 	for _, flagName := range []string{"allow-ban-all", "allow-unban-all", "allow-ban", "allow-unban"} {
-		assertFlagExists(t, rootCmd, flagName, "rootCmd")
+		assertFlagDoesNotExist(t, rootCmd, flagName, "rootCmd")
 		assertFlagExists(t, serveCmd, flagName, "serveCmd")
 		assertFlagDoesNotExist(t, versionCmd, flagName, "versionCmd")
 	}
@@ -126,32 +128,29 @@ func TestCommandStructureAndFlagPresence(t *testing.T) {
 }
 
 func TestAllowBanFlagsCanBeRepeated(t *testing.T) {
-	for _, prefix := range [][]string{{}, {"serve"}} {
-		viper.Reset()
-		rootCmd := setupRootCommand()
-		rootCmd.Run = func(cmd *cobra.Command, args []string) {}
-		if serveCmd, _, err := rootCmd.Find([]string{"serve"}); err == nil {
-			serveCmd.Run = func(cmd *cobra.Command, args []string) {}
-		}
+	viper.Reset()
+	rootCmd := setupRootCommand()
+	if serveCmd, _, err := rootCmd.Find([]string{"serve"}); err == nil {
+		serveCmd.Run = func(cmd *cobra.Command, args []string) {}
+	}
 
-		args := append(prefix, "--allow-ban", "sshd", "--allow-ban", "postfix", "--allow-unban", "sshd", "--allow-unban-all")
-		rootCmd.SetArgs(args)
-		if err := rootCmd.Execute(); err != nil {
-			t.Fatalf("unexpected execution error for args %v: %v", args, err)
-		}
+	args := []string{"serve", "--allow-ban", "sshd", "--allow-ban", "postfix", "--allow-unban", "sshd", "--allow-unban-all"}
+	rootCmd.SetArgs(args)
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("unexpected execution error for args %v: %v", args, err)
+	}
 
-		if got := viper.GetStringSlice("allow-ban"); len(got) != 2 || got[0] != "sshd" || got[1] != "postfix" {
-			t.Errorf("expected allow-ban [sshd postfix], got %v", got)
-		}
-		if got := viper.GetStringSlice("allow-unban"); len(got) != 1 || got[0] != "sshd" {
-			t.Errorf("expected allow-unban [sshd], got %v", got)
-		}
-		if viper.GetBool("allow-ban-all") {
-			t.Error("expected allow-ban-all to be false")
-		}
-		if !viper.GetBool("allow-unban-all") {
-			t.Error("expected allow-unban-all to be true")
-		}
+	if got := viper.GetStringSlice("allow-ban"); len(got) != 2 || got[0] != "sshd" || got[1] != "postfix" {
+		t.Errorf("expected allow-ban [sshd postfix], got %v", got)
+	}
+	if got := viper.GetStringSlice("allow-unban"); len(got) != 1 || got[0] != "sshd" {
+		t.Errorf("expected allow-unban [sshd], got %v", got)
+	}
+	if viper.GetBool("allow-ban-all") {
+		t.Error("expected allow-ban-all to be false")
+	}
+	if !viper.GetBool("allow-unban-all") {
+		t.Error("expected allow-unban-all to be true")
 	}
 }
 
