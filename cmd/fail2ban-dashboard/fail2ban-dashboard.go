@@ -16,6 +16,7 @@ import (
 	"github.com/webishdev/fail2ban-dashboard/internal/metrics"
 	"github.com/webishdev/fail2ban-dashboard/internal/server"
 	"github.com/webishdev/fail2ban-dashboard/internal/store"
+	"github.com/webishdev/fail2ban-dashboard/internal/track"
 )
 
 var Version = "development"
@@ -106,6 +107,8 @@ func addServeFlags(cmd *cobra.Command) {
 	flags.Bool("allow-unban-all", false, "allow unbanning addresses in all jails, also F2BD_ALLOW_UNBAN_ALL")
 	flags.StringSlice("allow-ban", nil, "allow banning addresses in the given jail (can be used multiple times), also F2BD_ALLOW_BAN")
 	flags.StringSlice("allow-unban", nil, "allow unbanning addresses in the given jail (can be used multiple times), also F2BD_ALLOW_UNBAN")
+	flags.Bool("track", false, "track bans in a local SQLite database for one year and show charts, also F2BD_TRACK")
+	flags.String("track-db", "", "location of the SQLite database used for tracking, also F2BD_TRACK_DB (default fail2ban-dashboard.db in current working directory)")
 }
 
 // splitJailNames splits comma separated values, e.g. from environment variables, into single jail names.
@@ -160,6 +163,10 @@ func serve(_ *cobra.Command, _ []string) {
 	allowBanJails := splitJailNames(viper.GetStringSlice("allow-ban"))
 	allowUnbanJails := splitJailNames(viper.GetStringSlice("allow-unban"))
 
+	// Tracking
+	trackEnabled := viper.GetBool("track")
+	trackDB := viper.GetString("track-db")
+
 	// Configure logging
 	bootstrap.ConfigureLogging(logLevel)
 
@@ -179,6 +186,27 @@ func serve(_ *cobra.Command, _ []string) {
 
 	// Initialize data store
 	dataStore := store.NewDataStore(f2bc, refreshSeconds)
+
+	// Initialize ban tracking
+	var tracker *track.Tracker
+	if trackEnabled {
+		trackDB = bootstrap.ResolveTrackDB(trackDB)
+		var trackError error
+		tracker, trackError = track.Open(trackDB)
+		if trackError != nil {
+			log.Errorf("Could not open tracking database at %s: %s", trackDB, trackError)
+			os.Exit(1)
+		}
+		defer func() {
+			if closeError := tracker.Close(); closeError != nil {
+				log.Errorf("Could not close tracking database: %s", closeError)
+			}
+		}()
+		tracker.Register(dataStore)
+		log.Infof("Tracking bans in %s", trackDB)
+	} else {
+		log.Info("Tracking disabled")
+	}
 
 	// Set up cache directory
 	absoluteCacheDir := bootstrap.SetupCacheDirectory(cacheDir)
@@ -230,7 +258,7 @@ func serve(_ *cobra.Command, _ []string) {
 	}
 
 	// Register dashboard endpoints
-	dashboardRegError := server.RegisterDashboardEndpoints(dashboardApp, dataStore, geoIP, configuration)
+	dashboardRegError := server.RegisterDashboardEndpoints(dashboardApp, dataStore, geoIP, configuration, tracker)
 	if dashboardRegError != nil {
 		log.Errorf("Register dashboard endpoints: %s\n", dashboardRegError)
 		os.Exit(1)

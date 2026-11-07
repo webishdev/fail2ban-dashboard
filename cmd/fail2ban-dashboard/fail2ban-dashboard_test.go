@@ -117,7 +117,7 @@ func TestCommandStructureAndFlagPresence(t *testing.T) {
 	assertFlagExists(t, serveCmd, "address", "serveCmd")
 	assertFlagExists(t, serveCmd, "cache-dir", "serveCmd")
 
-	for _, flagName := range []string{"allow-ban-all", "allow-unban-all", "allow-ban", "allow-unban"} {
+	for _, flagName := range []string{"allow-ban-all", "allow-unban-all", "allow-ban", "allow-unban", "track", "track-db"} {
 		assertFlagDoesNotExist(t, rootCmd, flagName, "rootCmd")
 		assertFlagExists(t, serveCmd, flagName, "serveCmd")
 		assertFlagDoesNotExist(t, versionCmd, flagName, "versionCmd")

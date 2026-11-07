@@ -781,7 +781,7 @@ func TestLoginPageDoesNotExposeFail2BanVersion(t *testing.T) {
 		OAuth2RedirectURL: "https://dashboard.example.com/callback",
 	}
 
-	err := RegisterDashboardEndpoints(app, store.NewDataStore(nil, 10), nil, configuration)
+	err := RegisterDashboardEndpoints(app, store.NewDataStore(nil, 10), nil, configuration, nil)
 	if err != nil {
 		t.Fatalf("Failed to register endpoints: %v", err)
 	}

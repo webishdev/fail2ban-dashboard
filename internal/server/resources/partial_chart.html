@@ -1,0 +1,43 @@
+{{ $chart := . }}
+<details id="{{ $chart.ID }}-chart" class="chart group mb-8 rounded-box border border-base-300 bg-base-100 shadow-sm" open>
+    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+        <h2 class="text-lg font-semibold">Bans</h2>
+        <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-base-content/60 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </summary>
+    <div class="px-4 pb-4 sm:px-5 sm:pb-5">
+        <div class="tabs tabs-border">
+            {{ range .Ranges }}
+            <input type="radio" name="{{ $chart.ID }}-range" class="tab" aria-label="{{ .Title }}" data-range="{{ .Key }}" {{ if .Checked }}checked{{ end }} />
+            <div class="tab-content pt-4">
+                <div class="mb-3 text-sm text-base-content/60"><span class="font-semibold tabular-nums text-base-content">{{ .Total }}</span> bans in total, at most <span class="tabular-nums">{{ .Max }}</span> per {{ if eq .Key "year" }}month{{ else }}day{{ end }}</div>
+                <svg viewBox="0 0 {{ $chart.Width }} {{ $chart.Height }}" preserveAspectRatio="none" class="block h-40 w-full border-b border-base-300 text-primary" role="img" aria-label="Bans per {{ if eq .Key "year" }}month{{ else }}day{{ end }}">
+                    {{ range .Bars }}
+                    <g>
+                        <title>{{ .Label }}: {{ .Count }}</title>
+                        <rect x="{{ .X }}" y="{{ .Y }}" width="{{ .W }}" height="{{ .H }}" fill="currentColor" />
+                        <rect x="{{ .X }}" y="0" width="{{ .W }}" height="{{ $chart.Height }}" fill="transparent" />
+                    </g>
+                    {{ end }}
+                </svg>
+                <div class="mt-1 grid text-center text-xs tabular-nums text-base-content/60" style="grid-template-columns: repeat({{ len .Bars }}, minmax(0, 1fr))">
+                    {{ range .Bars }}
+                    <span class="overflow-visible whitespace-nowrap {{ if .MinorLabel }}invisible sm:visible{{ end }}">{{ if .ShowLabel }}{{ .Label }}{{ end }}</span>
+                    {{ end }}
+                </div>
+            </div>
+            {{ end }}
+        </div>
+    </div>
+</details>
+<script>
+    // Keep the chart expanded or collapsed across page reloads
+    (() => {
+        const chart = document.getElementById('{{ $chart.ID }}-chart');
+        if (localStorage.getItem('f2b-dashboard.chart') === 'closed') {
+            chart.open = false;
+        }
+        chart.addEventListener('toggle', () => {
+            localStorage.setItem('f2b-dashboard.chart', chart.open ? 'open' : 'closed');
+        });
+    })();
+</script>

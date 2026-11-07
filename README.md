@@ -140,6 +140,8 @@ Flags:
       --scheduled-geoip-download     will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD (default true)
       --skip-version-check           skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK
   -s, --socket string                location of the fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
+      --track                        track bans in a local SQLite database for one year and show charts, also F2BD_TRACK
+      --track-db string              location of the SQLite database used for tracking, also F2BD_TRACK_DB (default fail2ban-dashboard.db in current working directory)
       --trust-proxy-headers          trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS
 ```
 
@@ -221,6 +223,22 @@ Example to allow banning in the `sshd` and `postfix` jails and unbanning in all 
 
 Make sure to protect the dashboard with basic authentication or OAuth2 when enabling these actions.
 
+#### Ban tracking
+
+With `--track` every ban seen while refreshing the fail2ban data is stored in a local SQLite database.
+The overview page and the jail detail pages then show a chart with the number of bans for the last week, month
+(one bar per day) or year (one bar per month). Bans older than one year are removed from the database.
+
+| Environment Variable | Command Line Flag | Description                              | Default                                              |
+|----------------------|-------------------|------------------------------------------|------------------------------------------------------|
+| `F2BD_TRACK`         | `--track`         | Track bans and show charts               | `false`                                              |
+| `F2BD_TRACK_DB`      | `--track-db`      | Location of the SQLite database for bans | `fail2ban-dashboard.db` in current working directory |
+
+The directory of the database is created when missing. The history starts when tracking is enabled, only bans that are
+active during a refresh are recorded, so bans shorter than `--refresh-seconds` may be missed.
+When running in Docker, the working directory is `/`, so set `F2BD_TRACK_DB` to a file on a mounted volume to keep the
+history between container restarts.
+
 ### Configuration file
 
 It is also possible to configure `fail2ban-dashboard` using a config file.
@@ -256,6 +274,8 @@ Supported configuration names are similar to flags and environment variables:
 | allow-unban-all     |
 | allow-ban           |
 | allow-unban         |
+| track               |
+| track-db            |
 
 ## Dashboard
 
