@@ -60,7 +60,7 @@
           A lightweight web dashboard for <code>fail2ban</code> that asks fail2ban itself, straight
           through its control socket, instead of parsing log files. You get your jails and banned
           addresses at a glance, can ban and unban addresses for the jails you allow, and offers Prometheus
-          metrics if you want them. One binary, no database, no fuss.
+          metrics if you want them. One binary, no database required, no fuss.
         </p>
         <div class="cta">
           <a class="btn btn-primary" href="#quick-start">Get started</a>
@@ -168,6 +168,11 @@
           <h3>Ban &amp; unban</h3>
           <p>Opt in per jail to ban an IPv4 or IPv6 address from the dashboard or lift a ban with one click. Off by default.</p>
         </article>
+        <article class="card card-wide">
+          <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 17v-5M10 17V7M14 17v-7M18 17V4"/></svg></div>
+          <h3>Ban history</h3>
+          <p>Opt in with <code>--track</code> to keep a year of bans in a local SQLite database and see bans per week, month and year as charts.</p>
+        </article>
       </div>
     </div>
   </section>
@@ -205,6 +210,7 @@
         <a href="#basic-auth">Basic authentication</a>
         <a href="#oauth2">OAuth2</a>
         <a href="#ban-unban">Ban &amp; unban</a>
+        <a href="#tracking">Ban tracking</a>
         <a href="#config-file">Config file</a>
         <a href="#metrics">Metrics</a>
         <a href="#building">Building</a>
@@ -223,7 +229,7 @@
 
         <h3>Standalone binary</h3>
         <p>Download a release for your platform from the <a href="https://github.com/webishdev/fail2ban-dashboard/releases">releases page</a>, then run:</p>
-<pre><code>sudo ./fail2ban-dashboard</code></pre>
+<pre><code>sudo ./fail2ban-dashboard serve</code></pre>
         <p>Open <a href="http://127.0.0.1:3000/">http://127.0.0.1:3000/</a> in your browser.</p>
 
         <h2 id="compatibility">Compatibility</h2>
@@ -329,8 +335,33 @@ Available Commands:
   --allow-ban postfix \
   --allow-unban-all</code></pre>
         <p>As environment variables, multiple jails are separated by comma or space:</p>
-<pre><code>F2BD_ALLOW_BAN="sshd,postfix" F2BD_ALLOW_UNBAN_ALL=true ./fail2ban-dashboard</code></pre>
+<pre><code>F2BD_ALLOW_BAN="sshd,postfix" F2BD_ALLOW_UNBAN_ALL=true ./fail2ban-dashboard serve</code></pre>
         <p class="note">Protect the dashboard with <a href="#basic-auth">basic authentication</a> or <a href="#oauth2">OAuth2</a> when enabling these actions. The forms are CSRF protected, so a reverse proxy must pass the original <code>Host</code> header through. Mounting the socket read-only does not prevent these commands, only the flags above do.</p>
+
+        <h2 id="tracking">Ban tracking</h2>
+        <p>With <code>--track</code> every ban seen while refreshing the fail2ban data is stored in a local SQLite database. The overview and jail pages then show a collapsible chart with the bans of the last week or month (one bar per day) or year (one bar per month). Bans older than one year are removed from the database.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Flag</th><th>Environment variable</th><th>Description</th><th>Default</th></tr></thead>
+            <tbody>
+              <tr><td><code>--track</code></td><td><code>F2BD_TRACK</code></td><td>Track bans and show charts</td><td><code>false</code></td></tr>
+              <tr><td><code>--track-db</code></td><td><code>F2BD_TRACK_DB</code></td><td>Location of the SQLite database</td><td><code>fail2ban-dashboard.db</code> in working directory</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Example to store the database at a fixed location:</p>
+<pre><code>./fail2ban-dashboard serve \
+  --track \
+  --track-db /var/lib/fail2ban-dashboard/bans.db</code></pre>
+        <p>With Docker, keep the database on a volume:</p>
+<pre><code>docker run --user=root \
+  -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro \
+  -v fail2ban-dashboard:/data \
+  -e F2BD_TRACK=true \
+  -e F2BD_TRACK_DB=/data/fail2ban-dashboard.db \
+  -p 3000:3000 \
+  ghcr.io/webishdev/fail2ban-dashboard:latest</code></pre>
+        <p class="note">The history starts when tracking is enabled. Only bans that are active during a refresh are recorded, so bans shorter than <code>--refresh-seconds</code> may be missed. In the container the working directory is <code>/</code>, without a volume the history is lost when the container is recreated.</p>
 
         <h2 id="config-file">Config file</h2>
         <p>Any format supported by <a href="https://github.com/spf13/viper#reading-config-files">viper</a> works (TOML, YAML, JSON, …). The file is looked up in:</p>
