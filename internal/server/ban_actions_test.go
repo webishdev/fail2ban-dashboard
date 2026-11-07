@@ -67,7 +67,7 @@ func createBanTestApp(t *testing.T, f2bc *mockClient, configuration *config.Conf
 	}
 	configuration.BasePath = "/"
 	app := fiber.New()
-	if err := RegisterDashboardEndpoints(app, dataStore, nil, configuration); err != nil {
+	if err := RegisterDashboardEndpoints(app, dataStore, nil, configuration, nil); err != nil {
 		t.Fatalf("Failed to register endpoints: %v", err)
 	}
 	return app

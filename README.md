@@ -97,14 +97,25 @@ Instead of `latest` you can use a specific version like `v0.8.1`
 
 ```
 Usage:
-  fail2ban-dashboard [flags]
   fail2ban-dashboard [command]
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
-  serve       Start the fail2ban dashboard server (default)
+  serve       Start the fail2ban dashboard server
   version     Print the version number and git hash
+
+Flags:
+  -h, --help   help for fail2ban-dashboard
+
+Use "fail2ban-dashboard [command] --help" for more information about a command.
+```
+
+The dashboard is started with the `serve` command, all options are available for this command:
+
+```
+Usage:
+  fail2ban-dashboard serve [flags]
 
 Flags:
   -a, --address string               address to serve the dashboard on, also F2BD_ADDRESS (default "127.0.0.1:3000")
@@ -116,7 +127,7 @@ Flags:
       --auth-user string             username for basic auth, also F2BD_AUTH_USER
       --base-path string             base path of the application, also F2BD_BASE_PATH (default "/")
   -c, --cache-dir string             directory to cache GeoIP data, also F2BD_CACHE_DIR (default current working directory)
-  -h, --help                         help for fail2ban-dashboard
+  -h, --help                         help for serve
       --log-level string             log level (trace, debug, info, warn, error), also F2BD_LOG_LEVEL (default "info")
   -m, --metrics                      will provide metrics endpoint, also F2BD_METRICS
       --metrics-address string       address to make metrics available, also F2BD_METRICS_ADDRESS (default "127.0.0.1:9100")
@@ -129,9 +140,9 @@ Flags:
       --scheduled-geoip-download     will keep GeoIP cache update even without accessing the dashboard, also F2BD_SCHEDULED_GEOIP_DOWNLOAD (default true)
       --skip-version-check           skip fail2ban version check (use at your own risk), also F2BD_SKIP_VERSION_CHECK
   -s, --socket string                location of the fail2ban socket, also F2BD_SOCKET (default "/var/run/fail2ban/fail2ban.sock")
+      --track                        track bans in a local SQLite database for one year and show charts, also F2BD_TRACK
+      --track-db string              location of the SQLite database used for tracking, also F2BD_TRACK_DB (default fail2ban-dashboard.db in current working directory)
       --trust-proxy-headers          trust proxy headers like X-Forwarded-For, also F2BD_TRUST_PROXY_HEADERS
-
-Use "fail2ban-dashboard [command] --help" for more information about a command.
 ```
 
 ### Configuration
@@ -212,6 +223,22 @@ Example to allow banning in the `sshd` and `postfix` jails and unbanning in all 
 
 Make sure to protect the dashboard with basic authentication or OAuth2 when enabling these actions.
 
+#### Ban tracking
+
+With `--track` every ban seen while refreshing the fail2ban data is stored in a local SQLite database.
+The overview page and the jail detail pages then show a chart with the number of bans for the last week, month
+(one bar per day) or year (one bar per month). Bans older than one year are removed from the database.
+
+| Environment Variable | Command Line Flag | Description                              | Default                                              |
+|----------------------|-------------------|------------------------------------------|------------------------------------------------------|
+| `F2BD_TRACK`         | `--track`         | Track bans and show charts               | `false`                                              |
+| `F2BD_TRACK_DB`      | `--track-db`      | Location of the SQLite database for bans | `fail2ban-dashboard.db` in current working directory |
+
+The directory of the database is created when missing. The history starts when tracking is enabled, only bans that are
+active during a refresh are recorded, so bans shorter than `--refresh-seconds` may be missed.
+When running in Docker, the working directory is `/`, so set `F2BD_TRACK_DB` to a file on a mounted volume to keep the
+history between container restarts.
+
 ### Configuration file
 
 It is also possible to configure `fail2ban-dashboard` using a config file.
@@ -247,6 +274,8 @@ Supported configuration names are similar to flags and environment variables:
 | allow-unban-all     |
 | allow-ban           |
 | allow-unban         |
+| track               |
+| track-db            |
 
 ## Dashboard
 

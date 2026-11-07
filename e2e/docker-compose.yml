@@ -12,6 +12,7 @@ services:
       F2BD_METRICS: "true"
       F2BD_ALLOW_BAN_ALL: "true"
       F2BD_ALLOW_UNBAN_ALL: "true"
+      F2BD_TRACK: "true"
     ports:
       - "3000:3000"
       - "9100:9100"

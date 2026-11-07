@@ -30,6 +30,9 @@
                     {{ template "jailDetail" .Jail }}
                 </div>
             </section>
+            {{ if .Chart }}
+            {{ template "chart" .Chart }}
+            {{ end }}
             <section class="banned">
                 <div class="mb-3 flex items-center justify-between">
                     <h2 class="text-lg font-semibold">Banned addresses</h2>

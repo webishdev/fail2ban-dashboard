@@ -30,6 +30,9 @@
             {{ else if eq .Status "failed" }}
             <div role="alert" class="alert alert-error alert-soft mb-6" data-status="failed"><span><span class="font-mono font-semibold">{{ .StatusAddress }}</span> could not be banned by fail2ban in the jails {{ .StatusJails }}, see the logs for details.</span></div>
             {{ end }}
+            {{ if .Chart }}
+            {{ template "chart" .Chart }}
+            {{ end }}
             {{ $curBasePath := .BasePath }}
             {{ if .Jails }}
             <section class="jails grid gap-4">

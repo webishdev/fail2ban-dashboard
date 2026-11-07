@@ -28,6 +28,7 @@ import (
 	"github.com/webishdev/fail2ban-dashboard/internal/models"
 	oauth "github.com/webishdev/fail2ban-dashboard/internal/oauth2"
 	"github.com/webishdev/fail2ban-dashboard/internal/store"
+	"github.com/webishdev/fail2ban-dashboard/internal/track"
 )
 
 //go:embed resources/css/daisyui@5.css
@@ -72,6 +73,9 @@ var headHtml []byte
 //go:embed resources/partial_header.html
 var headerHtml []byte
 
+//go:embed resources/partial_chart.html
+var chartHtml []byte
+
 //go:embed resources/flags.css
 var flagsCss []byte
 
@@ -111,6 +115,7 @@ type indexData struct {
 	baseData
 	BannedSum     int
 	Jails         []models.Jail
+	Chart         *chartData
 	CanBan        bool
 	CSRFToken     string
 	Status        string
@@ -129,6 +134,7 @@ type detailData struct {
 	OrderStarted  Sorted
 	OrderEnds     Sorted
 	Jail          models.Jail
+	Chart         *chartData
 	BannedRows    []bannedRow
 	CanBan        bool
 	CanUnban      bool
@@ -150,7 +156,7 @@ func generateRandomPassword() string {
 	return hex.EncodeToString(b)
 }
 
-func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *config.Configuration) error {
+func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoIP *geoip.GeoIP, configuration *config.Configuration, tracker *track.Tracker) error {
 
 	// Initialize the in-memory session store
 	sessionStore := session.NewStore(session.Config{})
@@ -350,6 +356,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			Authenticated:   isAuthenticated,
 			BannedSum:       sum,
 			Jails:           jails,
+			Chart:           buildChart(tracker, ""),
 			CanBan:          configuration.AllowBanAll,
 			CSRFToken:       csrf.TokenFromContext(c),
 			Status:          c.Redirect().Message(flashStatus).Value,
@@ -429,6 +436,7 @@ func RegisterDashboardEndpoints(app *fiber.App, dataStore *store.DataStore, geoI
 			OrderStarted:    toggleSortOrder("started", sorting, order),
 			OrderEnds:       toggleSortOrder("ends", sorting, order),
 			Jail:            jailByName,
+			Chart:           buildChart(tracker, jailName),
 			BannedRows:      bannedRows,
 			CanBan:          canBan,
 			CanUnban:        canUnban,
@@ -747,6 +755,9 @@ func parseTemplates(funcMap template.FuncMap) (*template.Template, *template.Tem
 	if _, err := indexTemplate.New("header").Parse(string(headerHtml)); err != nil {
 		return nil, nil, nil, err
 	}
+	if _, err := indexTemplate.New("chart").Parse(string(chartHtml)); err != nil {
+		return nil, nil, nil, err
+	}
 	if _, err := detailTemplate.New("head").Parse(string(headHtml)); err != nil {
 		return nil, nil, nil, err
 	}
@@ -760,6 +771,9 @@ func parseTemplates(funcMap template.FuncMap) (*template.Template, *template.Tem
 		return nil, nil, nil, err
 	}
 	if _, err := detailTemplate.New("banned").Parse(string(bannedHtml)); err != nil {
+		return nil, nil, nil, err
+	}
+	if _, err := detailTemplate.New("chart").Parse(string(chartHtml)); err != nil {
 		return nil, nil, nil, err
 	}
 	return indexTemplate, detailTemplate, flagsTemplate, nil
