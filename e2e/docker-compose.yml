@@ -1,6 +1,7 @@
 services:
   fail2ban:
     image: "crazymax/fail2ban:${FAIL2BAN_VERSION:-1.1.1}"
+    working_dir: /f2b-dashboard-data
     environment:
       TZ: "Europe/Berlin"
       F2BD_ADDRESS: ":3000"
@@ -17,6 +18,7 @@ services:
       - "3000:3000"
       - "9100:9100"
     volumes:
+      - "./f2b-dashboard-data:/f2b-dashboard-data"
       - "../bin/linux/amd64:/app"
       - "./data/script:/script"
       - "./data/jail.d:/data/jail.d"
