@@ -35,6 +35,7 @@ If the dashboard should be used with another version, please switch off the vers
 - [Installation](#installation)
     - [Standalone application](#standalone-application)
     - [Docker](#docker)
+        - [Running as non-root](#running-as-non-root)
 - [Usage](#usage)
     - [Command line](#command-line)
     - [Configuration](#configuration)
@@ -85,11 +86,35 @@ the [releases page](https://github.com/webishdev/fail2ban-dashboard/releases).
 
 With Docker use
 
-`docker run --user=root -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro -p 3000:3000 ghcr.io/webishdev/fail2ban-dashboard:latest`
+`docker run -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro -v f2bd-data:/f2b-dashboard-data -p 3000:3000 ghcr.io/webishdev/fail2ban-dashboard:latest`
 
-The `root` user is necessary as by default the `fail2ban` socket is only accessible for the `root` user.
+The container runs as `root` as by default the `fail2ban` socket is only accessible for the `root` user.
+The working directory is `/f2b-dashboard-data`, the GeoIP cache and the tracking database are stored there.
 
 Instead of `latest` you can use a specific version like `v0.8.1`
+
+#### Running as non-root
+
+The container can also run with a non-root user, but this requires changes on the host as the socket is mounted with
+the permissions of the host. The `fail2ban` socket must be writable for a group which is then added to the container.
+
+As `fail2ban` recreates the socket on every start, the permissions can be set with a systemd drop-in, e.g.
+`/etc/systemd/system/fail2ban.service.d/socket-group.conf` for an existing group `f2bdash`:
+
+```ini
+[Service]
+ExecStartPost=/bin/sh -c 'while [ ! -S /var/run/fail2ban/fail2ban.sock ]; do sleep 0.5; done; chgrp f2bdash /var/run/fail2ban/fail2ban.sock; chmod 660 /var/run/fail2ban/fail2ban.sock'
+```
+
+Then start the container with the user `65532` (`nonroot` of the distroless image) and the group id of `f2bdash`:
+
+`docker run --user=65532:65532 --group-add=$(getent group f2bdash | cut -d: -f3) -v /var/run/fail2ban:/var/run/fail2ban:ro -v /path/to/f2b-dashboard-data:/f2b-dashboard-data -p 3000:3000 ghcr.io/webishdev/fail2ban-dashboard:latest`
+
+- The directory `/var/run/fail2ban` is mounted instead of the socket file, so a recreated socket is still visible in the container
+- The mounted `/f2b-dashboard-data` directory must be writable for the user `65532`, e.g. `chown 65532:65532 /path/to/f2b-dashboard-data`.
+  When using a named volume instead, mount it with `--mount type=volume,src=<name>,dst=/f2b-dashboard-data,volume-nocopy`, otherwise
+  Docker resets the ownership of an empty volume to `root`
+- Members of the group have full control over `fail2ban` through the socket
 
 ## Usage
 
@@ -236,7 +261,7 @@ The overview page and the jail detail pages then show a chart with the number of
 
 The directory of the database is created when missing. The history starts when tracking is enabled, only bans that are
 active during a refresh are recorded, so bans shorter than `--refresh-seconds` may be missed.
-When running in Docker, the working directory is `/`, so set `F2BD_TRACK_DB` to a file on a mounted volume to keep the
+When running in Docker, the working directory is `/f2b-dashboard-data`, so mount a volume at `/f2b-dashboard-data` to keep the
 history between container restarts.
 
 ### Configuration file

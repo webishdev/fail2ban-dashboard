@@ -221,11 +221,12 @@
 
         <h3>Docker</h3>
         <p>The quickest way to run the dashboard. The fail2ban socket is mounted read-only into the container:</p>
-<pre><code>docker run --user=root \
+<pre><code>docker run \
   -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro \
+  -v f2bd-data:/f2b-dashboard-data \
   -p 3000:3000 \
   ghcr.io/webishdev/fail2ban-dashboard:latest</code></pre>
-        <p class="note">The <code>root</code> user is necessary because the fail2ban socket is only accessible to <code>root</code> by default. Instead of <code>latest</code> you can pin a version such as <code>v0.11.2</code>.</p>
+        <p class="note">The container runs as <code>root</code> because the fail2ban socket is only accessible to <code>root</code> by default. Running as non-root is possible after adjusting the socket permissions on the host, see the <a href="https://github.com/webishdev/fail2ban-dashboard#running-as-non-root">README</a>. The GeoIP cache and the tracking database are stored in <code>/f2b-dashboard-data</code>. Instead of <code>latest</code> you can pin a version such as <code>v0.11.2</code>.</p>
 
         <h3>Standalone binary</h3>
         <p>Download a release for your platform from the <a href="https://github.com/webishdev/fail2ban-dashboard/releases">releases page</a>, then run:</p>
@@ -356,9 +357,9 @@ Available Commands:
         <p>With Docker, keep the database on a volume:</p>
 <pre><code>docker run --user=root \
   -v /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock:ro \
-  -v fail2ban-dashboard:/data \
+  -v fail2ban-dashboard:/f2b-dashboard-data \
   -e F2BD_TRACK=true \
-  -e F2BD_TRACK_DB=/data/fail2ban-dashboard.db \
+  -e F2BD_TRACK_DB=/f2b-dashboard-data/fail2ban-dashboard.db \
   -p 3000:3000 \
   ghcr.io/webishdev/fail2ban-dashboard:latest</code></pre>
         <p class="note">The history starts when tracking is enabled. Only bans that are active during a refresh are recorded, so bans shorter than <code>--refresh-seconds</code> may be missed. In the container the working directory is <code>/</code>, without a volume the history is lost when the container is recreated.</p>

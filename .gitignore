@@ -8,3 +8,4 @@ cached*
 .lint_result
 __debug*
 testresults.json
+e2e/f2b-dashboard-data
