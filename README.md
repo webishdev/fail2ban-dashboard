@@ -91,7 +91,7 @@ With Docker use
 The container runs as `root` as by default the `fail2ban` socket is only accessible for the `root` user.
 The working directory is `/f2b-dashboard-data`, the GeoIP cache and the tracking database are stored there.
 
-Instead of `latest` you can use a specific version like `v0.8.1`
+Instead of `latest` you can use a specific version like `v0.13.1`
 
 #### Running as non-root
 
@@ -261,8 +261,8 @@ The overview page and the jail detail pages then show a chart with the number of
 
 The directory of the database is created when missing. The history starts when tracking is enabled, only bans that are
 active during a refresh are recorded, so bans shorter than `--refresh-seconds` may be missed.
-When running in Docker, the working directory is `/f2b-dashboard-data`, so mount a volume at `/f2b-dashboard-data` to keep the
-history between container restarts.
+When running in Docker, the database is stored in the working directory `/f2b-dashboard-data` by default, so mount a volume
+there to keep the history between container restarts.
 
 ### Configuration file
 
@@ -272,6 +272,7 @@ library.
 
 The config file can be located at the current working directory, the user home directory `~/.config/fail2ban-dashboard/`
 or `/etc/fail2ban-dashboard/`.
+When running in Docker, the working directory is `/f2b-dashboard-data`, so a config file can be placed on the mounted volume.
 
 For example, for a TOML file located at `/etc/fail2ban-dashboard/config.toml` to change the address should look like:
 
