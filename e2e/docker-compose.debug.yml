@@ -18,7 +18,7 @@ services:
       - "4000:3000"
     volumes:
       - "..:/workspace"
-      - "./data/script:/script"
+      - "./files/script:/script"
       - f2b-run:/var/run/fail2ban
       - go-cache:/go
     command:

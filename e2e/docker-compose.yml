@@ -18,10 +18,10 @@ services:
       - "9100:9100"
     volumes:
       - "../bin/linux/amd64:/app"
-      - "./data/script:/script"
-      - "./data/jail.d:/data/jail.d"
-      - "./data/filter.d:/data/filter.d"
-      - "./data/log:/var/log/test"
+      - "./files/script:/script"
+      - "./files/jail.d:/data/jail.d"
+      - "./files/filter.d:/data/filter.d"
+      - "./files/log:/var/log/test"
       - "/etc/localtime:/etc/localtime:ro"
 
 
